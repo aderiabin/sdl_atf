@@ -15,6 +15,7 @@ local control_services = require('services/control_service')
 local rpc_services = require('services/rpc_service')
 local heartbeatMonitor = require('services/heartbeat_monitor')
 local mobileExpectations = require('expectations/session_expectations')
+local securityManager = require('security_manager')
 
 local Event = events.Event
 local FAILED = expectations.FAILED
@@ -220,7 +221,8 @@ function MSI.MobileSessionImpl(session_id, correlation_id, test, connection, sen
   res.ignoreHeartBeatAck = ignoreHeartBeatAck
   --- Heartbeat monitor
   res.heartbeat_monitor = heartbeatMonitor.HeartBeatMonitor(res)
-
+  --- SecurityManager
+  res.securityManager = securityManager.SecurityManager()
   setmetatable(res, mt)
   return res
 end
