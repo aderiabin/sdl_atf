@@ -222,7 +222,7 @@ function MSI.MobileSessionImpl(session_id, correlation_id, test, connection, sen
   --- Heartbeat monitor
   res.heartbeat_monitor = heartbeatMonitor.HeartBeatMonitor(res)
   --- SecurityManager
-  res.securityManager = securityManager.SecurityManager()
+  res.securityManager = securityManager.SecurityManager(res.connection)
   setmetatable(res, mt)
   return res
 end

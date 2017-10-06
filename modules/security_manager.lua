@@ -1,29 +1,47 @@
-local openssl = require('openssl')
+local openssl = require('ssl')
 
-local SM = {}
-local mt = { __index = { } }
+local SecurityManager = {}
 
--- Manage digital certificates
--- Manage security protocols
--- Manage cyphers
--- Handle Secure Sockets Layer (SSL) context
--- Provide interface for encryption/decryption
--- Be able to perform a handshake
-function mt.__index:PerformHandshake()
+--- SSL
+local ssl_mt = { __index = {} }
+
+function ssl_mt.__index:PerformHandshake()
   -- prepare event to expect (example control_service:StartService)
   openssl.doHandshake(self.connection)
   -- expect event and check the result (example control_service:StartService)
 end
 
-function SM.SecurityManager(connection)
+--- BIO
+local BIO = {
+	types = {
+		SOURCE_BIO = 0,
+		FILTER_BIO = 1
+	}
+}
+
+--- SecurityManager
+
+function SecurityManager:init()
+	openssl.initSslLibrary()
+	self.sslContext = openssl.prepareSSLContext()
+end
+
+function SecurityManager:createSsl()
+	return openssl.newSsl(self.sslContext)
+end
+
+function SecurityManager:createBio(bioType)
+	return openssl.newBio(bioType)
+end
+
+function SecurityManager:SSL()
 	local res = {}
-	--- isEncriptedSession
 	res.isEncriptedSession = false
-	res.connection = connection
-	res.SSL = openssl.getSsl()
-	res.SSL_CTX = openssl.getSslContext()
-	setmetatable(res, mt)
+	res.ssl = self:createSsl()
+	res.bioIn = self:createBio(BIO.types.SOURCE_BIO)
+	res.bioOut = self:createBio(BIO.types.SOURCE_BIO)
+	setmetatable(res, ssl_mt)
   return res
 end
 
-return SM
+return SecurityManager
