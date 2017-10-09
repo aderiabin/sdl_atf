@@ -178,46 +178,40 @@ namespace {
 		}
 	}
 
-	// int krx_ssl_init(SSL_CTX* ctx, SSL* ssl, int isserver, info_callback cb) {
-		// /* create SSL* */
-		// k->ssl = SSL_new(k->ctx);
-		// if(!k->ssl) {
-		// 	printf("Error: cannot create new SSL*.\n");
-		// 	return -1;
-		// }
+	int isHandshakeFinished(SSL* ssl) {
+		return SSL_is_init_finished(ssl);
+	}
+	int doHandshake(SSL* ssl) {
+		return SSL_do_handshake(ssl);
+	}
 
-		/* info callback */
-		// SSL_set_info_callback(k->ssl, cb);
+	int getSSLErrorInfo(const SSL* ssl, int returnOfSSLOperation) {
+		return SSL_get_error(ssl, returnOfSSLOperation);
+	}
 
-		/* bios */
-		// k->in_bio = BIO_new(BIO_s_mem());
-		// if(k->in_bio == NULL) {
-		// 	printf("Error: cannot allocate read bio.\n");
-		// 	return -2;
-		// }
+	int checkDecriptedDataInSSL(SSL* ssl) {
+		return SSL_pending(ssl);
+	}
 
-		// BIO_set_mem_eof_return(k->in_bio, -1); /* see: https://www.openssl.org/docs/crypto/BIO_s_mem.html */
+	int readDecriptedDataFromSSL(SSL* ssl, char* buf int bufSize) {
+		return SSL_read(ssl, buf, bufSize);
+	}
 
-		// k->out_bio = BIO_new(BIO_s_mem());
-		// if(k->out_bio == NULL) {
-		// 	printf("Error: cannot allocate write bio.\n");
-		// 	return -3;
-		// }
+	int writeEncriptedDataIntoSSL(SSL* ssl, char* buf int bufSize) {
+		return SSL_write(ssl, buf, bufSize);
+	}
 
-		// BIO_set_mem_eof_return(k->out_bio, -1); /* see: https://www.openssl.org/docs/crypto/BIO_s_mem.html */
+	int checkDataToReadInBIO(BIO* bio) {
+		return BIO_ctrl_pending(bio);
+	}
 
-		// SSL_set_bio(k->ssl, k->in_bio, k->out_bio);
+	int readDatafromBIO(BIO* bio, char* buf int bufSize) {
+		return BIO_read(bio, buf, bufSize);
+	}
 
-		/* either use the server or client part of the protocol */
-		// if(isserver == 1) {
-		// 	SSL_set_accept_state(k->ssl);
-		// }
-		// else {
-		// 	SSL_set_connect_state(k->ssl);
-		// }
-
- //  		return 0;
-	// }
+	int writeDataIntoBIO(BIO* bio, char* buf int bufSize) {
+		return BIO_write(bio, buf, bufSize);
+	}
 
 	// Lua interfaces
 	//OPENSSL
@@ -310,6 +304,47 @@ namespace {
 		prepareSSLToHandshake(int isServer)
 	}
 
+	int ssl_isHandshakeFinished(lua_State* L) {
+		SSL* ssl = (SSL*)luaL_checkudata(L, 1, "openssl.ssl");
+		int isFinished = isHandshakeFinished(ssl);
+		lua_pushboolean(L, isFinished);
+		return 1;
+	}
+
+	int ssl_performHandshake(lua_State* L) {
+		SSL* ssl = (SSL*)luaL_checkudata(L, 1, "openssl.ssl");
+		int result = doHandshake(ssl);
+		int info = getSSLErrorInfo(ssl, result);
+		lua_pushinteger(L, result);
+		lua_pushinteger(L, info);
+		return 2;
+	}
+
+	int ssl_checkDataToDecript(lua_State* L) {
+		SSL* ssl = (SSL*)luaL_checkudata(L, 1, "openssl.ssl");
+		int datSize = checkDecriptedDataInSSL(ssl);
+		lua_pushinteger(L, datSize);
+		return 1;
+	}
+
+	int ssl_decrypt(lua_State* L) {
+		SSL* ssl = (SSL*)luaL_checkudata(L, 1, "openssl.ssl");
+		int size = luaL_checknumber(L, 2);
+		char* buffer = new char[size];
+		int readSize = readDecriptedDataFromSSL(ssl, buffer, size);
+		lua_pushlstring(L, buffer, readSize);
+		delete[] buffer;
+		return 1;
+	}
+
+	int ssl_encrypt(lua_State* L) {
+		SSL* ssl = (SSL*)luaL_checkudata(L, 1, "openssl.ssl");
+		size_t size;
+		const char* data = luaL_checklstring(L, 2, &size);
+		int writeSize = writeEncriptedDataIntoSSL(ssl, data, size);
+		return 0;
+	}
+
 	int ssl_free(lua_State* L) {
 		SSL* ssl = (SSL*)luaL_checkudata(L, 1, "openssl.ssl");
 		freeSSL(ssl);
@@ -317,6 +352,30 @@ namespace {
 	}
 
 	//BIO
+	int bio_checkDataToRead(lua_State* L) {
+		BIO* bio = (BIO*)luaL_checkudata(L, 1, "openssl.bio");
+		int datSize = checkDataToReadInBIO(bio);
+		lua_pushinteger(L, datSize);
+		return 1;
+	}
+
+	int bio_readData(lua_State* L) {
+		BIO* bio = (BIO*)luaL_checkudata(L, 1, "openssl.bio");
+		int size = luaL_checknumber(L, 2);
+		char* buffer = new char[size];
+		int readSize = readDatafromBIO(bio, buffer, size);
+		lua_pushlstring(L, buffer, readSize);
+		delete[] buffer;
+		return 1;
+	}
+
+	int bio_writeData(lua_State* L) {
+		BIO* bio = (BIO*)luaL_checkudata(L, 1, "openssl.bio");
+		size_t size;
+		const char* data = luaL_checklstring(L, 2, &size);
+		int writeSize = writeDataIntoBIO(bio, data, size);
+		return 0;
+	}
 
 }
 
@@ -327,7 +386,6 @@ int luaopen_openssl(lua_State *L) {
 		{ "prepareSslContext", &openssl_prepareSslContext },
 		{ "createBio", &openssl_createBio },
 		{ "cleanupSslLibrary", &openssl_cleanupSslLib },
-
 		{ NULL, NULL }
 	};
 
@@ -350,6 +408,11 @@ int luaopen_openssl(lua_State *L) {
 		{ "setInfoCallback", &ssl_setInfoCallback },
 		{ "setBios", &ssl_setBios },
 		{ "prepareToHandshake", &ssl_prepareToHandshake },
+		{ "performHandshake", &ssl_performHandshake },
+		{ "isHandshakeFinished", &ssl_isHandshakeFinished },
+		{ "checkData", &ssl_checkDataToDecript },
+		{ "decrypt", &ssl_decrypt },
+		{ "encrypt", &ssl_encrypt },
 		{ NULL, NULL }
 	};
 	luaL_setfuncs(L, ssl_functions, 0);
@@ -359,6 +422,15 @@ int luaopen_openssl(lua_State *L) {
 
 	//BIO
 	luaL_newmetatable(L, "openssl.bio");
+	lua_newtable(L);
+		luaL_Reg bio_functions[] = {
+		{ "checkData", &bio_checkDataToRead },
+		{ "read", &bio_readData },
+		{ "write", &bio_writeData },
+		{ NULL, NULL }
+	};
+	luaL_setfuncs(L, bio_functions, 0);
+	lua_setfield(L, -2, "__index");
 
 	//OPENSSL
 	luaL_newlib(L, openssl_functions);
