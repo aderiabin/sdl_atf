@@ -78,11 +78,20 @@ function mt.__index:SendRPC(func, arguments, fileName)
   return self.rpc_services:SendRPC(func, arguments, fileName)
 end
 
----Start specific service
+--- Start specific service
 -- For service == 7 should be used StartRPC() instead of this function
 -- @tparam number service Service type
 -- @treturn Expectation expectation for StartService ACK
 function mt.__index:StartService(service)
+  return self.control_services:StartService(service)
+end
+
+--- Start specific secured service
+-- @tparam number service Service type
+-- @tparam table securitySettings settings for SSL
+-- @treturn Expectation expectation for StartService ACK
+function mt.__index:StartSecuredService(service, securitySettings)
+  -- check and prepare SSL on basis of securitySettings
   return self.control_services:StartService(service)
 end
 
@@ -222,7 +231,7 @@ function MSI.MobileSessionImpl(session_id, correlation_id, test, connection, sen
   --- Heartbeat monitor
   res.heartbeat_monitor = heartbeatMonitor.HeartBeatMonitor(res)
   --- SecurityManager
-  res.ssl = securityManager.SSL()
+  res.security = securityManager.SSL()
   setmetatable(res, mt)
   return res
 end

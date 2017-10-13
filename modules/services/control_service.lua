@@ -70,7 +70,7 @@ function mt.__index:StartService(service)
   -- prepare event to expect
   local startserviceEvent = Event()
   startserviceEvent.matches = function(_, data)
-    return data.frameType == 0 and
+    return data.frameType == constants.FRAME_TYPE.CONTROL_FRAME and
     data.serviceType == service and
     (service == constants.SERVICE_TYPE.RPC or data.sessionId == self.session.sessionId.get()) and
     (data.frameInfo == constants.FRAME_INFO.START_SERVICE_ACK or

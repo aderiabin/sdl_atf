@@ -1,15 +1,17 @@
-local openssl = require('ssl')
+local openssl = require('luaopenssl')
 
 local SecurityManager = {}
 
 --- SSL
 local ssl_mt = { __index = {} }
 
-function ssl_mt.__index:PerformHandshake()
-  -- prepare event to expect (example control_service:StartService)
-  openssl.doHandshake(self.connection)
-  -- expect event and check the result (example control_service:StartService)
-end
+-- function ossl_mt.__index:PerformHandshake()
+--   -- prepare event to expect (example control_service:StartService)
+--   openssl.doHandshake(self.connection)
+--   -- expect event and check the result (example control_service:StartService)
+-- end
+
+
 
 --- BIO
 local BIO = {
@@ -21,27 +23,31 @@ local BIO = {
 
 --- SecurityManager
 
-function SecurityManager:init()
+function SecurityManager.init()
 	openssl.initSslLibrary()
-	self.sslContext = openssl.prepareSSLContext()
+	print("OpenSSL library is initialised")
+	-- self.sslContext = openssl.prepareSSLContext()
 end
 
 function SecurityManager:createSsl()
 	return openssl.newSsl(self.sslContext)
 end
 
-function SecurityManager:createBio(bioType)
+function SecurityManager.createBio(bioType)
 	return openssl.newBio(bioType)
 end
 
-function SecurityManager:SSL()
+function SecurityManager.SSL()
 	local res = {}
 	res.isEncriptedSession = false
-	res.ssl = self:createSsl()
-	res.bioIn = self:createBio(BIO.types.SOURCE_BIO)
-	res.bioOut = self:createBio(BIO.types.SOURCE_BIO)
+	-- res.ctx = self:createSslContext()
+	-- res.ssl = self.sslContext:newSSL()
+	-- res.bioIn = self:createBio(BIO.types.SOURCE_BIO)
+	-- res.bioOut = self:createBio(BIO.types.SOURCE_BIO)
 	setmetatable(res, ssl_mt)
   return res
 end
 
+SecurityManager.init()
 return SecurityManager
+

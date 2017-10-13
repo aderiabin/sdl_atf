@@ -2,7 +2,7 @@
 --
 -- *Dependencies:* `json`, `protocol_handler.ford_protocol_constants`, `bit32`
 --
--- *Globals:* `bit32`, ret
+-- *Globals:* `bit32`
 -- @module protocol_handler.protocol_handler
 -- @copyright [Ford Motor Company](https://smartdevicelink.com/partners/ford/) and [SmartDeviceLink Consortium](https://smartdevicelink.com/consortium/)
 -- @license <https://github.com/smartdevicelink/sdl_core/blob/master/LICENSE>
@@ -18,7 +18,7 @@ local mt = { __index = { } }
 --- Construct instance of ProtocolHandler type
 -- @treturn ProtocolHandler Constructed instance
 function ProtocolHandler.ProtocolHandler()
-  ret =
+  local ret =
   {
     buffer = "",
     frames = { }
@@ -104,12 +104,12 @@ function mt.__index:Parse(binary, validateJson)
   local res = { }
   while #self.buffer >= 12 do
     local msg = {}
-    local c1 = string.byte(self.buffer, 1)
+    local firstByte = string.byte(self.buffer, 1)
     msg.size = bytesToInt32(self.buffer, 5)
     if #self.buffer < msg.size + 12 then break end
-    msg.version = bit32.rshift(bit32.band(c1, 0xf0), 4)
-    msg.frameType = bit32.band(c1, 0x07)
-    msg.encryption = bit32.band(c1, 0x08) == 0x08
+    msg.version = bit32.rshift(bit32.band(firstByte, 0xf0), 4)
+    msg.frameType = bit32.band(firstByte, 0x07)
+    msg.encryption = bit32.band(firstByte, 0x08) == 0x08
     msg.serviceType = string.byte(self.buffer, 2)
     msg.frameInfo = string.byte(self.buffer, 3)
     msg.sessionId = string.byte(self.buffer, 4)
@@ -125,8 +125,8 @@ function mt.__index:Parse(binary, validateJson)
           msg.binaryData = self.frames[msg.messageId] .. msg.binaryData
           self.frames[msg.messageId] = nil
         end
-        if msg.serviceType == constants.SERVICE_TYPE.RPC or
-        msg.serviceType == constants.SERVICE_TYPE.BULK_DATA then
+        if msg.serviceType == constants.SERVICE_TYPE.RPC
+          or msg.serviceType == constants.SERVICE_TYPE.BULK_DATA then
           msg.rpcType = bit32.rshift(string.byte(msg.binaryData, 1), 4)
           msg.rpcFunctionId = bit32.band(bytesToInt32(msg.binaryData, 1), 0x0fffffff)
           msg.rpcCorrelationId = bytesToInt32(msg.binaryData, 5)
@@ -160,18 +160,17 @@ function mt.__index:Compose(message)
   local kMax_protocol_payload_size = 1488
   local kFirstframe_frameType = 0x02
   local kFirstframe_frameInfo = 0
-  local kFirstframe_dataSize = 0x08
+  -- local kFirstframe_dataSize = 0x08
   local kConsecutiveframe_frameType = 0x03
   local payload = nil
-  local header = nil
   local is_multi_frame = false
   local res = {}
   local multiframe_payloads = {}
 
-  if message.frameType ~= constants.FRAME_TYPE.CONTROL_FRAME and
-    (message.serviceType == constants.SERVICE_TYPE.RPC or
-      message.serviceType == constants.SERVICE_TYPE.BULK_DATA)
-    and message.payload then
+  if message.frameType ~= constants.FRAME_TYPE.CONTROL_FRAME
+     and (message.serviceType == constants.SERVICE_TYPE.RPC
+       or message.serviceType == constants.SERVICE_TYPE.BULK_DATA)
+     and message.payload then
     payload = rpcPayload(message.rpcType,
       message.rpcFunctionId,
       message.rpcCorrelationId,
@@ -181,11 +180,12 @@ function mt.__index:Compose(message)
   if message.binaryData then
     if payload then
       payload = payload .. message.binaryData
-    else payload = message.binaryData
+    else
+      payload = message.binaryData
     end
   end
 
-  local payload_size
+  local payload_size = 0
   if payload then payload_size = #payload end
 
   if payload and #payload > kMax_protocol_payload_size then
@@ -200,8 +200,8 @@ function mt.__index:Compose(message)
   if is_multi_frame then
     -- 1st frame
     local firstFrame_payload = int32ToBytes(payload_size) .. int32ToBytes(#multiframe_payloads)
-    local frame = nil
-    header = create_ford_header(message.version,
+    -- local frame = nil
+    local header = create_ford_header(message.version,
       message.encryption,
       kFirstframe_frameType,
       message.serviceType,
@@ -209,7 +209,7 @@ function mt.__index:Compose(message)
       message.sessionId,
       firstFrame_payload,
       message.messageId)
-    frame = header .. firstFrame_payload
+    local frame = header .. firstFrame_payload
     table.insert(res, frame)
 
     for frame_number = 1, #multiframe_payloads do
@@ -227,7 +227,7 @@ function mt.__index:Compose(message)
       table.insert(res, frame)
     end
   else
-    header = create_ford_header(message.version, message.encryption, message.frameType, message.serviceType,
+   local header = create_ford_header(message.version, message.encryption, message.frameType, message.serviceType,
       message.frameInfo, message.sessionId, payload or "", message.messageId)
     if payload then
       table.insert(res, header .. payload)
