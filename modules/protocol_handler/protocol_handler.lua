@@ -95,6 +95,107 @@ local function create_ford_header(version, encryption, frameType, serviceType, f
   return res
 end
 
+local function parseProtocolHeader(buffer)
+  local PROTOCOL_HEADER_SIZE = 12
+    local size = bytesToInt32(buffer, 5)
+    if #buffer < size + PROTOCOL_HEADER_SIZE then
+      return nil
+    end
+    local msg = {}
+    local firstByte = string.byte(buffer, 1)
+    msg.version = bit32.rshift(bit32.band(firstByte, 0xf0), 4)
+    msg.frameType = bit32.band(firstByte, 0x07)
+    msg.encryption = bit32.band(firstByte, 0x08) == 0x08
+    msg.serviceType = string.byte(buffer, 2)
+    msg.frameInfo = string.byte(buffer, 3)
+    msg.sessionId = string.byte(buffer, 4)
+    msg.size = size
+    msg.messageId = bytesToInt32(buffer, 9)
+    msg.binaryData = string.sub(buffer, PROTOCOL_HEADER_SIZE + 1, PROTOCOL_HEADER_SIZE + msg.size)
+    return msg
+end
+
+local function parseBinaryHeader(message, validateJson)
+  local BINARY_HEADER_SIZE = 12
+  message.rpcType = bit32.rshift(string.byte(message.binaryData, 1), 4)
+  message.rpcFunctionId = bit32.band(bytesToInt32(message.binaryData, 1), 0x0fffffff)
+  message.rpcCorrelationId = bytesToInt32(message.binaryData, 5)
+  message.rpcJsonSize = bytesToInt32(message.binaryData, 9)
+  if message.rpcJsonSize > 0 then
+    if not validateJson then
+      message.payload = json.decode(string.sub(message.binaryData, BINARY_HEADER_SIZE + 1, BINARY_HEADER_SIZE + message.rpcJsonSize))
+    end
+  end
+  if message.size > message.rpcJsonSize + 12 then
+    message.binaryData = string.sub(message.binaryData, message.rpcJsonSize + 13)
+  else
+    message.binaryData = ""
+  end
+end
+
+local function printMsgData(msg)
+  print("-------------------- " .. msg.sessionId .. ":" .. msg.messageId .. " --------------------")
+  print("Message binary data size: " .. msg.size)
+  print("Size of current binary data: " .. #msg.binaryData)
+
+  local frameType = ""
+  if msg.frameType == constants.FRAME_TYPE.CONTROL_FRAME then
+    frameType = "CONTROL_FRAME"
+  elseif msg.frameType == constants.FRAME_TYPE.FIRST_FRAME then
+    frameType = "FIRST_FRAME"
+  elseif msg.frameType == constants.FRAME_TYPE.SINGLE_FRAME then
+    frameType = "SINGLE_FRAME"
+  elseif msg.frameType == constants.FRAME_TYPE.CONSECUTIVE_FRAME then
+    frameType = "CONSECUTIVE_FRAME"
+  end
+  print("Frame type: " .. frameType)
+
+  local frameInfo = ""
+  if msg.frameType == constants.FRAME_TYPE.CONSECUTIVE_FRAME then
+    if msg.frameInfo == constants.FRAME_INFO.LAST_FRAME then
+      frameInfo = "LAST_FRAME"
+    else
+      frameInfo = msg.frameInfo
+    end
+  elseif msg.frameType == constants.FRAME_TYPE.CONTROL_FRAME then
+    if msg.frameInfo == constants.FRAME_INFO.HEARTBEAT then
+      frameInfo = "HEARTBEAT"
+    elseif msg.frameInfo == constants.FRAME_INFO.START_SERVICE then
+      frameInfo = "START_SERVICE"
+    elseif msg.frameInfo == constants.FRAME_INFO.START_SERVICE_ACK then
+      frameInfo = "START_SERVICE_ACK"
+    elseif msg.frameInfo == constants.FRAME_INFO.START_SERVICE_NACK then
+      frameInfo = "START_SERVICE_NACK"
+    elseif msg.frameInfo == constants.FRAME_INFO.END_SERVICE then
+      frameInfo = "END_SERVICE"
+    elseif msg.frameInfo == constants.FRAME_INFO.END_SERVICE_ACK then
+      frameInfo = "END_SERVICE_ACK"
+    elseif msg.frameInfo == constants.FRAME_INFO.END_SERVICE_NACK then
+      frameInfo = "END_SERVICE_NACK"
+    elseif msg.frameInfo == constants.FRAME_INFO.SERVICE_DATA_ACK then
+      frameInfo = "SERVICE_DATA_ACK"
+    elseif msg.frameInfo == constants.FRAME_INFO.HEARTBEAT_ACK then
+      frameInfo = "HEARTBEAT_ACK"
+    end
+  end
+  print("Frame info: " .. frameInfo)
+
+  local serviceType = ""
+  if msg.serviceType == constants.SERVICE_TYPE.CONTROL then
+    serviceType = "CONTROL"
+  elseif msg.serviceType == constants.SERVICE_TYPE.PCM then
+    serviceType = "PCM"
+  elseif msg.serviceType == constants.SERVICE_TYPE.VIDEO then
+    serviceType = "VIDEO"
+  elseif msg.serviceType == constants.SERVICE_TYPE.RPC then
+    serviceType = "RPC"
+  elseif msg.serviceType == constants.SERVICE_TYPE.BULK_DATA then
+    serviceType = "BULK_DATA"
+  end
+  print("Service type: " .. serviceType)
+  print("---------------------------------------------")
+end
+
 --- Parse binary message from SDL to table with json validation
 -- @tparam string binary Message
 -- @tparam boolean validateJson True if JSON validation is required
@@ -103,52 +204,85 @@ function mt.__index:Parse(binary, validateJson)
   self.buffer = self.buffer .. binary
   local res = { }
   while #self.buffer >= 12 do
-    local msg = {}
-    local firstByte = string.byte(self.buffer, 1)
-    msg.size = bytesToInt32(self.buffer, 5)
-    if #self.buffer < msg.size + 12 then break end
-    msg.version = bit32.rshift(bit32.band(firstByte, 0xf0), 4)
-    msg.frameType = bit32.band(firstByte, 0x07)
-    msg.encryption = bit32.band(firstByte, 0x08) == 0x08
-    msg.serviceType = string.byte(self.buffer, 2)
-    msg.frameInfo = string.byte(self.buffer, 3)
-    msg.sessionId = string.byte(self.buffer, 4)
-    msg.messageId = bytesToInt32(self.buffer, 9)
-    msg.binaryData = string.sub(self.buffer, 13, msg.size + 12)
+    -- local firstByte = string.byte(self.buffer, 1)
+    -- msg.size = bytesToInt32(self.buffer, 5)
+    -- if #self.buffer < msg.size + 12 then break end
+    -- msg.version = bit32.rshift(bit32.band(firstByte, 0xf0), 4)
+    -- msg.frameType = bit32.band(firstByte, 0x07)
+    -- msg.encryption = bit32.band(firstByte, 0x08) == 0x08
+    -- msg.serviceType = string.byte(self.buffer, 2)
+    -- msg.frameInfo = string.byte(self.buffer, 3)
+    -- msg.sessionId = string.byte(self.buffer, 4)
+    -- msg.messageId = bytesToInt32(self.buffer, 9)
+    -- msg.binaryData = string.sub(self.buffer, 13, msg.size + 12)
+    local msg = parseProtocolHeader(self.buffer)
+    if not msg then break end
+    printMsgData(msg)
     self.buffer = string.sub(self.buffer, msg.size + 13)
-    if #msg.binaryData == 0 or msg.frameType == constants.FRAME_TYPE.CONTROL_FRAME then
+    ---new
+    if #msg.binaryData == 0 then
       table.insert(res, msg)
     else
-      if msg.frameType == constants.FRAME_TYPE.SINGLE_FRAME or
-      (msg.frameType == constants.FRAME_TYPE.CONSECUTIVE_FRAME and msg.frameInfo == constants.FRAME_INFO.LAST_FRAME) then
-        if msg.frameType == constants.FRAME_TYPE.CONSECUTIVE_FRAME then
-          msg.binaryData = self.frames[msg.messageId] .. msg.binaryData
-          self.frames[msg.messageId] = nil
-        end
-        if msg.serviceType == constants.SERVICE_TYPE.RPC
-          or msg.serviceType == constants.SERVICE_TYPE.BULK_DATA then
-          msg.rpcType = bit32.rshift(string.byte(msg.binaryData, 1), 4)
-          msg.rpcFunctionId = bit32.band(bytesToInt32(msg.binaryData, 1), 0x0fffffff)
-          msg.rpcCorrelationId = bytesToInt32(msg.binaryData, 5)
-          msg.rpcJsonSize = bytesToInt32(msg.binaryData, 9)
-          if msg.rpcJsonSize > 0 then
-            if not validateJson then
-              msg.payload = json.decode(string.sub(msg.binaryData, 13, msg.rpcJsonSize + 12))
-            end
-          end
-          if msg.size > msg.rpcJsonSize + 12 then
-            msg.binaryData = string.sub(msg.binaryData, msg.rpcJsonSize + 13)
-          else
-            msg.binaryData = ""
-          end
-        end
+      if msg.frameType == constants.FRAME_TYPE.CONTROL_FRAME then
         table.insert(res, msg)
       elseif msg.frameType == constants.FRAME_TYPE.FIRST_FRAME then
         self.frames[msg.messageId] = ""
+      elseif msg.frameType == constants.FRAME_TYPE.SINGLE_FRAME then
+        if msg.serviceType == constants.SERVICE_TYPE.RPC
+           or msg.serviceType == constants.SERVICE_TYPE.BULK_DATA then
+          parseBinaryHeader(msg, validateJson)
+        end
+        table.insert(res, msg)
       elseif msg.frameType == constants.FRAME_TYPE.CONSECUTIVE_FRAME then
         self.frames[msg.messageId] = self.frames[msg.messageId] .. msg.binaryData
+        if msg.frameInfo == constants.FRAME_INFO.LAST_FRAME then
+          msg.binaryData = self.frames[msg.messageId]
+          self.frames[msg.messageId] = nil
+          if msg.serviceType == constants.SERVICE_TYPE.RPC
+           or msg.serviceType == constants.SERVICE_TYPE.BULK_DATA then
+            parseBinaryHeader(msg, validateJson)
+          end
+          table.insert(res, msg)
+        end
       end
     end
+    ---new
+    ---old-----------------
+    -- if #msg.binaryData == 0 or msg.frameType == constants.FRAME_TYPE.CONTROL_FRAME then
+    --   table.insert(res, msg)
+    -- else
+    --   if msg.frameType == constants.FRAME_TYPE.SINGLE_FRAME or
+    --   (msg.frameType == constants.FRAME_TYPE.CONSECUTIVE_FRAME and msg.frameInfo == constants.FRAME_INFO.LAST_FRAME) then
+    --     if msg.frameType == constants.FRAME_TYPE.CONSECUTIVE_FRAME then
+    --       msg.binaryData = self.frames[msg.messageId] .. msg.binaryData
+    --       self.frames[msg.messageId] = nil
+    --     end
+    --     if msg.serviceType == constants.SERVICE_TYPE.RPC
+    --       or msg.serviceType == constants.SERVICE_TYPE.BULK_DATA then
+    --       parseBinaryHeader(msg, validateJson)
+    --       -- msg.rpcType = bit32.rshift(string.byte(msg.binaryData, 1), 4)
+    --       -- msg.rpcFunctionId = bit32.band(bytesToInt32(msg.binaryData, 1), 0x0fffffff)
+    --       -- msg.rpcCorrelationId = bytesToInt32(msg.binaryData, 5)
+    --       -- msg.rpcJsonSize = bytesToInt32(msg.binaryData, 9)
+    --       -- if msg.rpcJsonSize > 0 then
+    --       --   if not validateJson then
+    --       --     msg.payload = json.decode(string.sub(msg.binaryData, 13, msg.rpcJsonSize + 12))
+    --       --   end
+    --       -- end
+    --       -- if msg.size > msg.rpcJsonSize + 12 then
+    --       --   msg.binaryData = string.sub(msg.binaryData, msg.rpcJsonSize + 13)
+    --       -- else
+    --       --   msg.binaryData = ""
+    --       -- end
+    --     end
+    --     table.insert(res, msg)
+    --   elseif msg.frameType == constants.FRAME_TYPE.FIRST_FRAME then
+    --     self.frames[msg.messageId] = ""
+    --   elseif msg.frameType == constants.FRAME_TYPE.CONSECUTIVE_FRAME then
+    --     self.frames[msg.messageId] = self.frames[msg.messageId] .. msg.binaryData
+    --   end
+    -- end
+    ---old-----------------
   end
   return res
 end
