@@ -174,7 +174,7 @@ namespace {
 			FILTER_BIO = 1
 		};
 
-		BIO_METHOD* methodType;
+		const BIO_METHOD* methodType;
 		switch (type) {
 			case SOURCE_BIO:
 				methodType = BIO_s_mem();

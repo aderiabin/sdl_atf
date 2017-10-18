@@ -2,7 +2,7 @@
 --
 -- *Dependencies:* `expectations`, `events`
 --
--- *Globals:* `expectations`, `events`, `res`, `c`, `e`, `exp`, `pool`
+-- *Globals:* `expectations`, `events`, `res`, `c`, `e`, `pool`
 -- @copyright [Ford Motor Company](https://smartdevicelink.com/partners/ford/) and [SmartDeviceLink Consortium](https://smartdevicelink.com/consortium/)
 -- @license <https://github.com/smartdevicelink/sdl_core/blob/master/LICENSE>
 
@@ -36,34 +36,34 @@ end
 
 --- Get Handler
 -- @tparam Connection conn Mobile/HMI connection
--- @tparam Event ev Event
--- @treturn table Handler
-function mt.__index:GetHandler(conn, ev)
-  res = self._pool3[conn][ev] or
-  self._pool2[conn][ev] or
-  self._pool1[conn][ev]
+-- @tparam Event event Event
+-- @treturn Expectation Handler
+function mt.__index:GetHandler(conn, event)
+  res = self._pool3[conn][event] or
+  self._pool2[conn][event] or
+  self._pool1[conn][event]
   return res
 end
 
 --- Find handler for event
--- @tparam Connection obj Mobile/HMI connection
--- @tparam Event data Event
--- @treturn table Handler
-function mt.__index:FindHandler(obj, data)
+-- @tparam Connection connection Mobile/HMI connection
+-- @tparam table data Data for find event
+-- @treturn Expectation Handler
+function mt.__index:FindHandler(connection, data)
 
   -- Visit all event pools and find matching event
   local function findInPool(pool, data)
-    for e, h in pairs(pool) do
-      if e:matches(data) then
-        return h
+    for event, handler in pairs(pool) do
+      if event:matches(data) then
+        return handler
       end
     end
     return nil
   end
 
-  return findInPool(self._pool3[obj], data) or
-      findInPool(self._pool2[obj], data) or
-      findInPool(self._pool1[obj], data)
+  return findInPool(self._pool3[connection], data) or
+      findInPool(self._pool2[connection], data) or
+      findInPool(self._pool1[connection], data)
 end
 
 --- Set handler for pre event
@@ -82,8 +82,8 @@ end
 function mt.__index:validateAll()
 
   local function iter(pool)
-    for e, exp in pairs(pool) do
-      exp:validate()
+    for event, expectation in pairs(pool) do
+      expectation:validate()
     end
   end
 
@@ -127,8 +127,8 @@ function mt.__index:AddConnection(connection)
         this.postEventHandler(events.disconnectedEvent)
       end
     end)
-  connection:OnInputData(function (self, data)
-      this:RaiseEvent(self, data)
+  connection:OnInputData(function (connection, data)
+      this:RaiseEvent(connection, data)
     end)
 end
 
@@ -139,13 +139,13 @@ function mt.__index:RaiseEvent(connection, data)
   if self.preEventHandler and data then
     self.preEventHandler(data)
   end
-  exp = self:FindHandler(connection, data)
+  local exp = self:FindHandler(connection, data)
   if exp then
     exp.occurences = exp.occurences + 1
     if data then
       if exp.verifyData then
-        for k, v in pairs(exp.verifyData) do
-            v(exp, data)
+        for _, verifyFunc in pairs(exp.verifyData) do
+            verifyFunc(exp, data)
             if (exp.status == expectations.FAILED) then
                 break
             end

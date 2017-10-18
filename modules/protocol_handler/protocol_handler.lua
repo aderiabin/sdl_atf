@@ -10,6 +10,7 @@
 local ProtocolHandler = {}
 local json = require("json")
 local constants = require('protocol_handler/ford_protocol_constants')
+local securityManager = require('security_manager')
 local mt = { __index = { } }
 
 --- Type which represents protocol level message handling
@@ -217,12 +218,20 @@ function mt.__index:Parse(binary, validateJson)
     -- msg.binaryData = string.sub(self.buffer, 13, msg.size + 12)
     local msg = parseProtocolHeader(self.buffer)
     if not msg then break end
-    printMsgData(msg)
+    -- printMsgData(msg)
     self.buffer = string.sub(self.buffer, msg.size + 13)
     ---new
     if #msg.binaryData == 0 then
       table.insert(res, msg)
     else
+      if msg.encryption == true then 
+        local decryptedData = securityManager.decrypt(msg.binaryData, msg.sessionId, msg.serviceType)
+        if decryptedData then 
+          msg.binaryData = decryptedData
+        else
+          error("Protocol handler: Decryption error")
+        end
+      end
       if msg.frameType == constants.FRAME_TYPE.CONTROL_FRAME then
         table.insert(res, msg)
       elseif msg.frameType == constants.FRAME_TYPE.FIRST_FRAME then

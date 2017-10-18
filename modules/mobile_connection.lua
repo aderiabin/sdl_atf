@@ -71,15 +71,14 @@ end
 --- Set handler for OnInputData
 -- @tparam function func Handler function
 function MobileConnection.mt.__index:OnInputData(func)
-  local this = self
   local protocol_handler = ph.ProtocolHandler()
   local f =
-  function(self, binary)
-    local msg = protocol_handler:Parse(binary)
-    for _, v in ipairs(msg) do
+  function(connection, binary)
+    local msgs = protocol_handler:Parse(binary)
+    for _, msg in ipairs(msgs) do
       -- After refactoring should be moved in mobile session
-      atf_logger.LOG("SDLtoMOB", v)
-      func(this, v)
+      atf_logger.LOG("SDLtoMOB", msg)
+      func(self, msg)
     end
   end
   self.connection:OnInputData(f)

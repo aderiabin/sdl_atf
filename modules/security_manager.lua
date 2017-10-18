@@ -23,6 +23,8 @@ local BIO = {
 
 --- SecurityManager
 
+SecurityManager.mobileSessions = {}
+
 function SecurityManager.init()
 	openssl.initSslLibrary()
 	print("OpenSSL library is initialised")
@@ -37,9 +39,22 @@ function SecurityManager.createBio(bioType)
 	return openssl.newBio(bioType)
 end
 
-function SecurityManager.SSL()
+function SecurityManager.decrypt(encryptedData, sessionId, serviceType)
+	return encryptedData
+end
+
+function SecurityManager.encrypt(data, sessionId)
+	return data
+end
+
+function SecurityManager:SSL(mobileSession)
+	self.mobileSessions[mobileSession.sessionId] = {
+		session = mobileSession,
+		encryptedServices = {}
+	}
+
 	local res = {}
-	res.isEncriptedSession = false
+	-- res.isEncriptedSession = false
 	-- res.ctx = self:createSslContext()
 	-- res.ssl = self.sslContext:newSSL()
 	-- res.bioIn = self:createBio(BIO.types.SOURCE_BIO)

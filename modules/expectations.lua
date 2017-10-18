@@ -22,7 +22,7 @@ function Expectations.Expectation(name, connection)
   local mt = { __index = { } }
 
   --- Perform actions from actions list
-  -- @tparam ??? data ??? Data for actions
+  -- @tparam table data Data for actions
   function mt.__index:Action(data)
     for i = 1, #self.actions do
       self.actions[i](self, data)

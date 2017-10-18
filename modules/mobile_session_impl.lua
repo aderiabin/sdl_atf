@@ -195,7 +195,7 @@ end
 -- @tparam table ignoreHeartBeatAck Access table for ignore heartbeat ACK from SDL flag
 -- @tparam table regAppParams Mobile application parameters
 -- @treturn MobileSessionImpl Constructed instance
-function MSI.MobileSessionImpl(session_id, correlation_id, test, connection, sendHeartbeatToSDL, answerHeartbeatFromSDL, ignoreHeartBeatAck, regAppParams)
+function MSI.MobileSessionImpl(session_id, correlation_id, test, connection, sendHeartbeatToSDL, answerHeartbeatFromSDL, ignoreHeartBeatAck, isSSLHandshakeAuto, regAppParams)
   local res = { }
   --- Test which open mobile session
   res.test = test
@@ -207,7 +207,6 @@ function MSI.MobileSessionImpl(session_id, correlation_id, test, connection, sen
   res.exp_list = test.expectations_list
   --- Message identifier
   res.messageId = 1
-
   --- Ford protocol version
   res.version = config.defaultProtocolVersion or 2
   --- Mobile application state hashcode
@@ -231,7 +230,11 @@ function MSI.MobileSessionImpl(session_id, correlation_id, test, connection, sen
   --- Heartbeat monitor
   res.heartbeat_monitor = heartbeatMonitor.HeartBeatMonitor(res)
   --- SecurityManager
-  res.security = securityManager.SSL()
+  res.security = securityManager:SSL(res)
+  --- 
+  res.isSecuredSession = false
+  --- Access table for perform SSL handshake automatically flag
+  res.isSSLHandshakeAuto = isSSLHandshakeAuto
   setmetatable(res, mt)
   return res
 end

@@ -173,6 +173,7 @@ function MS.MobileSession(test, connection, regAppParams)
   function res.CorrelationId.get()
     return  res.correlationId
   end
+  
   --- Flag which defines whether mobile session sends heartbeat to SDL
   res.sendHeartbeatToSDL = true
   --- Flag which defines whether mobile session answers on heartbeat from SDL
@@ -180,7 +181,7 @@ function MS.MobileSession(test, connection, regAppParams)
   --- Flag which defines whether mobile session ignore ACK of heartbeat from SDL
   res.ignoreSDLHeartBeatACK = false
 
---- Property which defines whether mobile session sends heartbeat to SDL
+  --- Property which defines whether mobile session sends heartbeat to SDL
   res.SendHeartbeatToSDL = {}
   function res.SendHeartbeatToSDL.get()
     return res.sendHeartbeatToSDL
@@ -198,8 +199,17 @@ function MS.MobileSession(test, connection, regAppParams)
     return res.ignoreSDLHeartBeatACK
   end
 
+  ---
+  res.isSSLHandshakeAuto = true
+
+  --- Property which defines whether mobile session ignore ACK of heartbeat from SDL
+  res.IsSSLHandshakeAuto = {}
+  function res.IsSSLHandshakeAuto.get()
+    return res.isSSLHandshakeAuto
+  end
+
   res.mobile_session_impl = mobile_session_impl.MobileSessionImpl(
-  res.SessionId, res.CorrelationId, test, connection, res.SendHeartbeatToSDL, res.AnswerHeartbeatFromSDL, res.IgnoreSDLHeartBeatAck, regAppParams )
+  res.SessionId, res.CorrelationId, test, connection, res.SendHeartbeatToSDL, res.AnswerHeartbeatFromSDL, res.IgnoreSDLHeartBeatAck, res.IsSSLHandshakeAuto, regAppParams )
   setmetatable(res, mt)
   return res
 end

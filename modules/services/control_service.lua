@@ -61,11 +61,12 @@ end
 -- @treturn Expectation Expectation on start service event
 function mt.__index:StartService(service)
   xmlReporter.AddMessage("StartService", service)
-  local startSession =
+  local startServiceMessage =
   {
     serviceType = service,
     frameInfo =  constants.FRAME_INFO.START_SERVICE,
     sessionId = self.session.sessionId.get(),
+    encryption = false
   }
   -- prepare event to expect
   local startserviceEvent = Event()
@@ -76,7 +77,7 @@ function mt.__index:StartService(service)
     (data.frameInfo == constants.FRAME_INFO.START_SERVICE_ACK or
       data.frameInfo == constants.FRAME_INFO.START_SERVICE_NACK)
   end
-  self:Send(startSession)
+  self:Send(startServiceMessage)
 
   local ret = self.session:ExpectEvent(startserviceEvent, "StartService ACK")
   :ValidIf(function(s, data)
@@ -85,6 +86,43 @@ function mt.__index:StartService(service)
         return true
       else return false, "StartService NACK received" end
     end)
+  return ret
+end
+
+--- Start encripted service and create expectation on this event
+-- @tparam number service type of service
+-- @treturn Expectation Expectation on start service event
+function mt.__index:StartEncriptedService(service)
+  xmlReporter.AddMessage("StartEncriptedService", service)
+  local startServiceMessage =
+  {
+    serviceType = service,
+    frameInfo =  constants.FRAME_INFO.START_SERVICE,
+    sessionId = self.session.sessionId.get(),
+    encryption = true
+  }
+  -- prepare event to expect
+  if self.session.isSecuredSession then
+    local startserviceEvent = Event()
+    startserviceEvent.matches = function(_, data)
+      return data.frameType == constants.FRAME_TYPE.CONTROL_FRAME and
+      data.serviceType == service and
+      (service == constants.SERVICE_TYPE.RPC or data.sessionId == self.session.sessionId.get()) and
+      (data.frameInfo == constants.FRAME_INFO.START_SERVICE_ACK or
+        data.frameInfo == constants.FRAME_INFO.START_SERVICE_NACK)
+    end
+
+    local ret = self.session:ExpectEvent(startserviceEvent, "StartService ACK")
+    :ValidIf(function(s, data)
+        if data.frameInfo == constants.FRAME_INFO.START_SERVICE_ACK then
+          xmlReporter.AddMessage("StartService", "StartService ACK", "True")
+          return true
+        else return false, "StartService NACK received" end
+      end)
+  -- else
+    -- performHandshake event + handshakeStep expectation + handshakeFinished expectation + startService expectation
+   end
+  self:Send(startServiceMessage)
   return ret
 end
 
