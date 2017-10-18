@@ -2,7 +2,7 @@
 --
 -- *Dependencies:* `file_connection`, `protocol_handler.protocol_handler`
 --
--- *Globals:* `res`, `atf_logger`, `xmlReporter`
+-- *Globals:* `atf_logger`, `xmlReporter`
 -- @module mobile_connection
 -- @copyright [Ford Motor Company](https://smartdevicelink.com/partners/ford/) and [SmartDeviceLink Consortium](https://smartdevicelink.com/consortium/)
 -- @license <https://github.com/smartdevicelink/sdl_core/blob/master/LICENSE>
@@ -21,7 +21,7 @@ local MobileConnection = {
 -- @tparam FileConnection connection Lower level connection
 -- @treturn MobileConnection Constructed instance
 function MobileConnection.MobileConnection(connection)
-  res = { }
+  local res = { }
   res.connection = connection
   setmetatable(res, MobileConnection.mt)
   return res
@@ -78,7 +78,7 @@ function MobileConnection.mt.__index:OnInputData(func)
     for _, msg in ipairs(msgs) do
       -- After refactoring should be moved in mobile session
       atf_logger.LOG("SDLtoMOB", msg)
-      func(self, msg)
+      func(connection, msg)
     end
   end
   self.connection:OnInputData(f)

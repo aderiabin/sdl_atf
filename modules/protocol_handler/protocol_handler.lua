@@ -127,8 +127,8 @@ local function parseBinaryHeader(message, validateJson)
       message.payload = json.decode(string.sub(message.binaryData, BINARY_HEADER_SIZE + 1, BINARY_HEADER_SIZE + message.rpcJsonSize))
     end
   end
-  if message.size > message.rpcJsonSize + 12 then
-    message.binaryData = string.sub(message.binaryData, message.rpcJsonSize + 13)
+  if message.size > message.rpcJsonSize + BINARY_HEADER_SIZE then
+    message.binaryData = string.sub(message.binaryData, BINARY_HEADER_SIZE + message.rpcJsonSize + 1)
   else
     message.binaryData = ""
   end
@@ -224,9 +224,9 @@ function mt.__index:Parse(binary, validateJson)
     if #msg.binaryData == 0 then
       table.insert(res, msg)
     else
-      if msg.encryption == true then 
+      if msg.encryption == true then
         local decryptedData = securityManager.decrypt(msg.binaryData, msg.sessionId, msg.serviceType)
-        if decryptedData then 
+        if decryptedData then
           msg.binaryData = decryptedData
         else
           error("Protocol handler: Decryption error")
