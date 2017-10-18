@@ -69,8 +69,8 @@ function mt.__index:StartService(service)
     encryption = false
   }
   -- prepare event to expect
-  local startserviceEvent = Event()
-  startserviceEvent.matches = function(_, data)
+  local startServiceEvent = Event()
+  startServiceEvent.matches = function(_, data)
     return data.frameType == constants.FRAME_TYPE.CONTROL_FRAME and
     data.serviceType == service and
     (service == constants.SERVICE_TYPE.RPC or data.sessionId == self.session.sessionId.get()) and
@@ -79,7 +79,7 @@ function mt.__index:StartService(service)
   end
   self:Send(startServiceMessage)
 
-  local ret = self.session:ExpectEvent(startserviceEvent, "StartService ACK")
+  local ret = self.session:ExpectEvent(startServiceEvent, "StartService ACK")
   :ValidIf(function(s, data)
       if data.frameInfo == constants.FRAME_INFO.START_SERVICE_ACK then
         xmlReporter.AddMessage("StartService", "StartService ACK", "True")
@@ -92,8 +92,8 @@ end
 --- Start encripted service and create expectation on this event
 -- @tparam number service type of service
 -- @treturn Expectation Expectation on start service event
-function mt.__index:StartEncriptedService(service)
-  xmlReporter.AddMessage("StartEncriptedService", service)
+function mt.__index:StartSecureService(service)
+  xmlReporter.AddMessage("StartSecureService", service)
   local startServiceMessage =
   {
     serviceType = service,
@@ -102,9 +102,8 @@ function mt.__index:StartEncriptedService(service)
     encryption = true
   }
   -- prepare event to expect
-  if self.session.isSecuredSession then
-    local startserviceEvent = Event()
-    startserviceEvent.matches = function(_, data)
+  local startServiceEvent = Event()
+    startServiceEvent.matches = function(_, data)
       return data.frameType == constants.FRAME_TYPE.CONTROL_FRAME and
       data.serviceType == service and
       (service == constants.SERVICE_TYPE.RPC or data.sessionId == self.session.sessionId.get()) and
@@ -112,16 +111,37 @@ function mt.__index:StartEncriptedService(service)
         data.frameInfo == constants.FRAME_INFO.START_SERVICE_NACK)
     end
 
-    local ret = self.session:ExpectEvent(startserviceEvent, "StartService ACK")
+  local ret = self.session:ExpectEvent(startServiceEvent, "StartService ACK")
     :ValidIf(function(s, data)
         if data.frameInfo == constants.FRAME_INFO.START_SERVICE_ACK then
-          xmlReporter.AddMessage("StartService", "StartService ACK", "True")
-          return true
+          xmlReporter.AddMessage("StartSecureService", "StartService ACK", "True")
+          if data.encryption == true then
+            return true
+          else return false, "StartService ACK without encription received" end
         else return false, "StartService NACK received" end
       end)
-  -- else
+  if not self.session.isSecuredSession then
     -- performHandshake event + handshakeStep expectation + handshakeFinished expectation + startService expectation
-   end
+
+    local handshakeEvent = Event()
+    handshakeEvent.matches = function(_,data)
+        return data.frameType ~= constants.FRAME_TYPE.CONTROL_FRAME
+          and data.serviceType == constants.SERVICE_TYPE.CONTROL
+          and data.sessionId == self.session.sessionId.get()
+          and data.rpcType == constants.BINARY_RPC_TYPE.NOTIFICATION
+          and data.rpcFunctionId == constants.BINARY_RPC_FUNCTION_ID.HANDSHAKE
+      end
+    local hshexp = self.session:ExpectEvent(handshakeEvent, "Handshake"):Times(AtLeast(1))
+    :Do(function(_, data)
+        local isHandshakeFinished, dataToSend = self.session.security.performHandshake(data.binaryData)
+        -- if dataToSend then
+        --   -- send HandshakeData to SDL
+        -- end
+        -- if isHandshakeFinished then
+        --   -- remove current expectation
+        -- end
+      end)
+  end
   self:Send(startServiceMessage)
   return ret
 end

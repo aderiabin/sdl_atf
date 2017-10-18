@@ -73,12 +73,12 @@ end
 function MobileConnection.mt.__index:OnInputData(func)
   local protocol_handler = ph.ProtocolHandler()
   local f =
-  function(connection, binary)
+  function(_, binary)
     local msgs = protocol_handler:Parse(binary)
     for _, msg in ipairs(msgs) do
       -- After refactoring should be moved in mobile session
       atf_logger.LOG("SDLtoMOB", msg)
-      func(connection, msg)
+      func(self, msg)
     end
   end
   self.connection:OnInputData(f)

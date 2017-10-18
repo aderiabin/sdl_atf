@@ -11,7 +11,32 @@ local ssl_mt = { __index = {} }
 --   -- expect event and check the result (example control_service:StartService)
 -- end
 
+--- Prepare openssl to perform handshake on base of securitySettings
+function ssl_mt.__index:prepareToHandshake(securitySettings)
 
+end
+
+function ssl_mt.__index:performHandshake(inHandshakeData)
+	local outHandshakeData = {}
+	local isHandshakeFinished = false
+	-- performHandshake step => isHandshakeFinished, outHandshakeData
+	return isHandshakeFinished, outHandshakeData
+end
+
+function ssl_mt.__index:registerSecureService(mobileSession, service)
+	local encriptedServices = self.mobileSessions[mobileSession.sessionId.get()].encryptedServices
+	encriptedServices[service] = true
+end
+
+function ssl_mt.__index:unregisterSecureService(mobileSession, service)
+	local encriptedServices = self.mobileSessions[mobileSession.sessionId.get()].encryptedServices
+	encriptedServices[service] = nil
+end
+
+function ssl_mt.__index:checkSecureService(mobileSession, service)
+	local encriptedServices = self.mobileSessions[mobileSession.sessionId.get()].encryptedServices
+	return encriptedServices[service]
+end
 
 --- BIO
 local BIO = {
@@ -48,7 +73,7 @@ function SecurityManager.encrypt(data, sessionId)
 end
 
 function SecurityManager:SSL(mobileSession)
-	self.mobileSessions[mobileSession.sessionId] = {
+	self.mobileSessions[mobileSession.sessionId.get()] = {
 		session = mobileSession,
 		encryptedServices = {}
 	}

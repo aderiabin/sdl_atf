@@ -90,9 +90,14 @@ end
 -- @tparam number service Service type
 -- @tparam table securitySettings settings for SSL
 -- @treturn Expectation expectation for StartService ACK
-function mt.__index:StartSecuredService(service, securitySettings)
+function mt.__index:StartSecureService(service, securitySettings)
   -- check and prepare SSL on basis of securitySettings
-  return self.control_services:StartService(service)
+  self.security.prepareToHandshake(securitySettings)
+  return self.control_services:StartSecureService(service)
+    :Do(function(_, _)
+        self.isSecuredSession = true
+        securityManager:registerSecureService(self, service)
+      end)
 end
 
 ---Stop specific service
@@ -231,7 +236,7 @@ function MSI.MobileSessionImpl(session_id, correlation_id, test, connection, sen
   res.heartbeat_monitor = heartbeatMonitor.HeartBeatMonitor(res)
   --- SecurityManager
   res.security = securityManager:SSL(res)
-  --- 
+  ---
   res.isSecuredSession = false
   --- Access table for perform SSL handshake automatically flag
   res.isSSLHandshakeAuto = isSSLHandshakeAuto

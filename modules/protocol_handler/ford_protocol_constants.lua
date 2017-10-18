@@ -1,4 +1,4 @@
---- Module which provides constants for the Ford protocol
+--- Module which provides constants for the protocol
 --
 -- *Dependencies:* none
 --
@@ -7,24 +7,24 @@
 -- @copyright [Ford Motor Company](https://smartdevicelink.com/partners/ford/) and [SmartDeviceLink Consortium](https://smartdevicelink.com/consortium/)
 -- @license <https://github.com/smartdevicelink/sdl_core/blob/master/LICENSE>
 
-local FordProtocolConstants = {}
+local SDLProtocolConstants = {}
 --- Frame type enumeration
-FordProtocolConstants.FRAME_TYPE = {
+SDLProtocolConstants.FRAME_TYPE = {
   CONTROL_FRAME = 0x00,
   SINGLE_FRAME = 0x01,
   FIRST_FRAME = 0x02,
   CONSECUTIVE_FRAME = 0x03,
 }
 --- Service type enumeration
-FordProtocolConstants.SERVICE_TYPE = {
+SDLProtocolConstants.SERVICE_TYPE = {
   CONTROL = 0x00,
   PCM = 0x0A,
   VIDEO = 0x0B,
   BULK_DATA = 0x0F,
   RPC = 0x07,
 }
---- frame info enumeration
-FordProtocolConstants.FRAME_INFO = {
+--- Frame info enumeration
+SDLProtocolConstants.FRAME_INFO = {
   HEARTBEAT = 0x00,
   LAST_FRAME = 0x00,
   START_SERVICE = 0x01,
@@ -37,4 +37,15 @@ FordProtocolConstants.FRAME_INFO = {
   HEARTBEAT_ACK = 0xFF
 }
 
-return FordProtocolConstants
+--- RPC type for Binary header
+SDLProtocolConstants.BINARY_RPC_TYPE = {
+  REQUEST = 0x00,
+  RESPONSE = 0x10,
+  NOTIFICATION = 0x20
+}
+
+--- RPC Function Id for Binary header
+SDLProtocolConstants.BINARY_RPC_FUNCTION_ID = {
+  HANDSHAKE = 0x1,
+}
+return SDLProtocolConstants

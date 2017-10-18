@@ -118,6 +118,13 @@ end
 
 local function parseBinaryHeader(message, validateJson)
   local BINARY_HEADER_SIZE = 12
+  if message.serviceType == constants.SERVICE_TYPE.CONTROL
+    and (bit32.rshift(string.byte(message.binaryData, 1), 4) ~= constants.BINARY_RPC_TYPE.NOTIFICATION
+      or bit32.band(bytesToInt32(message.binaryData, 1), 0x0fffffff) ~= constants.BINARY_RPC_FUNCTION_ID.HANDSHAKE
+      or bytesToInt32(message.binaryData, 9) ~= 0) then  -- it is not Handshake data
+    print("SERVICE_TYPE.CONTROL but it is not Handshake")
+    return
+  end
   message.rpcType = bit32.rshift(string.byte(message.binaryData, 1), 4)
   message.rpcFunctionId = bit32.band(bytesToInt32(message.binaryData, 1), 0x0fffffff)
   message.rpcCorrelationId = bytesToInt32(message.binaryData, 5)
@@ -238,7 +245,8 @@ function mt.__index:Parse(binary, validateJson)
         self.frames[msg.messageId] = ""
       elseif msg.frameType == constants.FRAME_TYPE.SINGLE_FRAME then
         if msg.serviceType == constants.SERVICE_TYPE.RPC
-           or msg.serviceType == constants.SERVICE_TYPE.BULK_DATA then
+           or msg.serviceType == constants.SERVICE_TYPE.BULK_DATA
+           or msg.serviceType == constants.SERVICE_TYPE.CONTROL then
           parseBinaryHeader(msg, validateJson)
         end
         table.insert(res, msg)
@@ -248,7 +256,8 @@ function mt.__index:Parse(binary, validateJson)
           msg.binaryData = self.frames[msg.messageId]
           self.frames[msg.messageId] = nil
           if msg.serviceType == constants.SERVICE_TYPE.RPC
-           or msg.serviceType == constants.SERVICE_TYPE.BULK_DATA then
+           or msg.serviceType == constants.SERVICE_TYPE.BULK_DATA
+           or msg.serviceType == constants.SERVICE_TYPE.CONTROL then
             parseBinaryHeader(msg, validateJson)
           end
           table.insert(res, msg)
