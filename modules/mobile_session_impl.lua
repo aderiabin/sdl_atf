@@ -172,7 +172,7 @@ function mt.__index:Send(message)
 
 
   self.connection:Send({message})
-  xmlReporter.AddMessage("e","Send",{message})
+  xmlReporter.AddMessage("MobileSession","Send",{message})
   return message
 end
 

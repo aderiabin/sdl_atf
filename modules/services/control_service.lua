@@ -134,12 +134,22 @@ function mt.__index:StartSecureService(service)
     local hshexp = self.session:ExpectEvent(handshakeEvent, "Handshake"):Times(AtLeast(1))
     :Do(function(_, data)
         local isHandshakeFinished, dataToSend = self.session.security.performHandshake(data.binaryData)
-        -- if dataToSend then
-        --   -- send HandshakeData to SDL
-        -- end
-        -- if isHandshakeFinished then
-        --   -- remove current expectation
-        -- end
+        if dataToSend then
+          local handshakeMessage = {
+            frameInfo = 0,
+            serviceType = constants.SERVICE_TYPE.CONTROL,
+            encryption = false,
+            rpcType = constants.BINARY_RPC_TYPE.NOTIFICATION,
+            rpcFunctionId = constants.BINARY_RPC_FUNCTION_ID.HANDSHAKE,
+            rpcCorrelationId = data.rpcCorrelationId,
+            binaryData = dataToSend
+          }
+          self.session:Send(handshakeMessage)
+          xmlReporter.AddMessage("mobile_connection","SendHandshakeData",{handshakeMessage})
+        end
+        if isHandshakeFinished then
+          self.session.test:RemoveExpectation(hshexp)
+        end
       end)
   end
   self:Send(startServiceMessage)

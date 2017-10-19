@@ -60,6 +60,7 @@ end
 -- @tparam string payload Data
 -- @treturn string Built byte representation of RPC payload
 local function rpcPayload(rpcType, rpcFunctionId, rpcCorrelationId, payload)
+  payload = payload or ""
   local res = string.char(
     bit32.lshift(rpcType, 4) + bit32.band(bit32.rshift(rpcFunctionId, 24), 0x0f),
     bit32.rshift(bit32.band(rpcFunctionId, 0xff0000), 16),
@@ -141,6 +142,28 @@ local function parseBinaryHeader(message, validateJson)
   end
 end
 
+local function encryptPayload(data, encryption, sessionId, serviceType)
+  if encryption and data then
+    local encryptedData = securityManager.encrypt(data, sessionId, serviceType)
+    if not encryptedData then
+      error("Protocol handler: Encryption error")
+    end
+    return encryptedData
+  end
+  return data
+end
+
+local function decryptPayload(data, encryption, sessionId, serviceType)
+  if encryption and data then
+    local decryptedData = securityManager.decrypt(msg.binaryData, msg.sessionId, msg.serviceType)
+    if not decryptedData then
+      error("Protocol handler: Decryption error")
+    end
+    return decryptedData
+  end
+  return data
+end
+
 local function printMsgData(msg)
   print("-------------------- " .. msg.sessionId .. ":" .. msg.messageId .. " --------------------")
   print("Message binary data size: " .. msg.size)
@@ -212,17 +235,6 @@ function mt.__index:Parse(binary, validateJson)
   self.buffer = self.buffer .. binary
   local res = { }
   while #self.buffer >= 12 do
-    -- local firstByte = string.byte(self.buffer, 1)
-    -- msg.size = bytesToInt32(self.buffer, 5)
-    -- if #self.buffer < msg.size + 12 then break end
-    -- msg.version = bit32.rshift(bit32.band(firstByte, 0xf0), 4)
-    -- msg.frameType = bit32.band(firstByte, 0x07)
-    -- msg.encryption = bit32.band(firstByte, 0x08) == 0x08
-    -- msg.serviceType = string.byte(self.buffer, 2)
-    -- msg.frameInfo = string.byte(self.buffer, 3)
-    -- msg.sessionId = string.byte(self.buffer, 4)
-    -- msg.messageId = bytesToInt32(self.buffer, 9)
-    -- msg.binaryData = string.sub(self.buffer, 13, msg.size + 12)
     local msg = parseProtocolHeader(self.buffer)
     if not msg then break end
     -- printMsgData(msg)
@@ -231,14 +243,7 @@ function mt.__index:Parse(binary, validateJson)
     if #msg.binaryData == 0 then
       table.insert(res, msg)
     else
-      if msg.encryption == true then
-        local decryptedData = securityManager.decrypt(msg.binaryData, msg.sessionId, msg.serviceType)
-        if decryptedData then
-          msg.binaryData = decryptedData
-        else
-          error("Protocol handler: Decryption error")
-        end
-      end
+      msg.binaryData = decryptPayload(msg.binaryData, msg.encryption, msg.sessionId, msg.serviceType)
       if msg.frameType == constants.FRAME_TYPE.CONTROL_FRAME then
         table.insert(res, msg)
       elseif msg.frameType == constants.FRAME_TYPE.FIRST_FRAME then
@@ -264,43 +269,6 @@ function mt.__index:Parse(binary, validateJson)
         end
       end
     end
-    ---new
-    ---old-----------------
-    -- if #msg.binaryData == 0 or msg.frameType == constants.FRAME_TYPE.CONTROL_FRAME then
-    --   table.insert(res, msg)
-    -- else
-    --   if msg.frameType == constants.FRAME_TYPE.SINGLE_FRAME or
-    --   (msg.frameType == constants.FRAME_TYPE.CONSECUTIVE_FRAME and msg.frameInfo == constants.FRAME_INFO.LAST_FRAME) then
-    --     if msg.frameType == constants.FRAME_TYPE.CONSECUTIVE_FRAME then
-    --       msg.binaryData = self.frames[msg.messageId] .. msg.binaryData
-    --       self.frames[msg.messageId] = nil
-    --     end
-    --     if msg.serviceType == constants.SERVICE_TYPE.RPC
-    --       or msg.serviceType == constants.SERVICE_TYPE.BULK_DATA then
-    --       parseBinaryHeader(msg, validateJson)
-    --       -- msg.rpcType = bit32.rshift(string.byte(msg.binaryData, 1), 4)
-    --       -- msg.rpcFunctionId = bit32.band(bytesToInt32(msg.binaryData, 1), 0x0fffffff)
-    --       -- msg.rpcCorrelationId = bytesToInt32(msg.binaryData, 5)
-    --       -- msg.rpcJsonSize = bytesToInt32(msg.binaryData, 9)
-    --       -- if msg.rpcJsonSize > 0 then
-    --       --   if not validateJson then
-    --       --     msg.payload = json.decode(string.sub(msg.binaryData, 13, msg.rpcJsonSize + 12))
-    --       --   end
-    --       -- end
-    --       -- if msg.size > msg.rpcJsonSize + 12 then
-    --       --   msg.binaryData = string.sub(msg.binaryData, msg.rpcJsonSize + 13)
-    --       -- else
-    --       --   msg.binaryData = ""
-    --       -- end
-    --     end
-    --     table.insert(res, msg)
-    --   elseif msg.frameType == constants.FRAME_TYPE.FIRST_FRAME then
-    --     self.frames[msg.messageId] = ""
-    --   elseif msg.frameType == constants.FRAME_TYPE.CONSECUTIVE_FRAME then
-    --     self.frames[msg.messageId] = self.frames[msg.messageId] .. msg.binaryData
-    --   end
-    -- end
-    ---old-----------------
   end
   return res
 end
@@ -310,19 +278,20 @@ end
 -- @treturn table Table with binary message and header
 function mt.__index:Compose(message)
   local kMax_protocol_payload_size = 1488
-  local kFirstframe_frameType = 0x02
   local kFirstframe_frameInfo = 0
-  -- local kFirstframe_dataSize = 0x08
-  local kConsecutiveframe_frameType = 0x03
   local payload = nil
   local is_multi_frame = false
   local res = {}
   local multiframe_payloads = {}
 
   if message.frameType ~= constants.FRAME_TYPE.CONTROL_FRAME
-     and (message.serviceType == constants.SERVICE_TYPE.RPC
-       or message.serviceType == constants.SERVICE_TYPE.BULK_DATA)
-     and message.payload then
+    and (((message.serviceType == constants.SERVICE_TYPE.RPC
+          or message.serviceType == constants.SERVICE_TYPE.BULK_DATA)
+        and message.payload)
+      or (message.serviceType == constants.SERVICE_TYPE.CONTROL
+        and message.rpcType == constants.BINARY_RPC_TYPE.NOTIFICATION
+        and message.rpcFunctionId == constants.BINARY_RPC_FUNCTION_ID.HANDSHAKE
+        and (not message.payload))) then
     payload = rpcPayload(message.rpcType,
       message.rpcFunctionId,
       message.rpcCorrelationId,
@@ -352,10 +321,11 @@ function mt.__index:Compose(message)
   if is_multi_frame then
     -- 1st frame
     local firstFrame_payload = int32ToBytes(payload_size) .. int32ToBytes(#multiframe_payloads)
+    firstFrame_payload = encryptPayload(firstFrame_payload, message.encryption, message.sessionId, message.serviceType)
     -- local frame = nil
     local header = create_ford_header(message.version,
       message.encryption,
-      kFirstframe_frameType,
+      constants.FRAME_TYPE.FIRST_FRAME,
       message.serviceType,
       kFirstframe_frameInfo,
       message.sessionId,
@@ -373,13 +343,15 @@ function mt.__index:Compose(message)
         -- frame info can't be 0, 0 mean last frame
         frame_info = ((frame_number - 1) % 255) + 1
       end
-      header = create_ford_header(message.version, message.encryption, kConsecutiveframe_frameType, message.serviceType,
-        frame_info, message.sessionId, multiframe_payloads[frame_number], message.messageId)
-      frame = header .. multiframe_payloads[frame_number]
+      local frame_payload = encryptPayload(multiframe_payloads[frame_number], message.encryption, message.sessionId, message.serviceType)
+      header = create_ford_header(message.version, message.encryption, constants.FRAME_TYPE.CONSECUTIVE_FRAME, message.serviceType,
+        frame_info, message.sessionId, frame_payload, message.messageId)
+      frame = header .. frame_payload
       table.insert(res, frame)
     end
   else
-   local header = create_ford_header(message.version, message.encryption, message.frameType, message.serviceType,
+    payload = encryptPayload(payload, message.encryption, message.sessionId, message.serviceType)
+    local header = create_ford_header(message.version, message.encryption, message.frameType, message.serviceType,
       message.frameInfo, message.sessionId, payload or "", message.messageId)
     if payload then
       table.insert(res, header .. payload)

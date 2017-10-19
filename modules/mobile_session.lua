@@ -173,7 +173,7 @@ function MS.MobileSession(test, connection, regAppParams)
   function res.CorrelationId.get()
     return  res.correlationId
   end
-  
+
   --- Flag which defines whether mobile session sends heartbeat to SDL
   res.sendHeartbeatToSDL = true
   --- Flag which defines whether mobile session answers on heartbeat from SDL
