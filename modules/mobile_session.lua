@@ -46,6 +46,21 @@ function mt.__index:ExpectNotification(funcName, ...)
    return self.mobile_session_impl:ExpectNotification(funcName, ...)
 end
 
+--- Expectation of encrypted responce with specific correlation_id
+-- @tparam number cor_id Correlation identifier of specific rpc event
+-- @tparam table ... Expectation parameters
+-- @treturn Expectation Expectation for response
+function mt.__index:ExpectEncryptedResponse(cor_id, ...)
+  return self.mobile_session_impl:ExpectEncryptedResponse(cor_id, ...)
+end
+
+--- Expectation of encrypted notification with specific funcName
+-- @tparam string funcName Expected notification name
+-- @tparam table ... Expectation parameters
+-- @treturn Expectation Expectation for notification
+function mt.__index:ExpectEncryptedNotification(funcName, ...)
+   return self.mobile_session_impl:ExpectEncryptedNotification(funcName, ...)
+end
 
 --- Start video streaming
 -- @tparam number service Service type
@@ -69,6 +84,13 @@ function mt.__index:SendRPC(func, arguments, fileName)
   return self.mobile_session_impl:SendRPC(func, arguments, fileName)
 end
 
+--- Send encrypted RPC
+-- @tparam string func RPC name
+-- @tparam table arguments Arguments for RPC function
+-- @tparam string fileName Path to file with binary data
+function mt.__index:SendEncryptedRPC(func, arguments, fileName)
+  return self.mobile_session_impl:SendEncryptedRPC(func, arguments, fileName)
+end
 
 ---Start specific service
 -- For service == 7 should be used StartRPC() instead of this function
@@ -78,8 +100,14 @@ function mt.__index:StartService(service)
   if service == 7 then
     return self:StartRPC()
   end
-  -- in case StartService(7) it should be change on StartRPC
   return self.mobile_session_impl:StartService(service)
+end
+
+---Start specific secure service
+-- @tparam number service Service type
+-- @treturn Expectation expectation for StartService ACK
+function mt.__index:StartSecureService(service)
+  return self.mobile_session_impl:StartSecureService(service)
 end
 
 ---Stop specific service
@@ -151,7 +179,7 @@ end
 -- @tparam MobileConnection connection Base connection for open mobile session
 -- @tparam table regAppParams Mobile application parameters
 -- @treturn MobileSession Constructed instance
-function MS.MobileSession(test, connection, regAppParams)
+function MS.MobileSession(test, connection, regAppParams, securitySettings)
   local res = { }
   res.correlationId = 1
   res.sessionId = 0
@@ -208,8 +236,13 @@ function MS.MobileSession(test, connection, regAppParams)
     return res.isSSLHandshakeAuto
   end
 
+  securitySettings = securitySettings or {
+
+  }
+
   res.mobile_session_impl = mobile_session_impl.MobileSessionImpl(
-  res.SessionId, res.CorrelationId, test, connection, res.SendHeartbeatToSDL, res.AnswerHeartbeatFromSDL, res.IgnoreSDLHeartBeatAck, res.IsSSLHandshakeAuto, regAppParams )
+    res.SessionId, res.CorrelationId, test, connection, securitySettings, res.SendHeartbeatToSDL,
+    res.AnswerHeartbeatFromSDL, res.IgnoreSDLHeartBeatAck, res.IsSSLHandshakeAuto, regAppParams )
   setmetatable(res, mt)
   return res
 end

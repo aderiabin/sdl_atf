@@ -11,6 +11,7 @@ local ProtocolHandler = {}
 local json = require("json")
 local constants = require('protocol_handler/ford_protocol_constants')
 local securityManager = require('security_manager')
+local securityConstants = require('security/security_constants')
 local mt = { __index = { } }
 
 --- Type which represents protocol level message handling
@@ -83,7 +84,7 @@ end
 -- @tparam number messageId Message Id
 -- @treturn string Built byte representation of header
 -- @see `Applink Protocol`
-local function create_ford_header(version, encryption, frameType, serviceType, frameInfo, sessionId, payload, messageId)
+local function createProtocolHeader(version, encryption, frameType, serviceType, frameInfo, sessionId, payload, messageId)
   local res = string.char(
     bit32.bor(
       bit32.lshift(version, 4),
@@ -123,7 +124,6 @@ local function parseBinaryHeader(message, validateJson)
     and (bit32.rshift(string.byte(message.binaryData, 1), 4) ~= constants.BINARY_RPC_TYPE.NOTIFICATION
       or bit32.band(bytesToInt32(message.binaryData, 1), 0x0fffffff) ~= constants.BINARY_RPC_FUNCTION_ID.HANDSHAKE
       or bytesToInt32(message.binaryData, 9) ~= 0) then  -- it is not Handshake data
-    print("SERVICE_TYPE.CONTROL but it is not Handshake")
     return
   end
   message.rpcType = bit32.rshift(string.byte(message.binaryData, 1), 4)
@@ -142,10 +142,10 @@ local function parseBinaryHeader(message, validateJson)
   end
 end
 
-local function encryptPayload(data, encryption, sessionId, serviceType)
-  if encryption and data then
-    local encryptedData = securityManager.encrypt(data, sessionId, serviceType)
-    if not encryptedData then
+local function encryptPayload(data, message)
+  if message.encryption and data then
+    local encryptionStatus, encryptedData = securityManager.encrypt(data, message.sessionId, message.serviceType)
+    if not encryptionStatus then
       error("Protocol handler: Encryption error")
     end
     return encryptedData
@@ -153,15 +153,16 @@ local function encryptPayload(data, encryption, sessionId, serviceType)
   return data
 end
 
-local function decryptPayload(data, encryption, sessionId, serviceType)
-  if encryption and data then
-    local decryptedData = securityManager.decrypt(msg.binaryData, msg.sessionId, msg.serviceType)
-    if not decryptedData then
-      error("Protocol handler: Decryption error")
+local function decryptPayload(data, message)
+  if data then
+    if message.encryption then
+      return securityManager.decrypt(data, message.sessionId, message.serviceType)
+    else
+      return securityConstants.DECRIPTION_STATUS.NOT_DECRYPTED, data
     end
-    return decryptedData
+  else
+    return securityConstants.DECRIPTION_STATUS.NO_DATA, nil
   end
-  return data
 end
 
 local function printMsgData(msg)
@@ -239,11 +240,17 @@ function mt.__index:Parse(binary, validateJson)
     if not msg then break end
     -- printMsgData(msg)
     self.buffer = string.sub(self.buffer, msg.size + 13)
-    ---new
-    if #msg.binaryData == 0 then
+
+    local decryptedData
+    msg.decryptionStatus, decryptedData = decryptPayload(msg.binaryData, msg)
+    if msg.decryptionStatus == securityConstants.DECRIPTION_STATUS.SUCCESS then
+      msg.binaryData = decryptedData
+    end
+
+    if #msg.binaryData == 0
+       or msg.decryptionStatus == securityConstants.DECRIPTION_STATUS.ERROR then
       table.insert(res, msg)
     else
-      msg.binaryData = decryptPayload(msg.binaryData, msg.encryption, msg.sessionId, msg.serviceType)
       if msg.frameType == constants.FRAME_TYPE.CONTROL_FRAME then
         table.insert(res, msg)
       elseif msg.frameType == constants.FRAME_TYPE.FIRST_FRAME then
@@ -321,9 +328,8 @@ function mt.__index:Compose(message)
   if is_multi_frame then
     -- 1st frame
     local firstFrame_payload = int32ToBytes(payload_size) .. int32ToBytes(#multiframe_payloads)
-    firstFrame_payload = encryptPayload(firstFrame_payload, message.encryption, message.sessionId, message.serviceType)
-    -- local frame = nil
-    local header = create_ford_header(message.version,
+    firstFrame_payload = encryptPayload(firstFrame_payload, message)
+    local header = createProtocolHeader(message.version,
       message.encryption,
       constants.FRAME_TYPE.FIRST_FRAME,
       message.serviceType,
@@ -343,15 +349,15 @@ function mt.__index:Compose(message)
         -- frame info can't be 0, 0 mean last frame
         frame_info = ((frame_number - 1) % 255) + 1
       end
-      local frame_payload = encryptPayload(multiframe_payloads[frame_number], message.encryption, message.sessionId, message.serviceType)
-      header = create_ford_header(message.version, message.encryption, constants.FRAME_TYPE.CONSECUTIVE_FRAME, message.serviceType,
+      local frame_payload = encryptPayload(multiframe_payloads[frame_number], message)
+      header = createProtocolHeader(message.version, message.encryption, constants.FRAME_TYPE.CONSECUTIVE_FRAME, message.serviceType,
         frame_info, message.sessionId, frame_payload, message.messageId)
       frame = header .. frame_payload
       table.insert(res, frame)
     end
   else
-    payload = encryptPayload(payload, message.encryption, message.sessionId, message.serviceType)
-    local header = create_ford_header(message.version, message.encryption, message.frameType, message.serviceType,
+    payload = encryptPayload(payload, message)
+    local header = createProtocolHeader(message.version, message.encryption, message.frameType, message.serviceType,
       message.frameInfo, message.sessionId, payload or "", message.messageId)
     if payload then
       table.insert(res, header .. payload)

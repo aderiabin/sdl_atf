@@ -15,7 +15,7 @@ local control_services = require('services/control_service')
 local rpc_services = require('services/rpc_service')
 local heartbeatMonitor = require('services/heartbeat_monitor')
 local mobileExpectations = require('expectations/session_expectations')
-local securityManager = require('security_manager')
+local securityManager = require('security/security_manager')
 
 local Event = events.Event
 local FAILED = expectations.FAILED
@@ -55,6 +55,22 @@ function mt.__index:ExpectNotification(funcName, ...)
    return self.rpc_services:ExpectNotification(funcName, ...)
 end
 
+--- Expectation of encrypted responce with specific correlation_id
+-- @tparam number cor_id Correlation identifier of specific rpc event
+-- @tparam table ... Expectation parameters
+-- @treturn Expectation Expectation for response
+function mt.__index:ExpectEncryptedResponse(cor_id, ...)
+  return self.rpc_services:ExpectResponse(cor_id, ...)
+end
+
+--- Expectation of encrypted notification with specific funcName
+-- @tparam string funcName Expected notification name
+-- @tparam table ... Expectation parameters
+-- @treturn Expectation Expectation for notification
+function mt.__index:ExpectEncryptedNotification(funcName, ...)
+   return self.rpc_services:ExpectNotification(funcName, ...)
+end
+
 --- Start video streaming
 -- @tparam number session_id Mobile session identifier
 -- @tparam number service Service type
@@ -78,6 +94,14 @@ function mt.__index:SendRPC(func, arguments, fileName)
   return self.rpc_services:SendRPC(func, arguments, fileName)
 end
 
+--- Send encrypted RPC
+-- @tparam string func RPC name
+-- @tparam table arguments Arguments for RPC function
+-- @tparam string fileName Path to file with binary data
+function mt.__index:SendEncryptedRPC(func, arguments, fileName)
+  return self.rpc_services:SendRPC(func, arguments, fileName, true)
+end
+
 --- Start specific service
 -- For service == 7 should be used StartRPC() instead of this function
 -- @tparam number service Service type
@@ -90,12 +114,11 @@ end
 -- @tparam number service Service type
 -- @tparam table securitySettings settings for SSL
 -- @treturn Expectation expectation for StartService ACK
-function mt.__index:StartSecureService(service, securitySettings)
+function mt.__index:StartSecureService(service)
   -- check and prepare SSL on basis of securitySettings
-  self.security.prepareToHandshake(securitySettings)
+  self.security:prepareToHandshake()
   return self.control_services:StartSecureService(service)
     :Do(function(_, _)
-        self.isSecuredSession = true
         securityManager:registerSecureService(self, service)
       end)
 end
@@ -105,6 +128,9 @@ end
 -- @treturn Expectationexpectation for EndService ACK
 function mt.__index:StopService(service)
   return self.control_services:StopService(service)
+    :Do(function(_, _)
+        securityManager:unregisterSecureService(self, service)
+      end)
 end
 
 --- Stop heartbeat from mobile side
@@ -151,6 +177,9 @@ function mt.__index:StopRPC()
   local ret = self.control_services:StopService(7)
   self:StopHeartbeat()
   return ret
+    :Do(function(_, _)
+      securityManager:unregisterAllSecureServices(self)
+    end)
 end
 
 --- Send message from mobile to SDL
@@ -169,7 +198,6 @@ function mt.__index:Send(message)
   message.frameType = message.frameType or 1
   message.sessionId = self.sessionId.get()
   message.messageId = self.messageId
-
 
   self.connection:Send({message})
   xmlReporter.AddMessage("MobileSession","Send",{message})
@@ -195,12 +223,14 @@ end
 -- @tparam number correlation_id Initial correlation identifier
 -- @tparam Test test Test which open mobile session
 -- @tparam MobileConnection connection Base connection for open mobile session
+-- @tparam table securitySettings Settings for establish secured connection
 -- @tparam table sendHeartbeatToSDL Access table for send heartbeat to SDL flag
 -- @tparam table answerHeartbeatFromSDL Access table for answer heartbeat from SDL flag
 -- @tparam table ignoreHeartBeatAck Access table for ignore heartbeat ACK from SDL flag
+-- @tparam table isSSLHandshakeAuto Access table for is SSL handshake automated flag
 -- @tparam table regAppParams Mobile application parameters
 -- @treturn MobileSessionImpl Constructed instance
-function MSI.MobileSessionImpl(session_id, correlation_id, test, connection, sendHeartbeatToSDL, answerHeartbeatFromSDL, ignoreHeartBeatAck, isSSLHandshakeAuto, regAppParams)
+function MSI.MobileSessionImpl(session_id, correlation_id, test, connection, securitySettings, sendHeartbeatToSDL, answerHeartbeatFromSDL, ignoreHeartBeatAck, isSSLHandshakeAuto, regAppParams)
   local res = { }
   --- Test which open mobile session
   res.test = test
@@ -234,8 +264,8 @@ function MSI.MobileSessionImpl(session_id, correlation_id, test, connection, sen
   res.ignoreHeartBeatAck = ignoreHeartBeatAck
   --- Heartbeat monitor
   res.heartbeat_monitor = heartbeatMonitor.HeartBeatMonitor(res)
-  --- SecurityManager
-  res.security = securityManager:SSL(res)
+  --- Session security manager
+  res.security = securityManager:SSL(res, securitySettings)
   ---
   res.isSecuredSession = false
   --- Access table for perform SSL handshake automatically flag

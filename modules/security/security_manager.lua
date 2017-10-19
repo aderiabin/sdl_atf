@@ -2,6 +2,16 @@ local openssl = require('luaopenssl')
 
 local SecurityManager = {}
 
+local function updateSecurityOfSession(securityManager, mobileSession)
+	local encriptedServices = securityManager.mobileSessions[mobileSession.sessionId.get()].encryptedServices
+	if next(encriptedServices) == nil then
+		mobileSession.isSecuredSession = false
+		--clear SSL_CTX, SSL and BIOs
+	else
+		mobileSession.isSecuredSession = true
+	end
+end
+
 --- SSL
 local ssl_mt = { __index = {} }
 
@@ -12,7 +22,7 @@ local ssl_mt = { __index = {} }
 -- end
 
 --- Prepare openssl to perform handshake on base of securitySettings
-function ssl_mt.__index:prepareToHandshake(securitySettings)
+function ssl_mt.__index:prepareToHandshake()
 
 end
 
@@ -26,11 +36,19 @@ end
 function ssl_mt.__index:registerSecureService(mobileSession, service)
 	local encriptedServices = self.mobileSessions[mobileSession.sessionId.get()].encryptedServices
 	encriptedServices[service] = true
+	updateSecurityOfSession(self, mobileSession)
 end
 
 function ssl_mt.__index:unregisterSecureService(mobileSession, service)
 	local encriptedServices = self.mobileSessions[mobileSession.sessionId.get()].encryptedServices
 	encriptedServices[service] = nil
+	updateSecurityOfSession(self, mobileSession)
+end
+
+function ssl_mt.__index:unregisterAllSecureServices(mobileSession)
+	local mobileSessionData = self.mobileSessions[mobileSession.sessionId.get()]
+	mobileSessionData.encriptedServices = {}
+	updateSecurityOfSession(self, mobileSession)
 end
 
 function ssl_mt.__index:checkSecureService(mobileSession, service)
@@ -72,13 +90,14 @@ function SecurityManager.encrypt(data, sessionId)
 	return data
 end
 
-function SecurityManager:SSL(mobileSession)
+function SecurityManager:SSL(mobileSession, securitySettings)
 	self.mobileSessions[mobileSession.sessionId.get()] = {
 		session = mobileSession,
 		encryptedServices = {}
 	}
 
 	local res = {}
+	res.settings = securitySettings
 	-- res.isEncriptedSession = false
 	-- res.ctx = self:createSslContext()
 	-- res.ssl = self.sslContext:newSSL()
