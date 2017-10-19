@@ -10,7 +10,7 @@
 local ProtocolHandler = {}
 local json = require("json")
 local constants = require('protocol_handler/ford_protocol_constants')
-local securityManager = require('security_manager')
+local securityManager = require('security/security_manager')
 local securityConstants = require('security/security_constants')
 local mt = { __index = { } }
 
