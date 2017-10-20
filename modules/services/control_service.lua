@@ -132,7 +132,8 @@ function mt.__index:StartSecureService(service)
       end
     handShakeExp = self.session:ExpectEvent(handshakeEvent, "Handshake"):Times(AtLeast(1))
     :Do(function(_, data)
-        local isHandshakeFinished, dataToSend = self.session.security.performHandshake(data.binaryData)
+        print("Received handshake message")
+        local dataToSend = self.session.security.performHandshake(data.binaryData)
         if dataToSend then
           local handshakeMessage = {
             frameInfo = 0,
@@ -146,7 +147,8 @@ function mt.__index:StartSecureService(service)
           self.session:Send(handshakeMessage)
           xmlReporter.AddMessage("mobile_connection","SendHandshakeData",{handshakeMessage})
         end
-        if isHandshakeFinished then
+        if self.session.security.ssl:isHandshakeFinished() then
+          print("Handshake is finished")
           self.session.test:RemoveExpectation(handShakeExp)
         end
       end)

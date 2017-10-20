@@ -9,11 +9,16 @@
 
 local SecurityConstants = {}
 --- Frame type enumeration
-SecurityConstants.DECRIPTION_STATUS = {
+SecurityConstants.SECURITY_STATUS = {
   ERROR = -1,
   SUCCESS = 0,
   NO_DATA = 1,
-  NOT_DECRYPTED = 2,
+  NO_ENCRYPTION = 2,
+}
+
+SecurityConstants.BIO_TYPES = {
+  SOURCE_BIO = 0,
+  FILTER_BIO = 1
 }
 
 return SecurityConstants

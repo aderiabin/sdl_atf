@@ -144,8 +144,8 @@ end
 
 local function encryptPayload(data, message)
   if message.encryption and data then
-    local encryptionStatus, encryptedData = securityManager.encrypt(data, message.sessionId, message.serviceType)
-    if not encryptionStatus then
+    local encryptionStatus, encryptedData = securityManager:encrypt(data, message.sessionId, message.serviceType)
+    if encryptionStatus == securityConstants.SECURITY_STATUS.ERROR then
       error("Protocol handler: Encryption error")
     end
     return encryptedData
@@ -156,17 +156,25 @@ end
 local function decryptPayload(data, message)
   if data then
     if message.encryption then
-      return securityManager.decrypt(data, message.sessionId, message.serviceType)
+      print("Received encrypted message. Start to decrypt.")
+      return securityManager:decrypt(data, message.sessionId, message.serviceType)
     else
-      return securityConstants.DECRIPTION_STATUS.NOT_DECRYPTED, data
+      return securityConstants.SECURITY_STATUS.NO_ENCRYPTION, data
     end
   else
-    return securityConstants.DECRIPTION_STATUS.NO_DATA, nil
+    return securityConstants.SECURITY_STATUS.NO_DATA, nil
   end
 end
 
 local function printMsgData(msg)
   print("-------------------- " .. msg.sessionId .. ":" .. msg.messageId .. " --------------------")
+  local encryption
+  if msg.encryption then
+    encryption = "true"
+  else
+    encryption = "false"
+  end
+  print("Message encryption: " .. encryption)
   print("Message binary data size: " .. msg.size)
   print("Size of current binary data: " .. #msg.binaryData)
 
@@ -225,7 +233,17 @@ local function printMsgData(msg)
     serviceType = "BULK_DATA"
   end
   print("Service type: " .. serviceType)
+  print ("-------------")
+  if msg.frameType ~= constants.FRAME_TYPE.CONTROL_FRAME
+          and msg.serviceType == constants.SERVICE_TYPE.CONTROL
+          and msg.rpcType == constants.BINARY_RPC_TYPE.NOTIFICATION
+          and msg.rpcFunctionId == constants.BINARY_RPC_FUNCTION_ID.HANDSHAKE then
+          print("It is Handshake message")
+        else
+          print("It is not Handshake message")
+        end
   print("---------------------------------------------")
+
 end
 
 --- Parse binary message from SDL to table with json validation
@@ -238,17 +256,20 @@ function mt.__index:Parse(binary, validateJson)
   while #self.buffer >= 12 do
     local msg = parseProtocolHeader(self.buffer)
     if not msg then break end
-    -- printMsgData(msg)
+    if config.debuger then
+      printMsgData(msg)
+    end
     self.buffer = string.sub(self.buffer, msg.size + 13)
 
     local decryptedData
     msg.decryptionStatus, decryptedData = decryptPayload(msg.binaryData, msg)
-    if msg.decryptionStatus == securityConstants.DECRIPTION_STATUS.SUCCESS then
+    print("Decryption: Status: " .. msg.decryptionStatus)
+    if msg.decryptionStatus == securityConstants.SECURITY_STATUS.SUCCESS then
       msg.binaryData = decryptedData
     end
 
     if #msg.binaryData == 0
-       or msg.decryptionStatus == securityConstants.DECRIPTION_STATUS.ERROR then
+       or msg.decryptionStatus == securityConstants.SECURITY_STATUS.ERROR then
       table.insert(res, msg)
     else
       if msg.frameType == constants.FRAME_TYPE.CONTROL_FRAME then

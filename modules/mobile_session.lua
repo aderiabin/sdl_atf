@@ -237,7 +237,10 @@ function MS.MobileSession(test, connection, regAppParams, securitySettings)
   end
 
   securitySettings = securitySettings or {
-
+    cipherListString = "ALL:!ADH:!LOW:!EXP:!MD5:@STRENGTH",
+    serverCertPath = "./data/cert/server-cert.pem",
+    serverKeyPath = "./data/cert/server-key.pem",
+    sslProtocol = nil
   }
 
   res.mobile_session_impl = mobile_session_impl.MobileSessionImpl(

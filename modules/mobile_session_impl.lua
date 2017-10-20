@@ -1,6 +1,6 @@
 --- Module which provides implementation for mobile session interface
 --
--- *Dependencies:* `atf.util`, `expectations`, `events`, `services.control_service`,
+-- *Dependencies:* `atf.util`, `expectations`, `services.control_service`,
 -- `services.rpc_service`, `services.heartbeat_monitor`, `expectations.session_expectations`
 --
 -- *Globals:* `config`, 'xmlReporter'
@@ -10,14 +10,13 @@
 
 require('atf.util')
 local expectations = require('expectations')
-local events = require('events')
 local control_services = require('services/control_service')
 local rpc_services = require('services/rpc_service')
 local heartbeatMonitor = require('services/heartbeat_monitor')
 local mobileExpectations = require('expectations/session_expectations')
 local securityManager = require('security/security_manager')
+local constants = require('protocol_handler/ford_protocol_constants')
 
-local Event = events.Event
 local FAILED = expectations.FAILED
 local MSI = {}
 local mt = { __index = { } }
@@ -60,7 +59,11 @@ end
 -- @tparam table ... Expectation parameters
 -- @treturn Expectation Expectation for response
 function mt.__index:ExpectEncryptedResponse(cor_id, ...)
-  return self.rpc_services:ExpectResponse(cor_id, ...)
+  if self.isSecuredSession and self.security:checkSecureService(constants.SERVICE_TYPE.RPC) then
+    return self.rpc_services:ExpectResponse(cor_id, ...)
+  end
+  error("Error: Can not create expectation for encrypted response. "
+    .. "Secure service was not established. Session: " .. self.sessionId.get())
 end
 
 --- Expectation of encrypted notification with specific funcName
@@ -68,7 +71,11 @@ end
 -- @tparam table ... Expectation parameters
 -- @treturn Expectation Expectation for notification
 function mt.__index:ExpectEncryptedNotification(funcName, ...)
-   return self.rpc_services:ExpectNotification(funcName, ...)
+  if self.isSecuredSessionand and self.security:checkSecureService(constants.SERVICE_TYPE.RPC) then
+    return self.rpc_services:ExpectNotification(funcName, ...)
+  end
+  error("Error: Can not create expectation for encrypted notification. "
+    .. "Secure service was not established. Session: " .. self.sessionId.get())
 end
 
 --- Start video streaming
@@ -99,7 +106,11 @@ end
 -- @tparam table arguments Arguments for RPC function
 -- @tparam string fileName Path to file with binary data
 function mt.__index:SendEncryptedRPC(func, arguments, fileName)
-  return self.rpc_services:SendRPC(func, arguments, fileName, true)
+  if self.isSecuredSession and self.security:checkSecureService(constants.SERVICE_TYPE.RPC) then
+    return self.rpc_services:SendRPC(func, arguments, fileName, true)
+  end
+  error("Error: Can not send encrypted request. "
+    .. "Secure service was not established. Session: " .. self.sessionId.get())
 end
 
 --- Start specific service
@@ -115,11 +126,14 @@ end
 -- @tparam table securitySettings settings for SSL
 -- @treturn Expectation expectation for StartService ACK
 function mt.__index:StartSecureService(service)
-  -- check and prepare SSL on basis of securitySettings
-  self.security:prepareToHandshake()
+  if not self.isSecuredSession then
+    self.security:registerSessionSecurity()
+    self.security:prepareToHandshake()
+  end
+
   return self.control_services:StartSecureService(service)
     :Do(function(_, _)
-        securityManager:registerSecureService(self, service)
+        self.security:registerSecureService(service)
       end)
 end
 
@@ -129,7 +143,7 @@ end
 function mt.__index:StopService(service)
   return self.control_services:StopService(service)
     :Do(function(_, _)
-        securityManager:unregisterSecureService(self, service)
+        self.security:unregisterSecureService(service)
       end)
 end
 
@@ -157,7 +171,7 @@ end
 --- Start RPC service and heartBeat
 -- @treturn Expectation Expectation for StartService ACK
 function mt.__index:StartRPC()
-  local ret = self:StartService(7)
+  local ret = self:StartService(constants.SERVICE_TYPE.RPC)
   ret:Do(function()
       -- Heartbeat
       if self.version > 2 then
@@ -174,11 +188,11 @@ end
 
 --- Stop RPC service
 function mt.__index:StopRPC()
-  local ret = self.control_services:StopService(7)
+  local ret = self.control_services:StopService(constants.SERVICE_TYPE.RPC)
   self:StopHeartbeat()
   return ret
     :Do(function(_, _)
-      securityManager:unregisterAllSecureServices(self)
+      self.security:unregisterAllSecureServices()
     end)
 end
 
@@ -230,7 +244,8 @@ end
 -- @tparam table isSSLHandshakeAuto Access table for is SSL handshake automated flag
 -- @tparam table regAppParams Mobile application parameters
 -- @treturn MobileSessionImpl Constructed instance
-function MSI.MobileSessionImpl(session_id, correlation_id, test, connection, securitySettings, sendHeartbeatToSDL, answerHeartbeatFromSDL, ignoreHeartBeatAck, isSSLHandshakeAuto, regAppParams)
+function MSI.MobileSessionImpl(session_id, correlation_id, test, connection, securitySettings,
+    sendHeartbeatToSDL, answerHeartbeatFromSDL, ignoreHeartBeatAck, isSSLHandshakeAuto, regAppParams)
   local res = { }
   --- Test which open mobile session
   res.test = test
@@ -265,7 +280,7 @@ function MSI.MobileSessionImpl(session_id, correlation_id, test, connection, sec
   --- Heartbeat monitor
   res.heartbeat_monitor = heartbeatMonitor.HeartBeatMonitor(res)
   --- Session security manager
-  res.security = securityManager:SSL(res, securitySettings)
+  res.security = securityManager:Security(res, securitySettings)
   ---
   res.isSecuredSession = false
   --- Access table for perform SSL handshake automatically flag

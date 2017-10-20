@@ -1,109 +1,188 @@
 local openssl = require('luaopenssl')
+local securityConstants = require('security/security_constants')
 
 local SecurityManager = {}
 
-local function updateSecurityOfSession(securityManager, mobileSession)
-	local encriptedServices = securityManager.mobileSessions[mobileSession.sessionId.get()].encryptedServices
-	if next(encriptedServices) == nil then
-		mobileSession.isSecuredSession = false
-		--clear SSL_CTX, SSL and BIOs
+local function updateSecurityOfSession(security)
+	if next(security.encryptedServices) == nil then
+		security.session.isSecuredSession = false
+		security.ctx = nil
+		security.ssl = nil
+		security.bioIn = nil
+		security.bioOut = nil
 	else
-		mobileSession.isSecuredSession = true
+		security.session.isSecuredSession = true
 	end
 end
 
---- SSL
-local ssl_mt = { __index = {} }
-
--- function ossl_mt.__index:PerformHandshake()
---   -- prepare event to expect (example control_service:StartService)
---   openssl.doHandshake(self.connection)
---   -- expect event and check the result (example control_service:StartService)
--- end
+--- Security
+local security_mt = { __index = {} }
 
 --- Prepare openssl to perform handshake on base of securitySettings
-function ssl_mt.__index:prepareToHandshake()
+function security_mt.__index:prepareToHandshake()
+	local SERVER = 1
 
+	-- create SSL_CTX
+	self.ctx = SecurityManager.createSslContext(self)
+	print("Server SSL_CTX is initialized")
+	-- create BIOs
+	self.bioIn = SecurityManager.createBio(securityConstants.BIO_TYPES.SOURCE_BIO, self)
+	print("Input BIO is created")
+	self.bioOut = SecurityManager.createBio(securityConstants.BIO_TYPES.SOURCE_BIO, self)
+	print("Output BIO is created")
+	-- create SSL
+	self.ssl = self.ctx:newSsl()
+	print("SSL is created")
+	-- set info callback
+	self.ssl:setInfoCallback(SERVER)
+	print("SSL InfoCallback is set")
+	-- populate SSL with BIOs
+	self.ssl:setBios(self.bioIn, self.bioOut)
+	print("SSL BIOs is attached")
+	-- Prepare SSL to perform handshake
+	self.ssl:prepareToHandshake(SERVER)
+	print("SSL is prepared to handshake")
 end
 
-function ssl_mt.__index:performHandshake(inHandshakeData)
-	local outHandshakeData = {}
-	local isHandshakeFinished = false
-	-- performHandshake step => isHandshakeFinished, outHandshakeData
-	return isHandshakeFinished, outHandshakeData
+function security_mt.__index:performHandshake(inHandshakeData)
+	local outHandshakeData = nil
+	if inHandshakeData and inHandshakeData:len() > 0 then
+		self.bioIn:write(inHandshakeData);
+		self.ssl:performHandshake()
+		local pending = self.bioOut:checkData()
+		if pending > 0 then
+   		outHandshakeData = self.bioOut:read(pending)
+   	end
+	end
+	return outHandshakeData
 end
 
-function ssl_mt.__index:registerSecureService(mobileSession, service)
-	local encriptedServices = self.mobileSessions[mobileSession.sessionId.get()].encryptedServices
-	encriptedServices[service] = true
-	updateSecurityOfSession(self, mobileSession)
+function security_mt.__index:encrypt(data)
+	local encryptedData
+	if not data then
+		return securityConstants.SECURITY_STATUS.ERROR, nil
+	end
+
+	self.ssl:encrypt(data)
+	local pending = self.bioOut:checkData()
+	if pending == 0 then
+		return securityConstants.SECURITY_STATUS.ERROR, nil
+	end
+
+	encryptedData = self.bioOut:read(pending)
+	if not encryptedData then
+		return securityConstants.SECURITY_STATUS.ERROR, nil
+	end
+
+	return securityConstants.SECURITY_STATUS.SUCCESS, encryptedData
 end
 
-function ssl_mt.__index:unregisterSecureService(mobileSession, service)
-	local encriptedServices = self.mobileSessions[mobileSession.sessionId.get()].encryptedServices
-	encriptedServices[service] = nil
-	updateSecurityOfSession(self, mobileSession)
+function security_mt.__index:decrypt(encryptedData)
+	local data
+	if not encryptedData then
+		return securityConstants.SECURITY_STATUS.ERROR, nil
+	end
+
+	self.bioIn:write(encryptedData)
+	local pending = self.ssl:checkData()
+	if pending == 0 then
+		return securityConstants.SECURITY_STATUS.ERROR, nil
+	end
+
+	data = self.ssl:decrypt(pending)
+	if not data then
+		return securityConstants.SECURITY_STATUS.ERROR, nil
+	end
+
+	return securityConstants.SECURITY_STATUS.SUCCESS, data
 end
 
-function ssl_mt.__index:unregisterAllSecureServices(mobileSession)
-	local mobileSessionData = self.mobileSessions[mobileSession.sessionId.get()]
-	mobileSessionData.encriptedServices = {}
-	updateSecurityOfSession(self, mobileSession)
+function security_mt.__index:registerSessionSecurity()
+	SecurityManager.mobileSecurities[self.session.sessionId.get()] = self
+	print("Session " .. self.session.sessionId.get() .. " was registered in Security manager")
+	print("Registered sessions:")
+	for k, _ in pairs(SecurityManager.mobileSecurities) do
+		print(k)
+	end
 end
 
-function ssl_mt.__index:checkSecureService(mobileSession, service)
-	local encriptedServices = self.mobileSessions[mobileSession.sessionId.get()].encryptedServices
-	return encriptedServices[service]
+function security_mt.__index:registerSecureService(service)
+	self.encriptedServices[service] = true
+	updateSecurityOfSession(self)
 end
 
---- BIO
-local BIO = {
-	types = {
-		SOURCE_BIO = 0,
-		FILTER_BIO = 1
-	}
-}
+function security_mt.__index:unregisterSecureService(service)
+	self.encriptedServices[service] = nil
+	updateSecurityOfSession(self)
+end
+
+function security_mt.__index:unregisterAllSecureServices()
+	self.encriptedServices = {}
+	updateSecurityOfSession(self)
+end
+
+function security_mt.__index:checkSecureService(service)
+	return self.encriptedServices[service]
+end
 
 --- SecurityManager
-
-SecurityManager.mobileSessions = {}
+SecurityManager.mobileSecurities = {}
 
 function SecurityManager.init()
 	openssl.initSslLibrary()
 	print("OpenSSL library is initialised")
-	-- self.sslContext = openssl.prepareSSLContext()
 end
 
-function SecurityManager:createSsl()
-	return openssl.newSsl(self.sslContext)
+function SecurityManager.createSslContext(sessionSecurity)
+	local sslCtx = openssl.newSslContext()
+	if (not (sslCtx and sslCtx:initSslContext(sessionSecurity.settings.cipherListString, sessionSecurity.settings.serverCertPath, sessionSecurity.settings.serverKeyPath))) then
+		error("Error: Can not create and init SSL context for mobile session " .. sessionSecurity.session.sessionId.get())
+	end
+	return sslCtx
 end
 
-function SecurityManager.createBio(bioType)
-	return openssl.newBio(bioType)
+function SecurityManager.createBio(bioType, sessionSecurity)
+	local bio = openssl.newBio(bioType)
+	if not bio then
+		error("Error: Can not create BIO for mobile session " .. sessionSecurity.session.sessionId.get())
+	end
+	return bio
 end
 
-function SecurityManager.decrypt(encryptedData, sessionId, serviceType)
-	return encryptedData
+function SecurityManager:decrypt(encryptedData, sessionId, serviceType)
+	local security = self.mobileSecurities[sessionId]
+	if not security then
+		print("Error [decrypt]: Session " .. sessionId .. " is not registered in ATF Security manager")
+		return securityConstants.SECURITY_STATUS.ERROR, encryptedData
+	end
+	if not security:checkSecureService(serviceType) then
+		print("Warning: Received encrypted message with not secure service: " .. serviceType)
+	end
+	return security:decrypt(encryptedData)
 end
 
-function SecurityManager.encrypt(data, sessionId)
-	return data
+function SecurityManager:encrypt(data, sessionId, serviceType)
+	local security = self.mobileSecurities[sessionId]
+	if not security then
+		error("Error [encrypt]: Session " .. sessionId .. " is not registered in ATF Security manager")
+	end
+	if not security:checkSecureService(serviceType) then
+		error("Error: Try to send encrypted message with not secure service" .. serviceType)
+	end
+	return security:encrypt(data)
 end
 
-function SecurityManager:SSL(mobileSession, securitySettings)
-	self.mobileSessions[mobileSession.sessionId.get()] = {
-		session = mobileSession,
-		encryptedServices = {}
-	}
-
-	local res = {}
+function SecurityManager:Security(mobileSession, securitySettings)
+		local res = {}
 	res.settings = securitySettings
+	res.session = mobileSession
+	res.encriptedServices = {}
 	-- res.isEncriptedSession = false
-	-- res.ctx = self:createSslContext()
-	-- res.ssl = self.sslContext:newSSL()
-	-- res.bioIn = self:createBio(BIO.types.SOURCE_BIO)
-	-- res.bioOut = self:createBio(BIO.types.SOURCE_BIO)
-	setmetatable(res, ssl_mt)
+	-- res.ctx
+	-- res.ssl
+	-- res.bioIn
+	-- res.bioOut
+	setmetatable(res, security_mt)
   return res
 end
 

@@ -74,6 +74,7 @@ function MobileConnection.mt.__index:OnInputData(func)
   local protocol_handler = ph.ProtocolHandler()
   local f =
   function(_, binary)
+    print("Parse from MC:OnInputData")
     local msgs = protocol_handler:Parse(binary)
     for _, msg in ipairs(msgs) do
       -- After refactoring should be moved in mobile session

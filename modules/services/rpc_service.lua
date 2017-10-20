@@ -203,7 +203,7 @@ end
 function mt.__index:ExpectResponse(cor_id, ...)
   return baseExpectResponse(self, cor_id, ...)
   :ValidIf(function(_, data)
-      if data.decryptionStatus ~= securityConstants.DECRIPTION_STATUS.NOT_DECRYPTED then
+      if data.decryptionStatus ~= securityConstants.SECURITY_STATUS.NO_ENCRYPTION then
         print("Decryption status is incorrect: " .. data.decryptionStatus)
         return false
       end
@@ -219,7 +219,7 @@ end
 function mt.__index:ExpectNotification(funcName, ...)
   return baseExpectNotification(self, funcName, ...)
   :ValidIf(function(_, data)
-      if data.decryptionStatus ~= securityConstants.DECRIPTION_STATUS.NOT_DECRYPTED then
+      if data.decryptionStatus ~= securityConstants.SECURITY_STATUS.NO_ENCRYPTION then
         print("Decryption status is incorrect: " .. data.decryptionStatus)
         return false
       end
@@ -234,7 +234,7 @@ end
 function mt.__index:ExpectEncryptedResponse(cor_id, ...)
   return baseExpectResponse(self, cor_id, ...)
   :ValidIf(function(_, data)
-      if data.decryptionStatus ~= securityConstants.DECRIPTION_STATUS.SUCCESS then
+      if data.decryptionStatus ~= securityConstants.SECURITY_STATUS.SUCCESS then
         print("Decryption status is incorrect: " .. data.decryptionStatus)
         return false
       end
@@ -249,7 +249,7 @@ end
 function mt.__index:ExpectEncryptedNotification(funcName, ...)
   return baseExpectNotification(self, funcName, ...)
   :ValidIf(function(_, data)
-      if data.decryptionStatus ~= securityConstants.DECRIPTION_STATUS.SUCCESS then
+      if data.decryptionStatus ~= securityConstants.SECURITY_STATUS.SUCCESS then
         print("Decryption status is incorrect: " .. data.decryptionStatus)
         return false
       end
