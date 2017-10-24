@@ -132,7 +132,8 @@ function mt.__index:StartSecureService(service)
   end
 
   return self.control_services:StartSecureService(service)
-    :Do(function(_, _)
+    :Do(function(exp, _)
+        if exp.status == FAILED then return end
         self.security:registerSecureService(service)
       end)
 end
@@ -142,7 +143,8 @@ end
 -- @treturn Expectationexpectation for EndService ACK
 function mt.__index:StopService(service)
   return self.control_services:StopService(service)
-    :Do(function(_, _)
+    :Do(function(exp, _)
+        if exp.status == FAILED then return end
         self.security:unregisterSecureService(service)
       end)
 end

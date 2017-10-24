@@ -124,6 +124,14 @@ local function parseBinaryHeader(message, validateJson)
     and (bit32.rshift(string.byte(message.binaryData, 1), 4) ~= constants.BINARY_RPC_TYPE.NOTIFICATION
       or bit32.band(bytesToInt32(message.binaryData, 1), 0x0fffffff) ~= constants.BINARY_RPC_FUNCTION_ID.HANDSHAKE
       or bytesToInt32(message.binaryData, 9) ~= 0) then  -- it is not Handshake data
+    if config.debuger then
+      local data = {
+        rpcType = bit32.rshift(string.byte(message.binaryData, 1), 4),
+        rpcFunctionId = bit32.band(bytesToInt32(message.binaryData, 1), 0x0fffffff),
+        rpcJsonSize = bytesToInt32(message.binaryData, 9)
+      }
+      DEBUG_MESSAGE("ProtocolHandler:parseBinaryHeader() - it is not Handshake data ", data)
+    end
     return
   end
   message.rpcType = bit32.rshift(string.byte(message.binaryData, 1), 4)
@@ -257,40 +265,67 @@ function mt.__index:Parse(binary, validateJson)
     local msg = parseProtocolHeader(self.buffer)
     if not msg then break end
     if config.debuger then
-      printMsgData(msg)
+      -- printMsgData(msg)
+      DEBUG_MESSAGE("ProtocolHandler:Parse() - Message after parseProtocolHeader():", msg)
     end
     self.buffer = string.sub(self.buffer, msg.size + 13)
 
     local decryptedData
     msg.decryptionStatus, decryptedData = decryptPayload(msg.binaryData, msg)
-    print("Decryption: Status: " .. msg.decryptionStatus)
+    if config.debuger then
+      DEBUG_MESSAGE("ProtocolHandler:Parse() - Decryption status after decryptPayload(): ", msg.decryptionStatus)
+    end
     if msg.decryptionStatus == securityConstants.SECURITY_STATUS.SUCCESS then
       msg.binaryData = decryptedData
     end
 
     if #msg.binaryData == 0
        or msg.decryptionStatus == securityConstants.SECURITY_STATUS.ERROR then
+    if config.debuger then
+      DEBUG_MESSAGE("ProtocolHandler:Parse() - if #msg.binaryData == 0 or msg.decryptionStatus == securityConstants.SECURITY_STATUS.ERROR ")
+    end
       table.insert(res, msg)
     else
       if msg.frameType == constants.FRAME_TYPE.CONTROL_FRAME then
+    if config.debuger then
+      DEBUG_MESSAGE("ProtocolHandler:Parse() - if msg.frameType == constants.FRAME_TYPE.CONTROL_FRAME ")
+    end
         table.insert(res, msg)
       elseif msg.frameType == constants.FRAME_TYPE.FIRST_FRAME then
+    if config.debuger then
+      DEBUG_MESSAGE("ProtocolHandler:Parse() - if msg.frameType == constants.FRAME_TYPE.FIRST_FRAME ")
+    end
         self.frames[msg.messageId] = ""
       elseif msg.frameType == constants.FRAME_TYPE.SINGLE_FRAME then
+    if config.debuger then
+      DEBUG_MESSAGE("ProtocolHandler:Parse() - if msg.frameType == constants.FRAME_TYPE.SINGLE_FRAME ")
+    end
         if msg.serviceType == constants.SERVICE_TYPE.RPC
            or msg.serviceType == constants.SERVICE_TYPE.BULK_DATA
            or msg.serviceType == constants.SERVICE_TYPE.CONTROL then
+    if config.debuger then
+      DEBUG_MESSAGE("ProtocolHandler:Parse() - if msg.serviceType == constants.SERVICE_TYPE.RPC or msg.serviceType == constants.SERVICE_TYPE.BULK_DATA or msg.serviceType == constants.SERVICE_TYPE.CONTROL ")
+    end
           parseBinaryHeader(msg, validateJson)
         end
         table.insert(res, msg)
       elseif msg.frameType == constants.FRAME_TYPE.CONSECUTIVE_FRAME then
+    if config.debuger then
+      DEBUG_MESSAGE("ProtocolHandler:Parse() - if msg.frameType == constants.FRAME_TYPE.CONSECUTIVE_FRAME")
+    end
         self.frames[msg.messageId] = self.frames[msg.messageId] .. msg.binaryData
         if msg.frameInfo == constants.FRAME_INFO.LAST_FRAME then
+    if config.debuger then
+      DEBUG_MESSAGE("ProtocolHandler:Parse() - if msg.frameInfo == constants.FRAME_INFO.LAST_FRAME")
+    end
           msg.binaryData = self.frames[msg.messageId]
           self.frames[msg.messageId] = nil
           if msg.serviceType == constants.SERVICE_TYPE.RPC
            or msg.serviceType == constants.SERVICE_TYPE.BULK_DATA
            or msg.serviceType == constants.SERVICE_TYPE.CONTROL then
+    if config.debuger then
+      DEBUG_MESSAGE("ProtocolHandler:Parse() - if msg.serviceType == constants.SERVICE_TYPE.RPC or msg.serviceType == constants.SERVICE_TYPE.BULK_DATA or msg.serviceType == constants.SERVICE_TYPE.CONTROL")
+    end
             parseBinaryHeader(msg, validateJson)
           end
           table.insert(res, msg)
@@ -298,6 +333,12 @@ function mt.__index:Parse(binary, validateJson)
       end
     end
   end
+      if config.debuger then
+        DEBUG_MESSAGE("ProtocolHandler:Parse() - Messages to return: ")
+        for k, v in ipairs(res) do
+          DEBUG_MESSAGE("Message " .. k, v)
+        end
+      end
   return res
 end
 

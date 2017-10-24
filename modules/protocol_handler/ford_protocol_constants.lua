@@ -39,9 +39,9 @@ SDLProtocolConstants.FRAME_INFO = {
 
 --- RPC type for Binary header
 SDLProtocolConstants.BINARY_RPC_TYPE = {
-  REQUEST = 0x00,
-  RESPONSE = 0x10,
-  NOTIFICATION = 0x20
+  REQUEST = 0x0,
+  RESPONSE = 0x1,
+  NOTIFICATION = 0x2
 }
 
 --- RPC Function Id for Binary header

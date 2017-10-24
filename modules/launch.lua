@@ -8,6 +8,7 @@
 -- @license <https://github.com/smartdevicelink/sdl_core/blob/master/LICENSE>
 
 require ("atf.util")
+require ("debug.debuger")
 
 declare_opt("-c", "--config-file", RequiredArgument, "Config file")
 declare_long_opt("--mobile-connection", RequiredArgument, "Mobile connection IP")
@@ -26,7 +27,6 @@ declare_long_opt("--sdl-core", RequiredArgument, "Path to folder with SDL binary
 declare_long_opt("--report-mark", RequiredArgument, "Marker of testing report")
 
 local script_files = parse_cmdl()
-
 if (#script_files > 0) then
   for _,scpt in ipairs(script_files) do
     print_startscript(scpt)

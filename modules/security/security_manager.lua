@@ -18,10 +18,17 @@ end
 --- Security
 local security_mt = { __index = {} }
 
+function security_mt.__index:isHandshakeFinished()
+	if self.ssl then
+		return self.ssl:isHandshakeFinished()
+	end
+	return false
+end
+
 --- Prepare openssl to perform handshake on base of securitySettings
 function security_mt.__index:prepareToHandshake()
 	local SERVER = 1
-
+	-- if self.ssl:isHandshakeFinished() then return end
 	-- create SSL_CTX
 	self.ctx = SecurityManager.createSslContext(self)
 	print("Server SSL_CTX is initialized")
@@ -45,11 +52,21 @@ function security_mt.__index:prepareToHandshake()
 end
 
 function security_mt.__index:performHandshake(inHandshakeData)
+-- if config.debuger then
+--   DEBUG_MESSAGE("SecurityManager:performHandshake() - Start", inHandshakeData:len())
+-- end
 	local outHandshakeData = nil
-	if inHandshakeData and inHandshakeData:len() > 0 then
+-- if config.debuger then
+--   DEBUG_MESSAGE("SecurityManager:performHandshake() - inHandshakeData", inHandshakeData:len())
+-- end
+	if not self:isHandshakeFinished()
+		 and inHandshakeData and inHandshakeData:len() > 0 then
 		self.bioIn:write(inHandshakeData);
 		self.ssl:performHandshake()
 		local pending = self.bioOut:checkData()
+-- if config.debuger then
+--   DEBUG_MESSAGE("SecurityManager:performHandshake() - pending", pending)
+-- end
 		if pending > 0 then
    		outHandshakeData = self.bioOut:read(pending)
    	end
@@ -59,7 +76,7 @@ end
 
 function security_mt.__index:encrypt(data)
 	local encryptedData
-	if not data then
+	if not (self:isHandshakeFinished() and data) then
 		return securityConstants.SECURITY_STATUS.ERROR, nil
 	end
 
@@ -79,7 +96,8 @@ end
 
 function security_mt.__index:decrypt(encryptedData)
 	local data
-	if not encryptedData then
+	if not (self:isHandshakeFinished()
+		 and encryptedData and encryptedData:len() > 0) then
 		return securityConstants.SECURITY_STATUS.ERROR, nil
 	end
 
@@ -98,31 +116,33 @@ function security_mt.__index:decrypt(encryptedData)
 end
 
 function security_mt.__index:registerSessionSecurity()
-	SecurityManager.mobileSecurities[self.session.sessionId.get()] = self
-	print("Session " .. self.session.sessionId.get() .. " was registered in Security manager")
-	print("Registered sessions:")
-	for k, _ in pairs(SecurityManager.mobileSecurities) do
-		print(k)
+	if not SecurityManager.mobileSecurities[self.session.sessionId.get()] then
+		SecurityManager.mobileSecurities[self.session.sessionId.get()] = self
+		print("Session " .. self.session.sessionId.get() .. " was registered in Security manager")
+		print("Registered sessions:")
+		for k, _ in pairs(SecurityManager.mobileSecurities) do
+			print(k)
+		end
 	end
 end
 
 function security_mt.__index:registerSecureService(service)
-	self.encriptedServices[service] = true
+	self.encryptedServices[service] = true
 	updateSecurityOfSession(self)
 end
 
 function security_mt.__index:unregisterSecureService(service)
-	self.encriptedServices[service] = nil
+	self.encryptedServices[service] = nil
 	updateSecurityOfSession(self)
 end
 
 function security_mt.__index:unregisterAllSecureServices()
-	self.encriptedServices = {}
+	self.encryptedServices = {}
 	updateSecurityOfSession(self)
 end
 
 function security_mt.__index:checkSecureService(service)
-	return self.encriptedServices[service]
+	return self.encryptedServices[service]
 end
 
 --- SecurityManager
@@ -176,7 +196,7 @@ function SecurityManager:Security(mobileSession, securitySettings)
 		local res = {}
 	res.settings = securitySettings
 	res.session = mobileSession
-	res.encriptedServices = {}
+	res.encryptedServices = {}
 	-- res.isEncriptedSession = false
 	-- res.ctx
 	-- res.ssl

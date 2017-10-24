@@ -101,7 +101,6 @@ function mt.__index:StartSecureService(service)
     sessionId = self.session.sessionId.get(),
     encryption = true
   }
-  -- prepare event to expect
   local startServiceEvent = Event()
     startServiceEvent.matches = function(_, data)
       return data.frameType == constants.FRAME_TYPE.CONTROL_FRAME and
@@ -132,8 +131,13 @@ function mt.__index:StartSecureService(service)
       end
     handShakeExp = self.session:ExpectEvent(handshakeEvent, "Handshake"):Times(AtLeast(1))
     :Do(function(_, data)
-        print("Received handshake message")
-        local dataToSend = self.session.security.performHandshake(data.binaryData)
+      local binData = data.binaryData
+if config.debuger then
+  DEBUG_MESSAGE("ControlService:StartSecureService() - Received handshake message", data)
+  DEBUG_MESSAGE("ControlService:StartSecureService() - Received handshake data", data.binaryData:len())
+  DEBUG_MESSAGE("ControlService:StartSecureService() - Received handshake data (copy)", binData:len())
+end
+        local dataToSend = self.session.security:performHandshake(binData)
         if dataToSend then
           local handshakeMessage = {
             frameInfo = 0,
@@ -144,10 +148,13 @@ function mt.__index:StartSecureService(service)
             rpcCorrelationId = data.rpcCorrelationId,
             binaryData = dataToSend
           }
+if config.debuger then
+  DEBUG_MESSAGE("ControlService:StartSecureService() - Handshake data to send", handshakeMessage)
+end
           self.session:Send(handshakeMessage)
           xmlReporter.AddMessage("mobile_connection","SendHandshakeData",{handshakeMessage})
         end
-        if self.session.security.ssl:isHandshakeFinished() then
+        if self.session.security:isHandshakeFinished() then
           print("Handshake is finished")
           self.session.test:RemoveExpectation(handShakeExp)
         end
