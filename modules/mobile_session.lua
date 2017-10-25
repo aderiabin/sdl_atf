@@ -236,10 +236,14 @@ function MS.MobileSession(test, connection, regAppParams, securitySettings)
     return res.isSSLHandshakeAuto
   end
 
+  function res:IsSecuredSession()
+    return self.mobile_session_impl.isSecuredSession
+  end
+
   securitySettings = securitySettings or {
     cipherListString = "ALL:!ADH:!LOW:!EXP:!MD5:@STRENGTH",
-    serverCertPath = "./data/cert/server-cert.pem",
-    serverKeyPath = "./data/cert/server-key.pem",
+    serverCertPath = "./data/cert/spt_credential.pem",
+    serverKeyPath = "./data/cert/spt_credential.pem",
     sslProtocol = nil
   }
 

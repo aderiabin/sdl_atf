@@ -160,8 +160,16 @@ function mt.__index:CheckCorrelationID(message)
       end
     end
   else
-    error("MobileSession:Send: message with correlationId: "..message_correlation_id.." in session "..self.session.sessionId.get() .." was sent earlier by ATF")
+    error("RPC service: Message with correlationId: "..message_correlation_id.." in session "..self.session.sessionId.get() .." was sent earlier by ATF")
   end
+end
+
+local function setFunctionId(func)
+  local id = functionId[func]
+  if not id then
+    error("RPC service: Function: " .. func .." was not found in Mobile API")
+  end
+  return id
 end
 
 --- Send RPC message
@@ -172,7 +180,7 @@ end
 -- @treturn number Correlation id
 function mt.__index:SendRPC(func, arguments, fileName, encrypt)
   if encrypt ~= true then encrypt = false end
-  self.session.correlationId.set(self.session.correlationId.get()+1)
+  self.session.correlationId.set(self.session.correlationId.get() + 1)
   local correlationId = self.session.correlationId.get()
   local msg =
   {
@@ -180,7 +188,7 @@ function mt.__index:SendRPC(func, arguments, fileName, encrypt)
     serviceType = constants.SERVICE_TYPE.RPC,
     frameInfo = 0,
     rpcType = constants.BINARY_RPC_TYPE.REQUEST,
-    rpcFunctionId = functionId[func],
+    rpcFunctionId = setFunctionId(func),
     rpcCorrelationId = correlationId,
     payload = json.encode(arguments)
   }

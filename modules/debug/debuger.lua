@@ -9,6 +9,10 @@ function DEBUG_MESSAGE(message, data)
 			message = message .. " =>\n" .. commonFunctions:convertTableToString(data, 1)
 			data.binaryData = binaryData
 		else
+			if type(data) == nil then data = "nil"
+			elseif type(data) == "boolean" then
+				 data = data and "true" or "false"
+			end
 			message = message .. " => " .. data
 		end
 	end

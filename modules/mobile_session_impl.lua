@@ -60,7 +60,7 @@ end
 -- @treturn Expectation Expectation for response
 function mt.__index:ExpectEncryptedResponse(cor_id, ...)
   if self.isSecuredSession and self.security:checkSecureService(constants.SERVICE_TYPE.RPC) then
-    return self.rpc_services:ExpectResponse(cor_id, ...)
+    return self.rpc_services:ExpectEncryptedResponse(cor_id, ...)
   end
   error("Error: Can not create expectation for encrypted response. "
     .. "Secure service was not established. Session: " .. self.sessionId.get())
@@ -71,8 +71,8 @@ end
 -- @tparam table ... Expectation parameters
 -- @treturn Expectation Expectation for notification
 function mt.__index:ExpectEncryptedNotification(funcName, ...)
-  if self.isSecuredSessionand and self.security:checkSecureService(constants.SERVICE_TYPE.RPC) then
-    return self.rpc_services:ExpectNotification(funcName, ...)
+  if self.isSecuredSession and self.security:checkSecureService(constants.SERVICE_TYPE.RPC) then
+    return self.rpc_services:ExpectEncryptedNotification(funcName, ...)
   end
   error("Error: Can not create expectation for encrypted notification. "
     .. "Secure service was not established. Session: " .. self.sessionId.get())
