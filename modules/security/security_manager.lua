@@ -28,45 +28,35 @@ end
 --- Prepare openssl to perform handshake on base of securitySettings
 function security_mt.__index:prepareToHandshake()
 	local SERVER = 1
-	-- if self.ssl:isHandshakeFinished() then return end
 	-- create SSL_CTX
 	self.ctx = SecurityManager.createSslContext(self)
-	print("Server SSL_CTX is initialized")
+	-- print("Server SSL_CTX is initialized")
 	-- create BIOs
 	self.bioIn = SecurityManager.createBio(securityConstants.BIO_TYPES.SOURCE_BIO, self)
-	print("Input BIO is created")
+	-- print("Input BIO is created")
 	self.bioOut = SecurityManager.createBio(securityConstants.BIO_TYPES.SOURCE_BIO, self)
-	print("Output BIO is created")
+	-- print("Output BIO is created")
 	-- create SSL
 	self.ssl = self.ctx:newSsl()
-	print("SSL is created")
+	-- print("SSL is created")
 	-- set info callback
 	self.ssl:setInfoCallback(SERVER)
-	print("SSL InfoCallback is set")
+	-- print("SSL InfoCallback is set")
 	-- populate SSL with BIOs
 	self.ssl:setBios(self.bioIn, self.bioOut)
-	print("SSL BIOs is attached")
+	-- print("SSL BIOs is attached")
 	-- Prepare SSL to perform handshake
 	self.ssl:prepareToHandshake(SERVER)
-	print("SSL is prepared to handshake")
+	-- print("SSL is prepared to handshake")
 end
 
 function security_mt.__index:performHandshake(inHandshakeData)
--- if config.debuger then
---   DEBUG_MESSAGE("SecurityManager:performHandshake() - Start", inHandshakeData:len())
--- end
 	local outHandshakeData = nil
--- if config.debuger then
---   DEBUG_MESSAGE("SecurityManager:performHandshake() - inHandshakeData", inHandshakeData:len())
--- end
 	if not self:isHandshakeFinished()
 		 and inHandshakeData and inHandshakeData:len() > 0 then
 		self.bioIn:write(inHandshakeData);
 		self.ssl:performHandshake()
 		local pending = self.bioOut:checkData()
--- if config.debuger then
---   DEBUG_MESSAGE("SecurityManager:performHandshake() - pending", pending)
--- end
 		if pending > 0 then
    		outHandshakeData = self.bioOut:read(pending)
    	end

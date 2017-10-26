@@ -1,25 +1,38 @@
 local commonFunctions = require('user_modules/shared_testcases/commonFunctions')
 local colors = require('user_modules/consts').color
 
-function DEBUG_MESSAGE(message, data)
-	if data then
-		if type(data) == "table" then
-			local binaryData = data.binaryData
-			data.binaryData = nil
-			message = message .. " =>\n" .. commonFunctions:convertTableToString(data, 1)
-			data.binaryData = binaryData
-		else
-			if type(data) == nil then data = "nil"
-			elseif type(data) == "boolean" then
-				 data = data and "true" or "false"
-			end
-			message = message .. " => " .. data
-		end
-	end
-	commonFunctions:userPrint(colors.blue, message)
+local debuger = {}
+debuger.tags = {}
+
+function debuger.clearTags(tag)
+	debuger.tags = {}
 end
 
-local debuger = {}
+function debuger.setTags(tagTable)
+	debuger.tags = tagTable
+end
+
+function DEBUG_MESSAGE(message, data, debugTag)
+	if config.debug and (next(debuger.tags) == nil or debuger.tags[debugTag]) then
+		if data then
+			if type(data) == "table" then
+				local binaryData = data.binaryData
+				data.binaryData = nil
+				message = message .. " =>\n" .. commonFunctions:convertTableToString(data, 1)
+				data.binaryData = binaryData
+			else
+				if type(data) == nil then data = "nil"
+				elseif type(data) == "boolean" then
+					 data = data and "true" or "false"
+				end
+				message = message .. " => " .. data
+			end
+		end
+		commonFunctions:userPrint(colors.blue, message)
+	end
+end
+
+
 
 -- local req = {}
 
