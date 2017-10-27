@@ -48,9 +48,7 @@ function fbuffer_mt.__index:GetMessage()
   local header = {}
   if self.keep then
     local res = self.keep
-    if config.debuger then
-      DEBUG_MESSAGE("Call ProtocolHandler:Parse() from FileStorage:GetMessage() Condition: if self.keep")
-    end
+    DEBUG_MESSAGE("Call ProtocolHandler:Parse() from FileStorage:GetMessage() Condition: if self.keep")
     header = self.protocol_handler:Parse(self.keep)
     self.keep = nil
     return header, res
@@ -63,9 +61,7 @@ function fbuffer_mt.__index:GetMessage()
     string.byte(string.sub(len, 1, 1))
     local frame = self.rfd:read(len)
     local doNotValidateJson = true
-    if config.debuger then
-      DEBUG_MESSAGE("Call ProtocolHandler:Parse() from FileStorage:GetMessage() Condition: if self.rfd:read(4)")
-    end
+    DEBUG_MESSAGE("Call ProtocolHandler:Parse() from FileStorage:GetMessage() Condition: if self.rfd:read(4)")
     header = self.protocol_handler:Parse(frame, doNotValidateJson)
     return header, frame
   end
@@ -213,7 +209,7 @@ function MD.MessageDispatcher(connection)
       end
     end
   end
-  res.connection:OnDataSent(function(self, num) res._d:bytesWritten(num) end)
+  res.connection:OnDataSent(function(_, num) res._d:bytesWritten(num) end)
   qt.connect(res.timer, "timeout()", res._d, "timeout()")
   setmetatable(res, MD.mt)
   return res

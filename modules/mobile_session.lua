@@ -8,6 +8,7 @@
 -- @license <https://github.com/smartdevicelink/sdl_core/blob/master/LICENSE>
 
 require('atf.util')
+local config = require('config')
 local mobile_session_impl = require('mobile_session_impl')
 
 local MS = {}
@@ -241,10 +242,10 @@ function MS.MobileSession(test, connection, regAppParams, securitySettings)
   end
 
   securitySettings = securitySettings or {
-    cipherListString = "ALL:!ADH:!LOW:!EXP:!MD5:@STRENGTH",
-    serverCertPath = "./data/cert/spt_credential.pem",
-    serverKeyPath = "./data/cert/spt_credential.pem",
-    sslProtocol = nil
+    cipherListString = config.cipherListString,
+    serverCertPath = config.serverCertificatePath,
+    serverKeyPath = config.serverPrivateKeyPath,
+    securityProtocol = config.SecurityProtocol
   }
 
   res.mobile_session_impl = mobile_session_impl.MobileSessionImpl(
