@@ -80,11 +80,15 @@ function mt.__index:StartService(service)
   self:Send(startServiceMessage)
 
   local ret = self.session:ExpectEvent(startServiceEvent, "StartService ACK")
-  :ValidIf(function(s, data)
+  ret:ValidIf(function(_, data)
       if data.frameInfo == constants.FRAME_INFO.START_SERVICE_ACK then
         xmlReporter.AddMessage("StartService", "StartService ACK", "True")
         return true
       else return false, "StartService NACK received" end
+    end)
+  ret:Do(function(_, _)
+      self.session.test:RemoveExpectation(ret)
+      event_dispatcher:RemoveEvent(ret.connection, ret.event)
     end)
   return ret
 end
@@ -119,6 +123,10 @@ function mt.__index:StartSecureService(service)
           else return false, "StartService ACK without encription received" end
         else return false, "StartService NACK received" end
       end)
+  ret:Do(function(_, _)
+      self.session.test:RemoveExpectation(ret)
+      event_dispatcher:RemoveEvent(ret.connection, ret.event)
+    end)
   if not self.session.isSecuredSession then
     local handshakeEvent = Event()
     local handShakeExp

@@ -166,6 +166,9 @@ end
 -- @type ExpectationsList
 function Expectations.ExpectationsList()
   local mt = { __index = {} }
+
+  --- Add expectation into list of expectations
+  -- @tparam Expectation exp Expectation to add
   function mt.__index:Add(exp)
     if exp.pinned then
       table.insert(self.pinned, exp)
@@ -177,7 +180,7 @@ function Expectations.ExpectationsList()
   end
 
   --- Remove expectation from list of expectations
-  -- @tparam Expectation e Expectation to remove
+  -- @tparam Expectation exp Expectation to remove
   function mt.__index:Remove(exp)
     if exp.pinned then
       table.remove(self.pinned, exp.index)

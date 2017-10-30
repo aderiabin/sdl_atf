@@ -10,48 +10,29 @@
 ---------------------------------------------------------------------------------------------------
 --[[ Required Shared libraries ]]
 local Test = require('connecttest')
-local expectations = require('expectations')
 require('cardinalities')
 
 --[[ Scenario ]]
-function Test:Rai_ptu()
-  local id = 1
-  self["mobileSession" .. id] = mobile_session.MobileSession(self, self.mobileConnection)
-  self["mobileSession" .. id]:StartService(7)
-  :Do(function()
-      local corId = self["mobileSession" .. id]:SendRPC("RegisterAppInterface", config["application" .. id].registerAppInterfaceParams)
-      EXPECT_HMINOTIFICATION("BasicCommunication.OnAppRegistered", { application = { appName = config["application" .. id].registerAppInterfaceParams.appName } })
-      :Do(function(_, d1)
-          hmiAppIds[config["application" .. id].registerAppInterfaceParams.appID] = d1.params.application.appID
-          EXPECT_HMINOTIFICATION("SDL.OnStatusUpdate", { status = "UPDATE_NEEDED" }, { status = "UPDATING" }, { status = "UP_TO_DATE" })
-          :Times(3)
-          EXPECT_HMICALL("BasicCommunication.PolicyUpdate")
-          :Do(function(_, d2)
-              self.hmiConnection:SendResponse(d2.id, d2.method, "SUCCESS", { })
-              ptu_table = jsonFileToTable(d2.params.file)
-              ptu(self, ptu_update_func)
-            end)
-        end)
-      self["mobileSession" .. id]:ExpectResponse(corId, { success = true, resultCode = "SUCCESS" })
-      :Do(function()
-          self["mobileSession" .. id]:ExpectNotification("OnHMIStatus", { hmiLevel = "NONE", audioStreamingState = "NOT_AUDIBLE", systemContext = "MAIN" })
-          :Times(AtLeast(1)) -- issue with SDL --> notification is sent twice
-          self["mobileSession" .. id]:ExpectNotification("OnPermissionsChange")
-        end)
-    end)
+function Test:StartSecureSession()
+  self.mobileConnection:StartSecureSession(self)
 end
 
-function Test:StartSecureRPCService()
-  self.mobileSession1:StartSecureService(7)
-  :Do(function(exp,_)
-      if exp.status == expectations.FAILED then return end
-    end)
+function Test:Activate_app()
+  local pHMIAppId = hmiAppIds[config["application" .. pAppId].registerAppInterfaceParams.appID]
+  local mobSession = self.mobileSession
+  local requestId = self.hmiConnection:SendRequest("SDL.ActivateApp", { appID = pHMIAppId })
+  EXPECT_HMIRESPONSE(requestId)
+  if mobSession:IsSecuredSession() then
+    mobSession:ExpectEncryptedNotification("OnHMIStatus", { hmiLevel = "FULL", audioStreamingState = "AUDIBLE", systemContext = "MAIN" })
+  else
+    mobSession:ExpectNotification("OnHMIStatus", { hmiLevel = "FULL", audioStreamingState = "AUDIBLE", systemContext = "MAIN" })
+  end
 end
 
 function Test:AddCommandSecured()
   local iCmdID = 1
   local iPosition = 1
-  local cid = self.mobileSession1:SendRPC("AddCommand",
+  local cid = self.mobileSession:SendRPC("AddCommand",
   {
     cmdID = iCmdID,
     menuParams =

@@ -167,12 +167,12 @@ end
 
 --- Start rpc service (7) and send RegisterAppInterface rpc
 function mt.__index:Start()
-  self.mobile_session_impl:Start()
+  return self.mobile_session_impl:Start()
 end
 
 --- Stop rpc service (7) and stop Heartbeat
 function mt.__index:Stop()
-  self.mobile_session_impl:Stop()
+  return self.mobile_session_impl:Stop()
 end
 
 --- Construct instance of MobileSession type

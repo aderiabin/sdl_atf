@@ -9,6 +9,7 @@
 -- @license <https://github.com/smartdevicelink/sdl_core/blob/master/LICENSE>
 
 require('atf.util')
+local events = require('events')
 local expectations = require('expectations')
 local control_services = require('services/control_service')
 local rpc_services = require('services/rpc_service')
@@ -16,6 +17,7 @@ local heartbeatMonitor = require('services/heartbeat_monitor')
 local mobileExpectations = require('expectations/session_expectations')
 local securityManager = require('security/security_manager')
 local constants = require('protocol_handler/ford_protocol_constants')
+
 
 local FAILED = expectations.FAILED
 local MSI = {}
@@ -222,16 +224,30 @@ end
 
 --- Start rpc service (7) and send RegisterAppInterface rpc
 function mt.__index:Start()
+  local startEvent = events.Event()
+  startEvent.matches = function(_, data)
+      return data.message == "StartEvent"
+    end
+
   self:StartRPC()
-  :Do(function()
-    local correlationId = self:SendRPC("RegisterAppInterface", self.regAppParams)
-    self:ExpectResponse(correlationId, { success = true })
+  :Do(function(exp, _)
+      if exp.status == FAILED then return end
+      local correlationId = self:SendRPC("RegisterAppInterface", self.regAppParams)
+      self:ExpectResponse(correlationId, { success = true })
+      :Do(function(exp2, _)
+          if exp2.status == FAILED then return end
+          event_dispatcher:RaiseEvent(self.connection, {message = "StartEvent"})
+        end)
     end)
+  local ret = expectations.Expectation("StartEvent", self.connection)
+  ret.event = startEvent
+  event_dispatcher:AddEvent(self.connection, startEvent, ret)
+  return ret
 end
 
 --- Stop rpc service (7) and stop Heartbeat
 function mt.__index:Stop()
-  self:StopRPC()
+  return self:StopRPC()
 end
 
 --- Construct instance of MobileSessionImpl type
