@@ -11,10 +11,11 @@ require('os')
 local sdl_logger = require('sdl_logger')
 local config = require('config')
 local console = require('console')
+local util = require ("atf.util")
 local SDL = { }
 
 require('atf.util')
---- Table of SDL build options 
+--- Table of SDL build options
 SDL.buildOptions = {}
 --- The flag responsible for stopping ATF in case of emergency completion of SDL
 SDL.exitOnCrash = true
@@ -39,7 +40,7 @@ local usedBuildOptions = {
 
 --- Read specified parameter from CMakeCache.txt file
 -- @tparam string paramName Parameter to read value
--- @treturn string The main result. Value read of parameter. 
+-- @treturn string The main result. Value read of parameter.
 -- Can be nil in case parameter was not found.
 -- @treturn string Type of read parameter
 local function readParameterFromCMakeCacheFile(paramName)
@@ -136,7 +137,7 @@ function SDL:StartSDL(pathToSDL, smartDeviceLinkCore, ExitOnCrash)
   if result then
     msg = "SDL started"
     if config.storeFullSDLLogs == true then
-      sdl_logger.init_log(get_script_file_name())
+      sdl_logger.init_log(util.runner.get_script_file_name())
     end
   else
     msg = "SDL had already started not from ATF or unexpectedly crashed"
