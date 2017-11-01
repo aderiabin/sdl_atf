@@ -117,8 +117,6 @@ function Test.hmiConnection:EXPECT_HMIRESPONSE(id, args)
   return ret
 end
 
-
-
 --- Add test step with start SDL
 function Test:RunSDL()
   self:runSDL()

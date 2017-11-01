@@ -173,11 +173,11 @@ function MD.MessageDispatcher(connection)
   res.bufferSize = 8192
   res.mapped = { }
   res.timer = timers.Timer()
-  res.timer:setSingleShot(true)
+  res.sender = qt.dynamic()
+
   function res._d:timeout()
     self:bytesWritten(0)
   end
-  res.sender = qt.dynamic()
 
   function res.sender:SignalMessageSent() end
 
@@ -209,6 +209,8 @@ function MD.MessageDispatcher(connection)
       end
     end
   end
+
+  res.timer:setSingleShot(true)
   res.connection:OnDataSent(function(_, num) res._d:bytesWritten(num) end)
   qt.connect(res.timer, "timeout()", res._d, "timeout()")
   setmetatable(res, MD.mt)

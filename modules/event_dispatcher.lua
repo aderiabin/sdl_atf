@@ -2,12 +2,12 @@
 --
 -- *Dependencies:* `expectations`, `events`
 --
--- *Globals:* `expectations`, `events`, `res`, `c`, `e`, `pool`
+-- *Globals:* none
 -- @copyright [Ford Motor Company](https://smartdevicelink.com/partners/ford/) and [SmartDeviceLink Consortium](https://smartdevicelink.com/consortium/)
 -- @license <https://github.com/smartdevicelink/sdl_core/blob/master/LICENSE>
 
-expectations = require('expectations')
-events = require('events')
+local expectations = require('expectations')
+local events = require('events')
 
 --- Type which is responsible for dispatching events with expectations
 -- @type EventDispatcher
@@ -39,7 +39,7 @@ end
 -- @tparam Event event Event
 -- @treturn Expectation Handler
 function mt.__index:GetHandler(conn, event)
-  res = self._pool3[conn][event] or
+  local res = self._pool3[conn][event] or
   self._pool2[conn][event] or
   self._pool1[conn][event]
   return res
@@ -82,14 +82,14 @@ end
 function mt.__index:validateAll()
 
   local function iter(pool)
-    for event, expectation in pairs(pool) do
+    for _, expectation in pairs(pool) do
       expectation:validate()
     end
   end
 
-  for c, pool in pairs(self._pool3) do iter(pool) end
-  for c, pool in pairs(self._pool2) do iter(pool) end
-  for c, pool in pairs(self._pool1) do iter(pool) end
+  for _, pool in pairs(self._pool3) do iter(pool) end
+  for _, pool in pairs(self._pool2) do iter(pool) end
+  for _, pool in pairs(self._pool1) do iter(pool) end
 end
 
 --- Subscribe on connection's [[OnInputData]] signal
@@ -103,7 +103,7 @@ function mt.__index:AddConnection(connection)
       if this.preEventHandler then
         this.preEventHandler(events.connectedEvent)
       end
-      exp = this:GetHandler(self, events.connectedEvent)
+      local exp = this:GetHandler(self, events.connectedEvent)
       if exp then
         exp.occurences = exp.occurences + 1
         exp:Action()
@@ -117,7 +117,7 @@ function mt.__index:AddConnection(connection)
       if this.preEventHandler then
         this.preEventHandler(events.disconnectedEvent)
       end
-      exp = this:GetHandler(self, events.disconnectedEvent)
+      local exp = this:GetHandler(self, events.disconnectedEvent)
       if exp then
         exp.occurences = exp.occurences + 1
         exp:Action()
@@ -185,9 +185,9 @@ end
 
 --- Remove all events with expectation from pools
 function mt.__index:ClearEvents()
-  for c, pool in pairs(self._pool3) do self._pool3[c] = { } end
-  for c, pool in pairs(self._pool2) do self._pool2[c] = { } end
-  for c, pool in pairs(self._pool1) do self._pool1[c] = { } end
+  for c, _ in pairs(self._pool3) do self._pool3[c] = { } end
+  for c, _ in pairs(self._pool2) do self._pool2[c] = { } end
+  for c, _ in pairs(self._pool1) do self._pool1[c] = { } end
 end
 
 return Dispatcher

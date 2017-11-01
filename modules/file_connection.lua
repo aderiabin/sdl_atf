@@ -21,9 +21,7 @@ function FileConnection.FileConnection(filename, connection)
   local res = {}
   res.filename = filename
   res.connection = connection
-  DEBUG_MESSAGE("FileConnection:FileConnection(): Init FileStorage")
   res.fbuf = message_dispatcher.FileStorage(filename)
-  DEBUG_MESSAGE("FileConnection:FileConnection(): Init MessageDispatcher")
   res.fmapper = message_dispatcher.MessageDispatcher(connection)
   res.fmapper:MapFile(res.fbuf)
   res.mapped = { }
