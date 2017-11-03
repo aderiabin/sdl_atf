@@ -39,7 +39,7 @@ local Logger =
 }
 
 Logger.mobile_log_format = "%s (%s) [rpcFunction: %s, sessionId: %s, version: %s, frameType: %s, "
-      .. "encryption: %s, serviceType: %s, frameInfo: %s, messageId: %s] : %s \n"
+      .. "encryption: %s, serviceType: %s, frameInfo: %s, messageId: %s, binaryDataSize: %s] : %s \n"
 Logger.hmi_log_format = "%s (%s) : %s \n"
 
 --- Get function name from Mobile API
@@ -90,9 +90,16 @@ end
 -- @tparam string tract Tract information
 -- @tparam string message String representation of message from mobile application to SDL
 function Logger:MOBtoSDL(tract, message)
+  local binaryDataSize
+  if message.binaryData then
+    binaryDataSize = #message.binaryData
+  else
+    binaryDataSize = 0
+  end
+
   local log_str = string.format(Logger.mobile_log_format,"MOB->SDL ", Logger.formated_time(),
     get_function_name(message), message.sessionId, message.version, message.frameType,
-    message.encryption, message.serviceType, message.frameInfo, message.messageId, message.payload)
+    message.encryption, message.serviceType, message.frameInfo, message.messageId, binaryDataSize, message.payload)
   if is_hmi_tract(tract, message) then
     self.atf_log_file:write(log_str)
   end
@@ -118,9 +125,17 @@ function Logger:SDLtoMOB(tract, message)
   if type(payload) == "table" then
     payload = json.encode(payload)
   end
+
+  local binaryDataSize
+  if message.binaryData then
+    binaryDataSize = #message.binaryData
+  else
+    binaryDataSize = 0
+  end
+
   local log_str = string.format(Logger.mobile_log_format,"SDL->MOB", Logger.formated_time(),
     get_function_name(message), message.sessionId, message.version, message.frameType,
-    message.encryption, message.serviceType, message.frameInfo, message.messageId, payload)
+    message.encryption, message.serviceType, message.frameInfo, message.messageId, binaryDataSize, payload)
   if is_hmi_tract(tract, message) then
     self.atf_log_file:write(log_str)
   end

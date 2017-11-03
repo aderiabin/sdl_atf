@@ -48,8 +48,8 @@ function fbuffer_mt.__index:GetMessage()
   local header = {}
   if self.keep then
     local res = self.keep
-    DEBUG_MESSAGE("Call ProtocolHandler:Parse() from FileStorage:GetMessage() Condition: if self.keep")
-    header = self.protocol_handler:Parse(self.keep)
+    -- DEBUG_MESSAGE("Call ProtocolHandler:Parse() from FileStorage:GetMessage() Condition: if self.keep")
+    -- header = self.protocol_handler:Parse(self.keep)
     self.keep = nil
     return header, res
   end
@@ -61,8 +61,8 @@ function fbuffer_mt.__index:GetMessage()
     string.byte(string.sub(len, 1, 1))
     local frame = self.rfd:read(len)
     local doNotValidateJson = true
-    DEBUG_MESSAGE("Call ProtocolHandler:Parse() from FileStorage:GetMessage() Condition: if self.rfd:read(4)")
-    header = self.protocol_handler:Parse(frame, doNotValidateJson)
+    -- DEBUG_MESSAGE("Call ProtocolHandler:Parse() from FileStorage:GetMessage() Condition: if self.rfd:read(4)")
+    -- header = self.protocol_handler:Parse(frame, doNotValidateJson)
     return header, frame
   end
   return header, nil
@@ -186,7 +186,7 @@ function MD.MessageDispatcher(connection)
   function res._d:bytesWritten(c)
     if #res.generators == 0 then return end
     res.bufferSize = res.bufferSize + c
-    for i = 1, #res.generators do
+    for _ = 1, #res.generators do
       if res.idx < #res.generators then
         res.idx = res.idx + 1
       else

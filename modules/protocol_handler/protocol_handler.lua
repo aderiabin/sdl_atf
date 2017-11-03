@@ -301,7 +301,7 @@ end
 -- @tparam table message Table representation of message
 -- @treturn table Table with binary message and header
 function mt.__index:Compose(message)
-  local kMax_protocol_payload_size = 1488
+  local kMax_protocol_payload_size = 1400 --1488
   local kFirstframe_frameInfo = 0
   local payload = nil
   local is_multi_frame = false
@@ -345,7 +345,7 @@ function mt.__index:Compose(message)
   if is_multi_frame then
     -- 1st frame
     local firstFrame_payload = int32ToBytes(payload_size) .. int32ToBytes(#multiframe_payloads)
-    firstFrame_payload = encryptPayload(firstFrame_payload, message)
+    -- firstFrame_payload = encryptPayload(firstFrame_payload, message)
     local header = createProtocolHeader(message.version,
       message.encryption,
       constants.FRAME_TYPE.FIRST_FRAME,
