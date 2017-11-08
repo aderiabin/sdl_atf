@@ -15,6 +15,11 @@ local function updateSecurityOfSession(security)
 	end
 end
 
+local function getSecurityProtocolConst(strProtocol)
+	local protocolConst = securityConstants.PROTOCOLS[strProtocol]
+	return protocolConst and true or securityConstants.PROTOCOLS.AUTO
+end
+
 --- Security
 local security_mt = { __index = {} }
 
@@ -32,9 +37,9 @@ function security_mt.__index:prepareToHandshake()
 	self.ctx = SecurityManager.createSslContext(self)
 	-- print("Server SSL_CTX is initialized")
 	-- create BIOs
-	self.bioIn = SecurityManager.createBio(securityConstants.BIO_TYPES.SOURCE_BIO, self)
+	self.bioIn = SecurityManager.createBio(securityConstants.BIO_TYPES.SOURCE, self)
 	-- print("Input BIO is created")
-	self.bioOut = SecurityManager.createBio(securityConstants.BIO_TYPES.SOURCE_BIO, self)
+	self.bioOut = SecurityManager.createBio(securityConstants.BIO_TYPES.SOURCE, self)
 	-- print("Output BIO is created")
 	-- create SSL
 	self.ssl = self.ctx:newSsl()
@@ -144,8 +149,11 @@ function SecurityManager.init()
 end
 
 function SecurityManager.createSslContext(sessionSecurity)
-	local sslCtx = openssl.newSslContext()
-	if (not (sslCtx and sslCtx:initSslContext(sessionSecurity.settings.cipherListString, sessionSecurity.settings.serverCertPath, sessionSecurity.settings.serverKeyPath))) then
+	local sslCtx = openssl.newSslContext(getSecurityProtocolConst(sessionSecurity.settings.securityProtocol))
+	if (not (sslCtx and sslCtx:initSslContext(
+								sessionSecurity.settings.cipherListString,
+								sessionSecurity.settings.serverCertPath,
+								sessionSecurity.settings.serverKeyPath))) then
 		error("Error: Can not create and init SSL context for mobile session " .. sessionSecurity.session.sessionId.get())
 	end
 	return sslCtx

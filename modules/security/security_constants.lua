@@ -17,8 +17,15 @@ SecurityConstants.SECURITY_STATUS = {
 }
 
 SecurityConstants.BIO_TYPES = {
-  SOURCE_BIO = 0,
-  FILTER_BIO = 1
+  SOURCE = 0,
+  FILTER = 1
+}
+
+SecurityConstants.PROTOCOLS = {
+	AUTO = 0,
+	SSL = 1,
+	TLS = 2,
+	DTLS = 3,
 }
 
 return SecurityConstants
