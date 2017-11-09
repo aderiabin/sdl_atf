@@ -17,7 +17,7 @@ end
 
 local function getSecurityProtocolConst(strProtocol)
 	local protocolConst = securityConstants.PROTOCOLS[strProtocol]
-	return protocolConst and true or securityConstants.PROTOCOLS.AUTO
+	return protocolConst or securityConstants.PROTOCOLS.AUTO
 end
 
 --- Security
