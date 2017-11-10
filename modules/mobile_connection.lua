@@ -52,6 +52,15 @@ function MobileConnection.mt.__index:Send(data)
   self.connection:Send(messages)
 end
 
+--- Send frame from mobile to SDL
+-- @tparam string bytes Bytes to be sent
+function MobileConnection.mt.__index:SendFrame(frameMessage)
+local protocol_handler = ph.ProtocolHandler()
+  local frame = protocol_handler:GetBinaryFrame(frameMessage)
+  -- atf_logger.LOG("MOBtoSDL", frameMessage)
+  self.connection:Send({frame})
+end
+
 function MobileConnection.mt.__index:StartSession(test)
   test.mobileSession = mobile_session.MobileSession(
   test,

@@ -222,6 +222,12 @@ function mt.__index:Send(message)
   return message
 end
 
+--- Send frame from mobile to SDL
+-- @tparam string bytes Bytes to be sent
+function mt.__index:SendFrame(message)
+  self.connection:SendFrame(message)
+end
+
 --- Start rpc service (7) and send RegisterAppInterface rpc
 function mt.__index:Start()
   local startEvent = events.Event()

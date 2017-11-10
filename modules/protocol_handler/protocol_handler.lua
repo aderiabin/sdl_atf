@@ -84,17 +84,17 @@ end
 -- @tparam number messageId Message Id
 -- @treturn string Built byte representation of header
 -- @see `Applink Protocol`
-local function createProtocolHeader(version, encryption, frameType, serviceType, frameInfo, sessionId, payload, messageId)
+local function createProtocolHeader(message)
   local res = string.char(
     bit32.bor(
-      bit32.lshift(version, 4),
-      (encryption and 0x08 or 0),
-      bit32.band(frameType, 0x07)),
-    serviceType,
-    frameInfo,
-    sessionId) ..
-  (payload and int32ToBytes(#payload) or string.char(0, 0, 0, 0)) .. -- size
-  int32ToBytes(messageId)
+      bit32.lshift(message.version, 4),
+      (message.encryption and 0x08 or 0),
+      bit32.band(message.frameType, 0x07)),
+    message.serviceType,
+    message.frameInfo,
+    message.sessionId) ..
+  (message.payload and int32ToBytes(#message.payload) or string.char(0, 0, 0, 0)) .. -- size
+  int32ToBytes(message.messageId)
   return res
 end
 
@@ -164,6 +164,10 @@ local function decryptPayload(data, message)
   else
     return securityConstants.SECURITY_STATUS.NO_DATA, nil
   end
+end
+
+local function getProtocolFrameSize(version)
+  return constants.FRAME_SIZE["P" .. version]
 end
 
 local function printMsgData(msg)
@@ -297,16 +301,29 @@ function mt.__index:Parse(binary, validateJson)
   return res
 end
 
+function mt.__index:GetBinaryFrame(message)
+  local max_protocol_payload_size = getProtocolFrameSize(message.version)
+     - constants.PROTOCOL_HEADER_SIZE
+
+  if message.payload then
+    if #message.payload > max_protocol_payload_size then
+      error("Size of current frame is bigger than max frame size for protocol version " .. message.version)
+    end
+    message.payload = encryptPayload(message.payload, message)
+  else
+    message.payload = ""
+  end
+
+  return createProtocolHeader(message) .. message.payload
+end
+
 --- Compose table with binary message and header for SDL
 -- @tparam table message Table representation of message
 -- @treturn table Table with binary message and header
 function mt.__index:Compose(message)
-  local kMax_protocol_payload_size = 1400 --1488
-  local kFirstframe_frameInfo = 0
-  local payload = nil
-  local is_multi_frame = false
+  local kMax_protocol_payload_size = getProtocolFrameSize(message.version)
+     - constants.PROTOCOL_HEADER_SIZE
   local res = {}
-  local multiframe_payloads = {}
 
   if message.frameType ~= constants.FRAME_TYPE.CONTROL_FRAME
     and (((message.serviceType == constants.SERVICE_TYPE.RPC
@@ -316,72 +333,66 @@ function mt.__index:Compose(message)
         and message.rpcType == constants.BINARY_RPC_TYPE.NOTIFICATION
         and message.rpcFunctionId == constants.BINARY_RPC_FUNCTION_ID.HANDSHAKE
         and (not message.payload))) then
-    payload = rpcPayload(message.rpcType,
+    message.payload = rpcPayload(message.rpcType,
       message.rpcFunctionId,
       message.rpcCorrelationId,
       message.payload)
   end
 
   if message.binaryData then
-    if payload then
-      payload = payload .. message.binaryData
+    if message.payload then
+      message.payload = message.payload .. message.binaryData
     else
-      payload = message.binaryData
+      message.payload = message.binaryData
     end
   end
 
   local payload_size = 0
-  if payload then payload_size = #payload end
+  if message.payload then payload_size = #message.payload end
 
-  if payload and #payload > kMax_protocol_payload_size then
-    is_multi_frame = true
-    while #payload > 0 do
-      local payload_part = string.sub(payload, 1, kMax_protocol_payload_size)
-      payload = string.sub(payload, kMax_protocol_payload_size + 1)
-      table.insert(multiframe_payloads, payload_part)
-    end
-  end
+  if message.payload and payload_size > kMax_protocol_payload_size then
+    local countOfDataFrames = 0
+    -- Create messages consecutive frames
+    while #message.payload > 0 do
+      countOfDataFrames = countOfDataFrames + 1
 
-  if is_multi_frame then
-    -- 1st frame
-    local firstFrame_payload = int32ToBytes(payload_size) .. int32ToBytes(#multiframe_payloads)
-    -- firstFrame_payload = encryptPayload(firstFrame_payload, message)
-    local header = createProtocolHeader(message.version,
-      message.encryption,
-      constants.FRAME_TYPE.FIRST_FRAME,
-      message.serviceType,
-      kFirstframe_frameInfo,
-      message.sessionId,
-      firstFrame_payload,
-      message.messageId)
-    local frame = header .. firstFrame_payload
-    table.insert(res, frame)
+      local payload_part = string.sub(message.payload, 1, kMax_protocol_payload_size)
+      message.payload = string.sub(message.payload, kMax_protocol_payload_size + 1)
 
-    for frame_number = 1, #multiframe_payloads do
-      local frame_info
-      if frame_number == #multiframe_payloads then --last frame
-        frame_info = 0
-      else
-        -- frame info range should be [1 - 255].
-        -- frame info can't be 0, 0 mean last frame
-        frame_info = ((frame_number - 1) % 255) + 1
+      local frame_info = 0 -- last frame
+      if #message.payload > 0 then
+        frame_info = ((countOfDataFrames - 1) % 255) + 1
       end
-      local frame_payload = encryptPayload(multiframe_payloads[frame_number], message)
-      header = createProtocolHeader(message.version, message.encryption, constants.FRAME_TYPE.CONSECUTIVE_FRAME, message.serviceType,
-        frame_info, message.sessionId, frame_payload, message.messageId)
-      frame = header .. frame_payload
-      table.insert(res, frame)
+
+      local consecutiveFrameMessage = {
+        version = message.version,
+        encryption = message.encryption,
+        frameType = constants.FRAME_TYPE.CONSECUTIVE_FRAME,
+        serviceType = message.serviceType,
+        frameInfo = frame_info,
+        sessionId = message.sessionId,
+        messageId = message.messageId,
+        payload = payload_part
+      }
+      table.insert(res, self:GetBinaryFrame(consecutiveFrameMessage))
     end
+
+    -- Create message firstframe
+    local firstFrameMessage = {
+      version = message.version,
+      encryption = message.encryption,
+      frameType = constants.FRAME_TYPE.FIRST_FRAME,
+      serviceType = message.serviceType,
+      frameInfo = 0,
+      sessionId = message.sessionId,
+      messageId = message.messageId,
+      payload = int32ToBytes(payload_size) .. int32ToBytes(countOfDataFrames)
+    }
+    table.insert(res, 1, self:GetBinaryFrame(firstFrameMessage))
   else
-    payload = encryptPayload(payload, message)
-    local header = createProtocolHeader(message.version, message.encryption, message.frameType, message.serviceType,
-      message.frameInfo, message.sessionId, payload or "", message.messageId)
-    if payload then
-      table.insert(res, header .. payload)
-    else
-      table.insert(res, header)
-    end
+    table.insert(res, self:GetBinaryFrame(message))
   end
+
   return res
 end
 
