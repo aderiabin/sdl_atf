@@ -34,6 +34,14 @@ function mt.__index:ExpectEvent(event, name)
   return self.mobile_expectations:ExpectEvent(event, name)
 end
 
+--- Expectation of frame event
+-- @tparam table frameMessage Frame message to expect
+-- @treturn Expectation Expectation for event
+function mt.__index:ExpectFrame(frameMessage, binaryDataCompareFunc)
+  return self.mobile_expectations:ExpectFrame(frameMessage, binaryDataCompareFunc)
+end
+
+
 --- Expectation of any event
 -- @treturn Expectation Expectation for any unprocessed event
 function mt.__index:ExpectAny()

@@ -61,7 +61,6 @@ function Tcp.mt.__index:Send(data)
   -- xmlReporter.AddMessage("tcp_connection","Send", data)
   checkSelfArg(self)
   for _, c in ipairs(data) do
-    DEBUG_MESSAGE("Call Send data on Tcp.Connection", c:len())
     self.socket:write(c)
   end
 end
@@ -73,7 +72,6 @@ function Tcp.mt.__index:OnInputData(func)
   local d = qt.dynamic()
   local this = self
   function d:inputData(data)
-    DEBUG_MESSAGE("Receive data on Tcp.Connection", data:len())
     func(this, data)
   end
   qt.connect(self.qtproxy, "inputData(QByteArray)", d, "inputData(QByteArray)")

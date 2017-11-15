@@ -55,7 +55,7 @@ end
 --- Send frame from mobile to SDL
 -- @tparam string bytes Bytes to be sent
 function MobileConnection.mt.__index:SendFrame(frameMessage)
-local protocol_handler = ph.ProtocolHandler()
+  local protocol_handler = ph.ProtocolHandler()
   local frame = protocol_handler:GetBinaryFrame(frameMessage)
   -- atf_logger.LOG("MOBtoSDL", frameMessage)
   self.connection:Send({frame})
@@ -113,15 +113,22 @@ end
 
 --- Set handler for OnInputData
 -- @tparam function func Handler function
-function MobileConnection.mt.__index:OnInputData(func)
+function MobileConnection.mt.__index:OnInputData(messageHandlerFunc)
   local protocol_handler = ph.ProtocolHandler()
+  local frameHandlerFunc =
+    function(frameMessage)
+      frameMessage._technical.isFrame = true
+      -- atf_logger.LOG("SDLtoMOB", msg)
+      messageHandlerFunc(self, frameMessage)
+      frameMessage._technical.isFrame = false
+    end
   local f =
   function(_, binary)
-    local msgs = protocol_handler:Parse(binary)
+    local msgs = protocol_handler:Parse(binary, nil, frameHandlerFunc)
     for _, msg in ipairs(msgs) do
       -- After refactoring should be moved in mobile session
       atf_logger.LOG("SDLtoMOB", msg)
-      func(self, msg)
+      messageHandlerFunc(self, msg)
     end
   end
   self.connection:OnInputData(f)

@@ -60,16 +60,18 @@ end
 -- @tparam number rpcCorrelationId RPC correlation ID
 -- @tparam string payload Data
 -- @treturn string Built byte representation of RPC payload
-local function rpcPayload(rpcType, rpcFunctionId, rpcCorrelationId, payload)
-  payload = payload or ""
+local function rpcPayload(msg)
+  msg.payload = msg.payload or ""
+  msg.binaryData = msg.binaryData or ""
   local res = string.char(
-    bit32.lshift(rpcType, 4) + bit32.band(bit32.rshift(rpcFunctionId, 24), 0x0f),
-    bit32.rshift(bit32.band(rpcFunctionId, 0xff0000), 16),
-    bit32.rshift(bit32.band(rpcFunctionId, 0xff00), 8),
-    bit32.band(rpcFunctionId, 0xff)) ..
-  int32ToBytes(rpcCorrelationId) ..
-  int32ToBytes(#payload) ..
-  payload
+    bit32.lshift(msg.rpcType, 4) + bit32.band(bit32.rshift(msg.rpcFunctionId, 24), 0x0f),
+    bit32.rshift(bit32.band(msg.rpcFunctionId, 0xff0000), 16),
+    bit32.rshift(bit32.band(msg.rpcFunctionId, 0xff00), 8),
+    bit32.band(msg.rpcFunctionId, 0xff)) ..
+  int32ToBytes(msg.rpcCorrelationId) ..
+  int32ToBytes(#msg.payload) ..
+  msg.payload .. msg.binaryData
+
   return res
 end
 
@@ -93,18 +95,18 @@ local function createProtocolHeader(message)
     message.serviceType,
     message.frameInfo,
     message.sessionId) ..
-  (message.payload and int32ToBytes(#message.payload) or string.char(0, 0, 0, 0)) .. -- size
+  (message.binaryData and int32ToBytes(#message.binaryData) or string.char(0, 0, 0, 0)) .. -- size
   int32ToBytes(message.messageId)
   return res
 end
 
 local function parseProtocolHeader(buffer)
-  local PROTOCOL_HEADER_SIZE = 12
     local size = bytesToInt32(buffer, 5)
-    if #buffer < size + PROTOCOL_HEADER_SIZE then
+    if #buffer < size + constants.PROTOCOL_HEADER_SIZE then
       return nil
     end
     local msg = {}
+    msg._technical = {}
     local firstByte = string.byte(buffer, 1)
     msg.version = bit32.rshift(bit32.band(firstByte, 0xf0), 4)
     msg.frameType = bit32.band(firstByte, 0x07)
@@ -114,8 +116,13 @@ local function parseProtocolHeader(buffer)
     msg.sessionId = string.byte(buffer, 4)
     msg.size = size
     msg.messageId = bytesToInt32(buffer, 9)
-    msg.binaryData = string.sub(buffer, PROTOCOL_HEADER_SIZE + 1, PROTOCOL_HEADER_SIZE + msg.size)
     return msg
+end
+
+local function isBinaryDataHasHeader(msg)
+  return msg.serviceType == constants.SERVICE_TYPE.RPC
+           or msg.serviceType == constants.SERVICE_TYPE.BULK_DATA
+           or msg.serviceType == constants.SERVICE_TYPE.CONTROL
 end
 
 local function parseBinaryHeader(message, validateJson)
@@ -156,7 +163,7 @@ end
 local function decryptPayload(data, message)
   if data then
     if message.encryption then
-      print("Received encrypted message. Start to decrypt.")
+      -- print("Received encrypted message. Start to decrypt.")
       return securityManager:decrypt(data, message.sessionId, message.serviceType)
     else
       return securityConstants.SECURITY_STATUS.NO_ENCRYPTION, data
@@ -170,106 +177,29 @@ local function getProtocolFrameSize(version)
   return constants.FRAME_SIZE["P" .. version]
 end
 
-local function printMsgData(msg)
-  print("-------------------- " .. msg.sessionId .. ":" .. msg.messageId .. " --------------------")
-  local encryption
-  if msg.encryption then
-    encryption = "true"
-  else
-    encryption = "false"
-  end
-  print("Message encryption: " .. encryption)
-  print("Message binary data size: " .. msg.size)
-  print("Size of current binary data: " .. #msg.binaryData)
-
-  local frameType = ""
-  if msg.frameType == constants.FRAME_TYPE.CONTROL_FRAME then
-    frameType = "CONTROL_FRAME"
-  elseif msg.frameType == constants.FRAME_TYPE.FIRST_FRAME then
-    frameType = "FIRST_FRAME"
-  elseif msg.frameType == constants.FRAME_TYPE.SINGLE_FRAME then
-    frameType = "SINGLE_FRAME"
-  elseif msg.frameType == constants.FRAME_TYPE.CONSECUTIVE_FRAME then
-    frameType = "CONSECUTIVE_FRAME"
-  end
-  print("Frame type: " .. frameType)
-
-  local frameInfo = ""
-  if msg.frameType == constants.FRAME_TYPE.CONSECUTIVE_FRAME then
-    if msg.frameInfo == constants.FRAME_INFO.LAST_FRAME then
-      frameInfo = "LAST_FRAME"
-    else
-      frameInfo = msg.frameInfo
-    end
-  elseif msg.frameType == constants.FRAME_TYPE.CONTROL_FRAME then
-    if msg.frameInfo == constants.FRAME_INFO.HEARTBEAT then
-      frameInfo = "HEARTBEAT"
-    elseif msg.frameInfo == constants.FRAME_INFO.START_SERVICE then
-      frameInfo = "START_SERVICE"
-    elseif msg.frameInfo == constants.FRAME_INFO.START_SERVICE_ACK then
-      frameInfo = "START_SERVICE_ACK"
-    elseif msg.frameInfo == constants.FRAME_INFO.START_SERVICE_NACK then
-      frameInfo = "START_SERVICE_NACK"
-    elseif msg.frameInfo == constants.FRAME_INFO.END_SERVICE then
-      frameInfo = "END_SERVICE"
-    elseif msg.frameInfo == constants.FRAME_INFO.END_SERVICE_ACK then
-      frameInfo = "END_SERVICE_ACK"
-    elseif msg.frameInfo == constants.FRAME_INFO.END_SERVICE_NACK then
-      frameInfo = "END_SERVICE_NACK"
-    elseif msg.frameInfo == constants.FRAME_INFO.SERVICE_DATA_ACK then
-      frameInfo = "SERVICE_DATA_ACK"
-    elseif msg.frameInfo == constants.FRAME_INFO.HEARTBEAT_ACK then
-      frameInfo = "HEARTBEAT_ACK"
-    end
-  end
-  print("Frame info: " .. frameInfo)
-
-  local serviceType = ""
-  if msg.serviceType == constants.SERVICE_TYPE.CONTROL then
-    serviceType = "CONTROL"
-  elseif msg.serviceType == constants.SERVICE_TYPE.PCM then
-    serviceType = "PCM"
-  elseif msg.serviceType == constants.SERVICE_TYPE.VIDEO then
-    serviceType = "VIDEO"
-  elseif msg.serviceType == constants.SERVICE_TYPE.RPC then
-    serviceType = "RPC"
-  elseif msg.serviceType == constants.SERVICE_TYPE.BULK_DATA then
-    serviceType = "BULK_DATA"
-  end
-  print("Service type: " .. serviceType)
-  print ("-------------")
-  if msg.frameType ~= constants.FRAME_TYPE.CONTROL_FRAME
-          and msg.serviceType == constants.SERVICE_TYPE.CONTROL
-          and msg.rpcType == constants.BINARY_RPC_TYPE.NOTIFICATION
-          and msg.rpcFunctionId == constants.BINARY_RPC_FUNCTION_ID.HANDSHAKE then
-          print("It is Handshake message")
-        else
-          print("It is not Handshake message")
-        end
-  print("---------------------------------------------")
-
-end
-
 --- Parse binary message from SDL to table with json validation
 -- @tparam string binary Message
 -- @tparam boolean validateJson True if JSON validation is required
 -- @treturn table Parsed message
-function mt.__index:Parse(binary, validateJson)
+function mt.__index:Parse(binary, validateJson, frameHandler)
   self.buffer = self.buffer .. binary
   local res = { }
-  while #self.buffer >= 12 do
+  while #self.buffer >= constants.PROTOCOL_HEADER_SIZE do
     local msg = parseProtocolHeader(self.buffer)
     if not msg then break end
-    self.buffer = string.sub(self.buffer, msg.size + 13)
+    msg.binaryData = string.sub(self.buffer, constants.PROTOCOL_HEADER_SIZE + 1, constants.PROTOCOL_HEADER_SIZE + msg.size)
+    self.buffer = string.sub(self.buffer, msg.size + constants.PROTOCOL_HEADER_SIZE + 1)
 
     local decryptedData
-    msg.decryptionStatus, decryptedData = decryptPayload(msg.binaryData, msg)
-    if msg.decryptionStatus == securityConstants.SECURITY_STATUS.SUCCESS then
+    msg._technical.decryptionStatus, decryptedData = decryptPayload(msg.binaryData, msg)
+    if msg._technical.decryptionStatus == securityConstants.SECURITY_STATUS.SUCCESS then
       msg.binaryData = decryptedData
     end
 
+    frameHandler(msg)
+
     if #msg.binaryData == 0
-       or msg.decryptionStatus == securityConstants.SECURITY_STATUS.ERROR then
+       or msg._technical.decryptionStatus == securityConstants.SECURITY_STATUS.ERROR then
       table.insert(res, msg)
     else
       if msg.frameType == constants.FRAME_TYPE.CONTROL_FRAME then
@@ -277,9 +207,7 @@ function mt.__index:Parse(binary, validateJson)
       elseif msg.frameType == constants.FRAME_TYPE.FIRST_FRAME then
         self.frames[msg.messageId] = ""
       elseif msg.frameType == constants.FRAME_TYPE.SINGLE_FRAME then
-        if msg.serviceType == constants.SERVICE_TYPE.RPC
-           or msg.serviceType == constants.SERVICE_TYPE.BULK_DATA
-           or msg.serviceType == constants.SERVICE_TYPE.CONTROL then
+        if isBinaryDataHasHeader(msg) then
           parseBinaryHeader(msg, validateJson)
         end
         table.insert(res, msg)
@@ -288,9 +216,7 @@ function mt.__index:Parse(binary, validateJson)
         if msg.frameInfo == constants.FRAME_INFO.LAST_FRAME then
           msg.binaryData = self.frames[msg.messageId]
           self.frames[msg.messageId] = nil
-          if msg.serviceType == constants.SERVICE_TYPE.RPC
-           or msg.serviceType == constants.SERVICE_TYPE.BULK_DATA
-           or msg.serviceType == constants.SERVICE_TYPE.CONTROL then
+          if isBinaryDataHasHeader(msg) then
             parseBinaryHeader(msg, validateJson)
           end
           table.insert(res, msg)
@@ -305,16 +231,16 @@ function mt.__index:GetBinaryFrame(message)
   local max_protocol_payload_size = getProtocolFrameSize(message.version)
      - constants.PROTOCOL_HEADER_SIZE
 
-  if message.payload then
-    if #message.payload > max_protocol_payload_size then
+  if message.binaryData then
+    if #message.binaryData > max_protocol_payload_size then
       error("Size of current frame is bigger than max frame size for protocol version " .. message.version)
     end
-    message.payload = encryptPayload(message.payload, message)
+    message.binaryData = encryptPayload(message.binaryData, message)
   else
-    message.payload = ""
+    message.binaryData = ""
   end
 
-  return createProtocolHeader(message) .. message.payload
+  return createProtocolHeader(message) .. message.binaryData
 end
 
 --- Compose table with binary message and header for SDL
@@ -333,34 +259,23 @@ function mt.__index:Compose(message)
         and message.rpcType == constants.BINARY_RPC_TYPE.NOTIFICATION
         and message.rpcFunctionId == constants.BINARY_RPC_FUNCTION_ID.HANDSHAKE
         and (not message.payload))) then
-    message.payload = rpcPayload(message.rpcType,
-      message.rpcFunctionId,
-      message.rpcCorrelationId,
-      message.payload)
+    message.binaryData = rpcPayload(message)
   end
 
-  if message.binaryData then
-    if message.payload then
-      message.payload = message.payload .. message.binaryData
-    else
-      message.payload = message.binaryData
-    end
-  end
+  local binaryDataSize = 0
+  if message.binaryData then binaryDataSize = #message.binaryData end
 
-  local payload_size = 0
-  if message.payload then payload_size = #message.payload end
-
-  if message.payload and payload_size > kMax_protocol_payload_size then
+  if message.binaryData and binaryDataSize > kMax_protocol_payload_size then
     local countOfDataFrames = 0
     -- Create messages consecutive frames
-    while #message.payload > 0 do
+    while #message.binaryData > 0 do
       countOfDataFrames = countOfDataFrames + 1
 
-      local payload_part = string.sub(message.payload, 1, kMax_protocol_payload_size)
-      message.payload = string.sub(message.payload, kMax_protocol_payload_size + 1)
+      local dataPart = string.sub(message.binaryData, 1, kMax_protocol_payload_size)
+      message.binaryData = string.sub(message.binaryData, kMax_protocol_payload_size + 1)
 
       local frame_info = 0 -- last frame
-      if #message.payload > 0 then
+      if #message.binaryData > 0 then
         frame_info = ((countOfDataFrames - 1) % 255) + 1
       end
 
@@ -372,7 +287,7 @@ function mt.__index:Compose(message)
         frameInfo = frame_info,
         sessionId = message.sessionId,
         messageId = message.messageId,
-        payload = payload_part
+        binaryData = dataPart
       }
       table.insert(res, self:GetBinaryFrame(consecutiveFrameMessage))
     end
@@ -386,7 +301,7 @@ function mt.__index:Compose(message)
       frameInfo = 0,
       sessionId = message.sessionId,
       messageId = message.messageId,
-      payload = int32ToBytes(payload_size) .. int32ToBytes(countOfDataFrames)
+      binaryData = int32ToBytes(binaryDataSize) .. int32ToBytes(countOfDataFrames)
     }
     table.insert(res, 1, self:GetBinaryFrame(firstFrameMessage))
   else

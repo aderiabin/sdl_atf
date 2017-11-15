@@ -48,7 +48,6 @@ function fbuffer_mt.__index:GetMessage()
   local header = {}
   if self.keep then
     local res = self.keep
-    -- DEBUG_MESSAGE("Call ProtocolHandler:Parse() from FileStorage:GetMessage() Condition: if self.keep")
     -- header = self.protocol_handler:Parse(self.keep)
     self.keep = nil
     return header, res
@@ -60,8 +59,7 @@ function fbuffer_mt.__index:GetMessage()
     bit32.lshift(string.byte(string.sub(len, 2, 2)), 8) +
     string.byte(string.sub(len, 1, 1))
     local frame = self.rfd:read(len)
-    local doNotValidateJson = true
-    -- DEBUG_MESSAGE("Call ProtocolHandler:Parse() from FileStorage:GetMessage() Condition: if self.rfd:read(4)")
+    -- local doNotValidateJson = true
     -- header = self.protocol_handler:Parse(frame, doNotValidateJson)
     return header, frame
   end

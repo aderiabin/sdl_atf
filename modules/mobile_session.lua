@@ -31,6 +31,13 @@ function mt.__index:ExpectAny()
   return self.mobile_session_impl:ExpectAny()
 end
 
+--- Expectation of packet event
+-- @tparam table frameMessage Packet message to expect
+-- @treturn Expectation Expectation for packet event
+function mt.__index:ExpectPacket(frameMessage, binaryDataCompareFunc)
+  return self.mobile_session_impl:ExpectFrame(frameMessage, binaryDataCompareFunc)
+end
+
 --- Expectation of responce with specific correlation_id
 -- @tparam number cor_id Correlation identifier of specific rpc event
 -- @tparam table ... Expectation parameters
@@ -168,7 +175,7 @@ end
 --- Send frame from mobile to SDL
 -- @tparam string bytes Bytes to be sent
 function mt.__index:SendPacket(message)
-  self.mobile_session_impl:SendPacket(message)
+  self.mobile_session_impl:SendFrame(message)
 end
 
 --- Start rpc service (7) and send RegisterAppInterface rpc

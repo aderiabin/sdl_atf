@@ -211,8 +211,9 @@ end
 function mt.__index:ExpectResponse(cor_id, ...)
   return baseExpectResponse(self, cor_id, ...)
   :ValidIf(function(_, data)
-      if data.decryptionStatus ~= securityConstants.SECURITY_STATUS.NO_ENCRYPTION then
-        print("Decryption status is incorrect: " .. data.decryptionStatus)
+      if data._technical.decryptionStatus ~= securityConstants.SECURITY_STATUS.NO_ENCRYPTION then
+        print("Expected not encripted message. Received encrypted or corrupted message.")
+        print("Decryption status is: " .. data._technical.decryptionStatus)
         return false
       end
       return true
@@ -227,8 +228,9 @@ end
 function mt.__index:ExpectNotification(funcName, ...)
   return baseExpectNotification(self, funcName, ...)
   :ValidIf(function(_, data)
-      if data.decryptionStatus ~= securityConstants.SECURITY_STATUS.NO_ENCRYPTION then
-        print("Decryption status is incorrect: " .. data.decryptionStatus)
+      if data._technical.decryptionStatus ~= securityConstants.SECURITY_STATUS.NO_ENCRYPTION then
+        print("Expected not encripted message. Received encrypted or corrupted message.")
+        print("Decryption status is: " .. data._technical.decryptionStatus)
         return false
       end
       return true
@@ -242,8 +244,9 @@ end
 function mt.__index:ExpectEncryptedResponse(cor_id, ...)
   return baseExpectResponse(self, cor_id, ...)
   :ValidIf(function(_, data)
-      if data.decryptionStatus ~= securityConstants.SECURITY_STATUS.SUCCESS then
-        print("Decryption status is incorrect: " .. data.decryptionStatus)
+      if data._technical.decryptionStatus ~= securityConstants.SECURITY_STATUS.SUCCESS then
+        print("Expected encripted message. Received not encrypted or corrupted message.")
+        print("Decryption status is: " .. data._technical.decryptionStatus)
         return false
       end
       return true
@@ -257,8 +260,9 @@ end
 function mt.__index:ExpectEncryptedNotification(funcName, ...)
   return baseExpectNotification(self, funcName, ...)
   :ValidIf(function(_, data)
-      if data.decryptionStatus ~= securityConstants.SECURITY_STATUS.SUCCESS then
-        print("Decryption status is incorrect: " .. data.decryptionStatus)
+      if data._technical.decryptionStatus ~= securityConstants.SECURITY_STATUS.SUCCESS then
+        print("Expected encripted message. Received not encrypted or corrupted message.")
+        print("Decryption status is: " .. data._technical.decryptionStatus)
         return false
       end
       return true

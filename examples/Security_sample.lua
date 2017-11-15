@@ -32,7 +32,7 @@ end
 function Test:AddCommandSecured()
   local iCmdID = 1
   local iPosition = 1
-  local cid = self.mobileSession:SendRPC("AddCommand",
+  local cid = self.mobileSession:SendEncryptedRPC("AddCommand",
   {
     cmdID = iCmdID,
     menuParams =
