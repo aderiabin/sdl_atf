@@ -45,9 +45,15 @@ Logger.hmi_log_format = "%s (%s) : %s \n"
 --- Get function name from Mobile API
 -- @tparam number function_id Function identifier
 -- @treturn string Function name
-local function get_function_name(function_id)
+local function get_function_name(message)
+  if message.frameType ~= ford_constants.FRAME_TYPE.CONTROL_FRAME
+        and message.serviceType == ford_constants.SERVICE_TYPE.CONTROL
+        and message.rpcType == ford_constants.BINARY_RPC_TYPE.NOTIFICATION
+        and message.rpcFunctionId == ford_constants.BINARY_RPC_FUNCTION_ID.HANDSHAKE then
+    return "SSL Handshake"
+  end
   for name, id in pairs(rpc_function_id) do
-    if id == function_id then
+    if id == message.rpcFunctionId then
       return name
     end
   end
@@ -92,7 +98,7 @@ end
 -- @tparam string message String representation of message from mobile application to SDL
 function Logger:MOBtoSDL(tract, message)
   local log_str = string.format(Logger.mobile_log_format,"MOB->SDL ", Logger.formated_time(),
-    get_function_name(message.rpcFunctionId), message.sessionId, message.version, message.frameType,
+    get_function_name(message), message.sessionId, message.version, message.frameType,
     message.encryption, message.serviceType, message.frameInfo, message.messageId, getBinaryDataSize(message.binaryData), message.payload)
   if is_hmi_tract(tract, message) then
     self.atf_log_file:write(log_str)
@@ -121,7 +127,7 @@ function Logger:SDLtoMOB(tract, message)
   end
 
   local log_str = string.format(Logger.mobile_log_format,"SDL->MOB", Logger.formated_time(),
-    get_function_name(message.rpcFunctionId), message.sessionId, message.version, message.frameType,
+    get_function_name(message), message.sessionId, message.version, message.frameType,
     message.encryption, message.serviceType, message.frameInfo, message.messageId, getBinaryDataSize(message.binaryData), payload)
   if is_hmi_tract(tract, message) then
     self.atf_log_file:write(log_str)
