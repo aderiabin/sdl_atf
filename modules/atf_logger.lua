@@ -43,7 +43,7 @@ Logger.mobile_log_format = "%s (%s) [rpcFunction: %s, sessionId: %s, version: %s
 Logger.hmi_log_format = "%s (%s) : %s \n"
 
 --- Get function name from Mobile API
--- @tparam number function_id Function identifier
+-- @tparam table message Message table
 -- @treturn string Function name
 local function get_function_name(message)
   if message.frameType ~= ford_constants.FRAME_TYPE.CONTROL_FRAME
@@ -75,6 +75,7 @@ function Logger.formated_time(without_date)
 end
 
 --- Check message is it HMI tract
+-- @treturn boolean Return true if tract is HMI tract
 local function is_hmi_tract(tract, message)
   local str = string.format("%s", tract)
   if string.find(str, "HMI") or
@@ -86,6 +87,9 @@ local function is_hmi_tract(tract, message)
   return false
 end
 
+--- Calculate binary data size
+-- @tparam string binaryData Binary data of message
+-- @treturn number Binary data size
 local function getBinaryDataSize(binaryData)
   if binaryData then
     return #binaryData
