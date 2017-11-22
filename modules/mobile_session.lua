@@ -200,7 +200,8 @@ function MS.MobileSession(test, connection, regAppParams)
   end
 
   res.mobile_session_impl = mobile_session_impl.MobileSessionImpl(
-  res.SessionId, res.CorrelationId, test, connection, res.SendHeartbeatToSDL, res.AnswerHeartbeatFromSDL, res.IgnoreSDLHeartBeatAck, regAppParams )
+      res.SessionId, res.CorrelationId, test, connection, res.SendHeartbeatToSDL,
+      res.AnswerHeartbeatFromSDL, res.IgnoreSDLHeartBeatAck, regAppParams )
   setmetatable(res, mt)
   return res
 end

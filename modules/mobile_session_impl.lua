@@ -157,7 +157,7 @@ function mt.__index:Send(message)
 
 
   self.connection:Send({message})
-  xmlReporter.AddMessage("e","Send",{message})
+  xmlReporter.AddMessage("MobileSession","Send",{message})
   return message
 end
 
@@ -185,7 +185,8 @@ end
 -- @tparam table ignoreHeartBeatAck Access table for ignore heartbeat ACK from SDL flag
 -- @tparam table regAppParams Mobile application parameters
 -- @treturn MobileSessionImpl Constructed instance
-function MSI.MobileSessionImpl(session_id, correlation_id, test, connection, sendHeartbeatToSDL, answerHeartbeatFromSDL, ignoreHeartBeatAck, regAppParams)
+function MSI.MobileSessionImpl(session_id, correlation_id, test, connection,
+    sendHeartbeatToSDL, answerHeartbeatFromSDL, ignoreHeartBeatAck, regAppParams)
   local res = { }
   --- Test which open mobile session
   res.test = test
