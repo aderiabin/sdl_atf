@@ -14,7 +14,7 @@ local console = require('console')
 local SDL = { }
 
 require('atf.util')
---- Table of SDL build options 
+--- Table of SDL build options
 SDL.buildOptions = {}
 --- The flag responsible for stopping ATF in case of emergency completion of SDL
 SDL.exitOnCrash = true
@@ -39,7 +39,7 @@ local usedBuildOptions = {
 
 --- Read specified parameter from CMakeCache.txt file
 -- @tparam string paramName Parameter to read value
--- @treturn string The main result. Value read of parameter. 
+-- @treturn string The main result. Value read of parameter.
 -- Can be nil in case parameter was not found.
 -- @treturn string Type of read parameter
 local function readParameterFromCMakeCacheFile(paramName)
