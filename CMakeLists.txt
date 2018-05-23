@@ -1,8 +1,8 @@
 project(ATF)
 cmake_minimum_required(VERSION 3.1)
+include(FetchContent)
 
 # Enable PIC as static libraries may be linked to shared objects
-
 set (CMAKE_POSITION_INDEPENDENT_CODE TRUE)
 set (CMAKE_CXX_STANDARD 11)
 set (CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -26,6 +26,19 @@ set_target_properties(lua::lua
     IMPORTED_LOCATION ${LUA_LIB}
     IMPORTED_LINK_DEPENDENT_LIBRARIES ${LIBM_LIB}
     )
+
+
+FetchContent_Declare(
+  MqTCP
+  GIT_REPOSITORY git@github.ford.com:a-kutsan/MqTCP.git
+  GIT_TAG        master
+)
+
+FetchContent_GetProperties(MqTCP)
+if(NOT MqTCP_POPULATED)
+  FetchContent_Populate(MqTCP)
+  add_subdirectory("${mqtcp_SOURCE_DIR}" "${mqtcp_BINARY_DIR}")
+endif() 
 
 add_executable(${PROJECT_NAME}
                 src/network.cc 
