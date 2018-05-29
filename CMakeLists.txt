@@ -57,3 +57,4 @@ target_link_libraries(${PROJECT_NAME}
                        Qt5::WebSockets
                        lua::lua
                        )
+add_subdirectory(src/remote_adapter)
