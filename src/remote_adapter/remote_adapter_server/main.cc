@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string>
 
 #include "rpc/server.h"
 #include "rpc/this_handler.h"
@@ -6,11 +7,30 @@
 #include "mqueue_manager.h"
 #include "common/constants.h"
 
-void CheckError(int res) {
-  if (mq_wrappers::MQueueManager::SUCCESS != res) {
-    auto err_obj = std::make_tuple(res, strerror(res));
-    rpc::this_handler().respond_error(err_obj);
+void CheckError(const int res) {
+  if (constants::error_codes::SUCCESS == res) {
+    return;
   }
+  std::string stringified_error;
+  switch (res) {
+    case constants::error_codes::PATH_NOT_FOUND:
+      stringified_error = "Mqueue not found";
+      break;
+    case constants::error_codes::READ_FAILURE:
+      stringified_error = "Mqueue reading failure";
+      break;
+    case constants::error_codes::WRITE_FAILURE:
+      stringified_error = "Mqueue writing failure";
+      break;
+    case constants::error_codes::CLOSE_FAILURE:
+      stringified_error = "Mqueue closing failure";
+      break;
+    default:
+      stringified_error = strerror(res);
+      break;
+  }
+  const auto err_obj = std::make_tuple(res, stringified_error);
+  rpc::this_handler().respond_error(err_obj);
 }
 
 int main(int argc, char* argv[]) {
@@ -25,9 +45,7 @@ int main(int argc, char* argv[]) {
   mq_wrappers::MQueueManager mq_manager;
 
   srv.bind(constants::client_connected,
-           []() {
-            std::cout << "Hello" << std::endl;
-           });
+           []() { std::cout << "Hello" << std::endl; });
 
   srv.bind(constants::open,
            [&mq_manager](std::string path) {
@@ -40,9 +58,9 @@ int main(int argc, char* argv[]) {
              CheckError(res);
            });
 
-  srv.bind(constants::close_force,
+  srv.bind(constants::unlink,
            [&mq_manager](std::string path) {
-             const int res = mq_manager.MqCloseForce(path);
+             const int res = mq_manager.MqUnlink(path);
              CheckError(res);
            });
 
@@ -62,7 +80,7 @@ int main(int argc, char* argv[]) {
            });
 
   srv.bind(constants::clear,
-           [&mq_manager](std::string path) {
+           [&mq_manager]() {
              const auto res = mq_manager.MqClear();
              CheckError(res);
            });
