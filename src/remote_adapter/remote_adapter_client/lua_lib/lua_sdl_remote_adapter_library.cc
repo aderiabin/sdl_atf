@@ -2,7 +2,7 @@
 
 extern "C" {
 
-int luaopen_libSDLRemoteTestAdapter (lua_State *L){
+int luaopen_libRemoteTestingAdapterClient (lua_State *L){
 
     static const luaL_Reg library_functions[] = {
         {"new", lua_lib::SDLRemoteTestAdapterLuaWrapper::create_SDLRemoteTestAdapter},

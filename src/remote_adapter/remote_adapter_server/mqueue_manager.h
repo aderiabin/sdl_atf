@@ -1,5 +1,4 @@
-#ifndef MQUEUEMANAGER_H
-#define MQUEUEMANAGER_H
+#pragma once
 
 #include <fcntl.h>    /* For O_* constants */
 #include <sys/stat.h> /* For mode constants */
@@ -8,13 +7,14 @@
 
 #include <map>
 #include <string>
+#include <tuple>
 
 namespace mq_wrappers {
 
 class MQueueManager {
  public:
+  typedef std::tuple<std::string, int> ReceiveResult;
   MQueueManager();
-  static const unsigned SUCCESS = 0;
   std::map<std::string, mqd_t> handles_;
 
   /**
@@ -22,19 +22,37 @@ class MQueueManager {
    * @param path path to create mqueue
    * @return error no (0 if success)
    */
-  int MqOpen(std::string path);
+  int MqOpen(const std::string& path);
 
-  int MqSend(std::string path, std::string data);
+  /**
+   * @brief MqSend sends data to mqueue
+   * @param path path to mqueue to write in
+   * @param data data to be written to mqueue
+   * @return error no (0 if success)
+   */
+  int MqSend(const std::__cxx11::string& path,
+             const std::__cxx11::string& data);
 
-  typedef std::tuple<std::string, int> ReceiveResult;
-  ReceiveResult MqReceive(std::string path);
+  /**
+   * @brief MqReceive reads data from mqueue
+   * @param path path to mqueue to read from
+   * @return tuple with read data and errno
+   * in case of successful reading, otherwise tuple
+   * with an empty string and errno
+   */
+  ReceiveResult MqReceive(const std::string& path);
 
-  int MqClose(std::string path);
+  /**
+   * @brief MqClose closes mqueue specified by path
+   * @param path path to mqueue to close
+   * @return error no (0 if success)
+   */
+  int MqClose(const std::string& path);
 
-  int MqCloseForce(std::string path);
-
+  int MqUnlink(const std::string& path);
 
   int MqClear();
+
  private:
   class Defaults {
    public:
@@ -48,4 +66,3 @@ class MQueueManager {
 
 }  // namespace mq_wrappers
 
-#endif  // MQUEUEMANAGER_H
