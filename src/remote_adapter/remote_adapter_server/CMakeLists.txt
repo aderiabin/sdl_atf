@@ -1,5 +1,5 @@
 project(RemoteTestingAdapterServer)
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.11)
 set (CMAKE_CXX_STANDARD 11)
 
 find_package( Threads REQUIRED )
@@ -16,4 +16,11 @@ target_link_libraries(${PROJECT_NAME}
 
 target_include_directories( ${PROJECT_NAME}  PRIVATE
    ${CMAKE_CURRENT_SOURCE_DIR}/..
+)
+
+install(
+  TARGETS ${PROJECT_NAME}
+  DESTINATION "${CMAKE_INSTALL_PREFIX}"
+  PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
+  COMPONENT sdl_atf
 )
