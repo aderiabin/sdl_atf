@@ -1,5 +1,5 @@
 project(RemoteTestingAdapterClient)
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.11)
 set (CMAKE_CXX_STANDARD 11)
 
 find_package( Threads REQUIRED )
@@ -21,3 +21,10 @@ target_link_libraries(${PROJECT_NAME}
                         rpc::rpclib
                         Threads::Threads
                         $<$<BOOL:${QNXNTO}>:socket>)
+
+install(
+  TARGETS ${PROJECT_NAME}
+  DESTINATION "${CMAKE_INSTALL_PREFIX}"
+  PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
+  COMPONENT sdl_atf
+)

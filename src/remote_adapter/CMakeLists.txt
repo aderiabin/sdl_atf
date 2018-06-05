@@ -1,5 +1,5 @@
 project(RemoteSDLTestingAdapter)
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.11)
 set (CMAKE_CXX_STANDARD 11)
 include(FetchContent)
 
@@ -18,7 +18,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
 FetchContent_Declare(
   rpclib
   GIT_REPOSITORY https://github.com/rpclib/rpclib.git
-  GIT_TAG        v2.2.1 
+  GIT_TAG        v2.2.1
 )
 
 FetchContent_GetProperties(rpclib)

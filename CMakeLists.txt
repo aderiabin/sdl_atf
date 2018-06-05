@@ -1,5 +1,5 @@
 project(ATF)
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.11)
 include(FetchContent)
 
 # Enable PIC as static libraries may be linked to shared objects
@@ -34,20 +34,14 @@ FetchContent_Declare(
   GIT_TAG        master
 )
 
-FetchContent_GetProperties(MqTCP)
-if(NOT MqTCP_POPULATED)
-  FetchContent_Populate(MqTCP)
-  add_subdirectory("${mqtcp_SOURCE_DIR}" "${mqtcp_BINARY_DIR}")
-endif() 
-
 add_executable(${PROJECT_NAME}
-                src/network.cc 
-                src/timers.cc 
-                src/qtdynamic.cc 
-                src/qtlua.cc 
-                src/qdatetime.cc 
-                src/marshal.cc 
-                src/main.cc 
+                src/network.cc
+                src/timers.cc
+                src/qtdynamic.cc
+                src/qtlua.cc
+                src/qdatetime.cc
+                src/marshal.cc
+                src/main.cc
                 src/lua_interpreter.cc
                 )
 
@@ -57,4 +51,29 @@ target_link_libraries(${PROJECT_NAME}
                        Qt5::WebSockets
                        lua::lua
                        )
+
+install(
+  TARGETS ${PROJECT_NAME}
+  DESTINATION "${CMAKE_INSTALL_PREFIX}"
+  PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
+  COMPONENT sdl_atf
+)
+
+install(
+  DIRECTORY
+  "${CMAKE_SOURCE_DIR}/modules"
+  "${CMAKE_SOURCE_DIR}/data"
+  DESTINATION "${CMAKE_INSTALL_PREFIX}"
+  COMPONENT sdl_atf
+)
+
+install(
+  FILES
+  "${CMAKE_SOURCE_DIR}/start.sh"
+  DESTINATION "${CMAKE_INSTALL_PREFIX}"
+  PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
+  COMPONENT sdl_atf
+)
+
+add_subdirectory(src/luaxml)
 add_subdirectory(src/remote_adapter)
