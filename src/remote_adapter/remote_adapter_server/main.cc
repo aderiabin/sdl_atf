@@ -1,11 +1,39 @@
 #include <iostream>
 #include <string>
+#include <exception>
 
 #include "rpc/server.h"
 #include "rpc/this_handler.h"
 
 #include "mqueue_manager.h"
 #include "common/constants.h"
+
+void PrintUsage() {
+  std::cout << "\nUsage:" << std::endl;
+  std::cout << "------------------------------------------------" << std::endl;
+  std::cout << "For default port usage(port 5555): " << std::endl;
+  std::cout << "./RemoteTestingAdapterServer" << std::endl;
+  std::cout << "------------------------------------------------" << std::endl;
+  std::cout << "For custom port usage: " << std::endl;
+  std::cout << "./RemoteTestingAdapterServer <port>" << std::endl;
+  std::cout << "------------------------------------------------\n"
+            << std::endl;
+  std::cout << "NOTE: Port must be unsigned integer within 1024 - 65535\n";
+}
+
+bool IsUnsignedNumber(const std::string& number) {
+  // Checking for negative numbers
+  if ('-' == number[0] && isdigit(number[1])) {
+    std::cout << "\nNumber is negative!" << std::endl;
+    return false;
+  }
+  // Check that every symbol is a number
+  for (const char& c : number) {
+    if (!isdigit(c))
+      return false;
+  }
+  return true;
+}
 
 void CheckError(const int res) {
   if (constants::error_codes::SUCCESS == res) {
@@ -34,58 +62,86 @@ void CheckError(const int res) {
 }
 
 int main(int argc, char* argv[]) {
-  int port = 5555;
-  if (argc > 1) {
-    const int arg_port = std::atoi(argv[1]);
-    port = 0 != arg_port ? arg_port : port;
+  uint16_t port = 5555;
+  if (2 == argc) {
+    const std::string number = argv[1];
+    if (IsUnsignedNumber(number)) {
+      const uint16_t arg_port = std::atoi(number.c_str());
+      port = 0 != arg_port ? arg_port : port;
+    } else {
+      PrintUsage();
+      return 1;
+    }
+  }
+
+  if (argc > 2) {
+    PrintUsage();
+    return 1;
   }
   std::cout << "Listen on " << port << std::endl;
-  rpc::server srv(port);
+  try {
+    rpc::server srv(port);
 
-  mq_wrappers::MQueueManager mq_manager;
+    mq_wrappers::MQueueManager mq_manager;
 
-  srv.bind(constants::client_connected,
-           []() { std::cout << "Hello" << std::endl; });
+    srv.bind(constants::client_connected,
+             []() { std::cout << "Hello" << std::endl; });
 
-  srv.bind(constants::open,
-           [&mq_manager](std::string path) {
-             const int res = mq_manager.MqOpen(path);
-             CheckError(res);
-           });
-  srv.bind(constants::close,
-           [&mq_manager](std::string path) {
-             const int res = mq_manager.MqClose(path);
-             CheckError(res);
-           });
+    srv.bind(constants::open,
+             [&mq_manager](std::string path) {
+               const int res = mq_manager.MqOpen(path);
+               CheckError(res);
+             });
 
-  srv.bind(constants::unlink,
-           [&mq_manager](std::string path) {
-             const int res = mq_manager.MqUnlink(path);
-             CheckError(res);
-           });
+    srv.bind(constants::open_with_params,
+             [&mq_manager](std::string path,
+                           const int max_messages_number,
+                           const int max_message_size,
+                           const int flags,
+                           const int mode) {
+               const int res = mq_manager.MqOpenWithParams(
+                   path, max_messages_number, max_message_size, flags, mode);
+               CheckError(res);
+             });
 
-  srv.bind(constants::send,
-           [&mq_manager](std::string path, std::string data) {
-             const int res = mq_manager.MqSend(path, data);
-             CheckError(res);
-           });
+    srv.bind(constants::close,
+             [&mq_manager](std::string path) {
+               const int res = mq_manager.MqClose(path);
+               CheckError(res);
+             });
 
-  srv.bind(constants::receive,
-           [&mq_manager](std::string path) -> std::string {
-             const auto receive_result = mq_manager.MqReceive(path);
-             auto data = std::get<0>(receive_result);
-             auto res = std::get<1>(receive_result);
-             CheckError(res);
-             return data;
-           });
+    srv.bind(constants::unlink,
+             [&mq_manager](std::string path) {
+               const int res = mq_manager.MqUnlink(path);
+               CheckError(res);
+             });
 
-  srv.bind(constants::clear,
-           [&mq_manager]() {
-             const auto res = mq_manager.MqClear();
-             CheckError(res);
-           });
-  // Run the server loop.
-  srv.run();
+    srv.bind(constants::send,
+             [&mq_manager](std::string path, std::string data) {
+               const int res = mq_manager.MqSend(path, data);
+               CheckError(res);
+             });
+
+    srv.bind(constants::receive,
+             [&mq_manager](std::string path) -> std::pair<std::string, int> {
+               const auto receive_result = mq_manager.MqReceive(path);
+               auto res = receive_result.second;
+               CheckError(res);
+               return receive_result;
+             });
+
+    srv.bind(constants::clear,
+             [&mq_manager]() {
+               const auto res = mq_manager.MqClear();
+               CheckError(res);
+             });
+    // Run the server loop.
+    srv.run();
+  } catch (std::exception& e) {
+    std::cout << "Error: " << e.what() << std::endl;
+    std::cout << "Exception occured" << std::endl;
+    PrintUsage();
+  }
 
   return 0;
 }
