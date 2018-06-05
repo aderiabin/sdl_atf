@@ -10,11 +10,12 @@ namespace mq_wrappers {
 
 MQueueManager::MQueueManager() {}
 
-int MQueueManager::MqOpen(const std::__cxx11::string& path) {
+int MQueueManager::MqOpen(const std::string& path) {
   std::cout << "MqOpen : " << path << std::endl;
   struct mq_attr attributes;
   attributes.mq_maxmsg = Defaults::MSGQ_MAX_MESSAGES;
   attributes.mq_msgsize = Defaults::MAX_QUEUE_MSG_SIZE;
+  // mq_flags is ignored for mq_open
   attributes.mq_flags = 0;
   errno = 0;
   const auto mq_descriptor =
@@ -25,22 +26,41 @@ int MQueueManager::MqOpen(const std::__cxx11::string& path) {
   return errno;
 }
 
+int MQueueManager::MqOpenWithParams(const std::string& path,
+                     const int max_messages_number,
+                     const int max_message_size,
+                     const int flags,
+                     const int mode) {
+  std::cout << "MqOpen : " << path << std::endl;
+  struct mq_attr attributes;
+  attributes.mq_maxmsg = max_messages_number;
+  attributes.mq_msgsize = max_message_size;
+  // mq_flags is ignored for mq_open
+  attributes.mq_flags = 0;
+  errno = 0;
+  const auto mq_descriptor = mq_open(path.c_str(), flags, mode, &attributes);
+  if (errno == 0) {
+    handles_[path] = mq_descriptor;
+  }
+  return errno;
+}
+
 int MQueueManager::MqSend(const std::string& path, const std::string& data) {
-  std::cout << "MqSend : " << path << " , " << data << std::endl;
+  std::cout << "MqSend to : " << path << " : " << data << std::endl;
   if (handles_.find(path) != handles_.end()) {
     errno = 0;
     const int res =
         mq_send(handles_[path], data.c_str(), data.size(), Defaults::prio);
     std::cout << "res   = " << res << std::endl;
     std::cout << "Errno = " << strerror(errno) << std::endl;
-    return 0 == res ? 0 : errno;
+    return 0 == res ? constants::error_codes::SUCCESS : errno;
   }
-  std::cerr << "Mqueue path '" << path << "' not found";
+  std::cerr << "Mqueue path : '" << path << "' NOT found";
   return constants::error_codes::PATH_NOT_FOUND;
 }
 
 MQueueManager::ReceiveResult MQueueManager::MqReceive(const std::string& path) {
-  std::cout << "MqReceive " << path << std::endl;
+  std::cout << "MqReceive from " << path << std::endl;
   if (handles_.find(path) != handles_.end()) {
     std::cout << "Handle found : " << handles_[path] << " " << std::endl;
 
@@ -49,12 +69,25 @@ MQueueManager::ReceiveResult MQueueManager::MqReceive(const std::string& path) {
         mq_receive(handles_[path], buffer, sizeof(buffer), 0);
     std::cout << "Length of read data = " << length << std::endl;
     if (-1 == length) {
-      return std::make_tuple(std::string(), errno);
+      char buffer1[Defaults::MAX_QUEUE_MSG_SIZE] =
+          "Mqueue reading error occured";
+      const std::__cxx11::string error(buffer1, sizeof(buffer1));
+      std::cout << error << std::endl;
+      if (EAGAIN == errno) {
+        const std::__cxx11::string error("Mqueue is empty");
+        // TODO : Find out why the following info not transferred to client side
+        // Instead of it - there is exception thwrown on clien side
+        // with the code -1 : mqueue reading failure
+        std::cout << error << std::endl;
+        return std::make_pair(error, constants::error_codes::READ_FAILURE);
+      }
+      return std::make_pair(error, errno);
     }
-    return std::make_tuple(std::string(buffer, length),
-                           constants::error_codes::SUCCESS);
+    std::cout << "Returning successful result" << std::endl;
+    return std::make_pair(std::__cxx11::string(buffer, length),
+                          constants::error_codes::SUCCESS);
   }
-  return std::make_tuple(std::string(), constants::error_codes::PATH_NOT_FOUND);
+  return std::make_pair(std::string(), constants::error_codes::PATH_NOT_FOUND);
 }
 
 int MQueueManager::MqClose(const std::string& path) {
