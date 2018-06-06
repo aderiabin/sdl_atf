@@ -85,7 +85,10 @@ int main(int argc, char* argv[]) {
     mq_wrappers::MQueueManager mq_manager;
 
     srv.bind(constants::client_connected,
-             []() { std::cout << "Hello" << std::endl; });
+             []() {
+               std::cout << "Hello" << std::endl;
+               std::cout << "Client connected" << std::endl;
+             });
 
     srv.bind(constants::open,
              [&mq_manager](std::string path) {

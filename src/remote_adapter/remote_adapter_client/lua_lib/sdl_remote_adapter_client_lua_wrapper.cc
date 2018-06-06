@@ -63,6 +63,7 @@ void SDLRemoteTestAdapterLuaWrapper::registerSDLRemoteTestAdapter(
       {"send", SDLRemoteTestAdapterLuaWrapper::lua_send},
       {"receive", SDLRemoteTestAdapterLuaWrapper::lua_receive},
       {"clear", SDLRemoteTestAdapterLuaWrapper::lua_clear},
+      {"open_with_params", SDLRemoteTestAdapterLuaWrapper::lua_open_with_params},
 
       {NULL, NULL}};
 

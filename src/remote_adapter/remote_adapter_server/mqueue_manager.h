@@ -72,7 +72,7 @@ class MQueueManager {
    public:
     static const int MSGQ_MAX_MESSAGES = 10;
     static const int MAX_QUEUE_MSG_SIZE = 4096;
-    static const int flags = O_RDWR | O_CREAT | O_NONBLOCK;
+    static const int flags = O_RDWR | O_CREAT ;
     static const int mode = S_IRUSR | S_IWUSR;
     static const int prio = 0;
   };
