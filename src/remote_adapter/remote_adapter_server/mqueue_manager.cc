@@ -27,11 +27,11 @@ int MQueueManager::MqOpen(const std::string& path) {
 }
 
 int MQueueManager::MqOpenWithParams(const std::string& path,
-                     const int max_messages_number,
-                     const int max_message_size,
-                     const int flags,
-                     const int mode) {
-  std::cout << "MqOpen : " << path << std::endl;
+                                    const int max_messages_number,
+                                    const int max_message_size,
+                                    const int flags,
+                                    const int mode) {
+  std::cout << "MqOpenWithParams : " << path << std::endl;
   struct mq_attr attributes;
   attributes.mq_maxmsg = max_messages_number;
   attributes.mq_msgsize = max_message_size;
@@ -69,22 +69,10 @@ MQueueManager::ReceiveResult MQueueManager::MqReceive(const std::string& path) {
         mq_receive(handles_[path], buffer, sizeof(buffer), 0);
     std::cout << "Length of read data = " << length << std::endl;
     if (-1 == length) {
-      char buffer1[Defaults::MAX_QUEUE_MSG_SIZE] =
-          "Mqueue reading error occured";
-      const std::__cxx11::string error(buffer1, sizeof(buffer1));
-      std::cout << error << std::endl;
-      if (EAGAIN == errno) {
-        const std::__cxx11::string error("Mqueue is empty");
-        // TODO : Find out why the following info not transferred to client side
-        // Instead of it - there is exception thwrown on clien side
-        // with the code -1 : mqueue reading failure
-        std::cout << error << std::endl;
-        return std::make_pair(error, constants::error_codes::READ_FAILURE);
-      }
-      return std::make_pair(error, errno);
+      return std::make_pair(std::string(), errno);
     }
     std::cout << "Returning successful result" << std::endl;
-    return std::make_pair(std::__cxx11::string(buffer, length),
+    return std::make_pair(std::string(buffer, length),
                           constants::error_codes::SUCCESS);
   }
   return std::make_pair(std::string(), constants::error_codes::PATH_NOT_FOUND);
