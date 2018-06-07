@@ -9,10 +9,20 @@
 local config = { }
 --- Flag which defines usage of color for reporting
 config.color = true
---- Define URL for HMI connection
-config.hmiUrl = "ws://localhost"
---- Define port for HMI connection
-config.hmiPort = 8087
+
+--- HMI configuration
+config.hmiAdapterType = "WebSocket"
+
+config.hmiAdapterConfig = {}
+--- Define configuration parameters for HMI connection on WebSocket base
+config.hmiAdapterConfig.WebSocket = {}
+config.hmiAdapterConfig.WebSocket.url = "ws://localhost"
+config.hmiAdapterConfig.WebSocket.port = 8087
+--- Define configuration parameters for Remote HMI connection
+config.hmiAdapterConfig.Remote = {}
+config.hmiAdapterConfig.Remote.url = "localhost"
+config.hmiAdapterConfig.Remote.port = 54321
+
 --- Define host for default mobile device connection
 config.mobileHost = "localhost"
 --- Define port for default mobile device connection

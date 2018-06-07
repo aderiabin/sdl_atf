@@ -2,8 +2,8 @@
 --
 -- *Dependencies:* `libSDLRemoteTestAdapter.so`
 --
--- *Globals:* `atf_logger`, `qt`
--- @module remote_hmi_adapter_connection.lua
+-- *Globals:* `xmlReporter`, `qt`, `timers`, `atf_logger`
+-- @module RemoteHMIAdapter
 -- @copyright [Ford Motor Company](https://smartdevicelink.com/partners/ford/) and [SmartDeviceLink Consortium](https://smartdevicelink.com/consortium/)
 -- @license <https://github.com/smartdevicelink/sdl_core/blob/master/LICENSE>
 
@@ -21,44 +21,48 @@ local RemoteHMIAdapter = {
 -- @tparam string url URL for websocket
 -- @tparam number port Port for Websocket
 -- @treturn WebSocketConnection Constructed instance
-function RemoteHMIAdapter.RemoteHMIAdapterConnection(url, port)
+function RemoteHMIAdapter.Connection(params)
   local res =
   {
-    url = url,
-    port = port
+    url = params.url,
+    port = params.port
   }
-  setmetatable(res, connection.mt)
+  res.connection = nil
+  res.reading_timer = timers.Timer()
+  setmetatable(res, RemoteHMIAdapter.mt)
   res.qtproxy = qt.dynamic()
-  if (res.connection) then
+
     return res
-  else 
-    return nil
-  end  
-end
-
-
---- Connect with SDL
-function RemoteHMIAdapter.mt.__index:Connect()
-  self.connection = remote_adapter:new(self.url,self.port)
-end
-
-function RemoteHMIAdapter.mt.__index:StartReadingLoop()
-   
-  function self.qtproxy.BlockingRead() 
-    local data = self.connection.read()
-    qtproxy:DataAvailable(data)
-  end
-  self.reading_timer = timers.Timer()
-  qt.connect(self.reading_timer, "timeout()", self.qtproxy, "BlockingRead()")
-  self.reading_timer:start(10)
 end
 
 --- Check 'self' argument
 local function checkSelfArg(s)
   if type(s) ~= "table" or
-  getmetatable(s) ~= connection.mt then
+  getmetatable(s) ~= RemoteHMIAdapter.mt then
     error("Invalid argument 'self': must be connection (use ':', not '.')")
   end
+end
+
+--- Connect with SDL
+function RemoteHMIAdapter.mt.__index:Connect()
+  xmlReporter.AddMessage("remote_hmi_adapter_connection","Connect")
+  checkSelfArg(self)
+  self.connection = remote_adapter:new(self.url,self.port)
+  -- ToDo (aderiabin): Add unsuccess connect check
+  startReadingLoop()
+end
+
+local function startReadingLoop()
+
+  function self.qtproxy.BlockingRead()
+    local data = self.connection.read()
+    self.qtproxy:DataAvailable(data)
+    -- ToDo (aderiabin): Add check data for emptiness
+  end
+
+  -- self.reading_timer = timers.Timer()
+  qt.connect(self.reading_timer, "timeout()", self.qtproxy, "BlockingRead()")
+  self.reading_timer:start(10)
 end
 
 --- Send message from HMI to SDL
@@ -75,11 +79,11 @@ function RemoteHMIAdapter.mt.__index:OnInputData(func)
   local this = self
   function d:textMessageReceived(text)
     atf_logger.LOG("SDLtoHMI", text)
+    --  ToDo (aderiabin): json.decode? really? what module set this func
     local data = json.decode(text)
-    --print("ws input:", text)
     func(this, data)
   end
-  qt.connect(self.qtproxy, "readDone(QString)", d, "textMessageReceived(QString)")
+  qt.connect(self.qtproxy, "DataAvailable(QString)", d, "textMessageReceived(QString)")
 end
 
 --- Set handler for OnDataSent

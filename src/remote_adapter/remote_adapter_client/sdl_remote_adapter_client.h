@@ -11,7 +11,7 @@ class SDLRemoteTestAdapterClient {
   SDLRemoteTestAdapterClient(const std::string& host, uint32_t port);
 
   /**
-   * @brief connected checks if cleint is connected to server
+   * @brief connected checks if client is connected to server
    * @return true if connected otherwise false
    */
   bool connected() const;
