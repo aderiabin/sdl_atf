@@ -17,7 +17,7 @@ local mobile = require("mobile_connection")
 local tcp = require("tcp_connection")
 local file_connection = require("file_connection")
 local mobile_session = require("mobile_session")
-local websocket = require('websocket_connection')
+local hmi_adapter_controller = require("hmi_adapter/hmi_adapter_controller")
 local hmi_connection = require('hmi_connection')
 local events = require("events")
 local expectations = require('expectations')
@@ -25,6 +25,13 @@ local functionId = require('function_id')
 local SDL = require('SDL')
 local exit_codes = require('exit_codes')
 local load_schema = require('load_schema')
+
+local hmiAdapter
+if config.hmiAdapterType == "Remote" then
+  hmiAdapter = require('remote_hmi_adapter_connection')
+else if config.hmiAdapterType == "WebSocket" then
+  hmiAdapter = require('websocket_connection')
+end
 
 local mob_schema = load_schema.mob_schema
 local hmi_schema = load_schema.hmi_schema
@@ -39,7 +46,7 @@ local FAILED = expectations.FAILED
 -- @type Test
 
 --- HMI connection
-Test.hmiConnection = hmi_connection.Connection(websocket.WebSocketConnection(config.hmiUrl, config.hmiPort))
+Test.hmiConnection = hmi_connection.Connection(hmi_adapter_controller.getHmiAdapter())
 local tcpConnection = tcp.Connection(config.mobileHost, config.mobilePort)
 local fileConnection = file_connection.FileConnection("mobile.out", tcpConnection)
 

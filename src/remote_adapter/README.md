@@ -11,7 +11,7 @@ Implements functionality which allows to test SDL runnning on remote host.
 
 
 ## Dependencies:
- - [CMake](https://cmake.org/download/) : Download and install any release version > 3
+ - [CMake](https://cmake.org/download/) : Download and install any release version > 3.11
  - **GNU Make & C++ compiler** : Install with command `sudo apt-get install build-essential`
  - [rpclib](https://github.com/rpclib/rpclib) : Library for TCP communication.
    *Note* : Installed automatically while running CMake.

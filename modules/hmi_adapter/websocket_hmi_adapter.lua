@@ -20,11 +20,11 @@ local WS = {
 -- @tparam string url URL for websocket
 -- @tparam number port Port for Websocket
 -- @treturn WebSocketConnection Constructed instance
-function WS.WebSocketConnection(url, port)
+function WS.Connection(params)
   local res =
   {
-    url = url,
-    port = port
+    url = params.url,
+    port = params.port
   }
   res.socket = network.WebSocket()
   setmetatable(res, WS.mt)
