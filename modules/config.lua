@@ -11,9 +11,8 @@ local config = { }
 config.color = true
 
 --- HMI configuration
-config.hmiAdapterType = "WebSocket"
-
 config.hmiAdapterConfig = {}
+config.hmiAdapterConfig.hmiAdapterType = "WebSocket"
 --- Define configuration parameters for HMI connection on WebSocket base
 config.hmiAdapterConfig.WebSocket = {}
 config.hmiAdapterConfig.WebSocket.url = "ws://localhost"
@@ -22,6 +21,22 @@ config.hmiAdapterConfig.WebSocket.port = 8087
 config.hmiAdapterConfig.Remote = {}
 config.hmiAdapterConfig.Remote.url = "localhost"
 config.hmiAdapterConfig.Remote.port = 54321
+-- Define configuration parameters for input Mq
+-- for Remote HMI connection
+config.hmiAdapterConfig.Remote.inMqConfig = {}
+config.hmiAdapterConfig.Remote.inMqConfig.name = "/changeMe" -- ToDo: Wrong value. Must be set actual value
+config.hmiAdapterConfig.Remote.inMqConfig.max_messages_number = 1000 -- ToDo: Wrong value. Must be set actual value
+config.hmiAdapterConfig.Remote.inMqConfig.max_message_size = 1000 -- ToDo: Wrong value. Must be set actual value
+config.hmiAdapterConfig.Remote.inMqConfig.flags = 1 -- ToDo: Wrong value. Must be set actual value
+config.hmiAdapterConfig.Remote.inMqConfig.mode = 1 -- ToDo: Wrong value. Must be set actual value
+-- Define configuration parameters for output Mq
+-- for Remote HMI connection
+config.hmiAdapterConfig.Remote.outMqConfig = {}
+config.hmiAdapterConfig.Remote.outMqConfig.name = "/changeMe" -- ToDo: Wrong value. Must be set actual value
+config.hmiAdapterConfig.Remote.outMqConfig.max_messages_number = 0 -- ToDo: Wrong value. Must be set actual value
+config.hmiAdapterConfig.Remote.outMqConfig.max_message_size = 0 -- ToDo: Wrong value. Must be set actual value
+config.hmiAdapterConfig.Remote.outMqConfig.flags = 0 -- ToDo: Wrong value. Must be set actual value
+config.hmiAdapterConfig.Remote.outMqConfig.mode = 0 -- ToDo: Wrong value. Must be set actual value
 
 --- Define host for default mobile device connection
 config.mobileHost = "localhost"
