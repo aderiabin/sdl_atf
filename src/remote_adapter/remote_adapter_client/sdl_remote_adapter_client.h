@@ -73,7 +73,7 @@ class SDLRemoteTestAdapterClient {
   int clear();
 
  private:
-  std::string data_;
+  // std::string data_;
   rpc::client connection_;
   friend struct SDLRemoteTestAdapterLuaWrapper;
 };
