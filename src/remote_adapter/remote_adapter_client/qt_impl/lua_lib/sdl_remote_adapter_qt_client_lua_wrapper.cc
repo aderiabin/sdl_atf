@@ -8,6 +8,31 @@ namespace lua_lib {
 
 int SDLRemoteTestAdapterLuaWrapper::create_SDLRemoteTestAdapter(lua_State* L) {
   luaL_checktype(L, 1, LUA_TTABLE);
+
+  // Index -1(top) - table out_params
+  // Index -2 - table in_params
+  // Index -3 - number port
+  // Index -4 - string host
+  // index -5 - Library table
+
+  auto out_mq_params = build_MqParams(L);
+  lua_pop(L, 1);  // Remove value from the top of the stack
+  // Index -1(top) - table in_params
+  // Index -2 - number port
+  // Index -3 - string host
+  // index -4 - Library table
+
+  auto in_mq_params = build_MqParams(L);
+  lua_pop(L, 1);  // Remove value from the top of the stack
+  // Index -1(top) - number port
+  // Index -2 - string host
+  // Index -3 - Library table
+
+  auto port = lua_tointeger(L, -3);
+  auto ip = lua_tostring(L, -4);
+  lua_pop(L, 2);  // Remove 2 values from top of the stack
+  // Index -1(top) - Library table
+
   lua_newtable(L);  // Create instance table
   // Index -1(top) - created instance table
   // Index -2 - Library table
@@ -28,7 +53,7 @@ int SDLRemoteTestAdapterLuaWrapper::create_SDLRemoteTestAdapter(lua_State* L) {
   // Index -2 - created instance table
 
   try {
-    *s = new SDLRemoteTestAdapterQtClient();
+    *s = new SDLRemoteTestAdapterQtClient(ip, port, in_mq_params, out_mq_params);
   } catch (std::exception& e) {
     std::cout << e.what() << std::endl;
     return 0;
@@ -165,34 +190,12 @@ MqParams SDLRemoteTestAdapterLuaWrapper::build_MqParams(lua_State* L) {
 }
 
 int SDLRemoteTestAdapterLuaWrapper::lua_connect(lua_State* L) {
-  // Index -1(top) - table out_params
-  // Index -2 - table in_params
-  // Index -3 - number port
-  // Index -4 - string host
-  // index -5 - table instance
-
-  auto out_mq_params = build_MqParams(L);
-  lua_pop(L, 1);  // Remove value from the top of the stack
-  // Index -1(top) - table in_params
-  // Index -2 - number port
-  // Index -3 - string host
-  // index -4 - table instance
-
-  auto in_mq_params = build_MqParams(L);
-  lua_pop(L, 1);  // Remove value from the top of the stack
-  // Index -1(top) - number port
-  // Index -2 - string host
-  // Index -3 - table instance
-
-  auto port = lua_tointeger(L, -3);
-  auto ip = lua_tostring(L, -4);
-  lua_pop(L, 2);  // Remove 2 values from top of the stack
   // Index -1(top) - table instance
 
   auto instance = get_instance(L);
   // Index -1(top) - table instance
 
-  instance->connectMq(ip, port, in_mq_params, out_mq_params);
+  instance->connectMq();
   return 0;
 }
 

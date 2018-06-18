@@ -18,9 +18,8 @@ local RemoteHMIAdapter = {
 -- @type RemoteHMIAdapter
 
 --- Construct instance of WebSocketConnection type
--- @tparam string url URL for websocket
--- @tparam number port Port for Websocket
--- @treturn WebSocketConnection Constructed instance
+-- @tparam params parameters for Remote adapter
+-- @treturn RemoteHMIAdapter Constructed instance
 function RemoteHMIAdapter.Connection(params)
   local res =
   {
@@ -29,8 +28,7 @@ function RemoteHMIAdapter.Connection(params)
     inMqConfig = params.inMqConfig,
     outMqConfig = params.outMqConfig,
   }
-  res.connection = remote_adapter:new()
-  -- res.reading_timer = timers.Timer()
+  res.connection = remote_adapter:new(url, port, inMqConfig, outMqConfig)
   setmetatable(res, RemoteHMIAdapter.mt)
   res.qtproxy = qt.dynamic()
 
@@ -49,23 +47,9 @@ end
 function RemoteHMIAdapter.mt.__index:Connect()
   xmlReporter.AddMessage("remote_hmi_adapter_connection","Connect")
   checkSelfArg(self)
-  self.connection:connect(url, port, inMqConfig, outMqConfig)
+  self.connection:connect()
   -- -- ToDo (aderiabin): Add unsuccess connect check
-  -- startReadingLoop()
 end
-
--- local function startReadingLoop()
-
---   function self.qtproxy.BlockingRead()
---     local data = self.connection.read()
---     self.qtproxy:DataAvailable(data)
---     -- ToDo (aderiabin): Add check data for emptiness
---   end
-
---   -- self.reading_timer = timers.Timer()
---   qt.connect(self.reading_timer, "timeout()", self.qtproxy, "BlockingRead()")
---   self.reading_timer:start(10)
--- end
 
 --- Send message from HMI to SDL
 -- @tparam string text Message

@@ -25,7 +25,11 @@ class SDLRemoteTestAdapterQtClient : public QObject {
 Q_OBJECT
 
 public:
-    SDLRemoteTestAdapterQtClient(QObject* parent = Q_NULLPTR);
+    SDLRemoteTestAdapterQtClient(const std::string& host,
+                                 uint32_t port,
+                                 MqParams& in_params,
+                                 MqParams& out_params,
+                                 QObject* parent = Q_NULLPTR);
 
     ~SDLRemoteTestAdapterQtClient();
 
@@ -38,10 +42,8 @@ public:
 
     /**
     * @brief Connect client to server and open queue with custom parameters
-    * @param host server host to connect
-    * @param port server port to connect
     */
-    void connectMq(const std::string& host, uint32_t port, MqParams& in_params, MqParams& out_params);
+    void connectMq();
 
     /**
     * @brief Sends data to mqueue opened by server
@@ -85,20 +87,6 @@ signals:
     void disconnected();
 
 private:
-    // /**
-    // * @brief connected checks if client is connected to server
-    // * @return true if connected otherwise false
-    // */
-    // bool isconnected() const;
-
-    // /**
-    // * @brief Sends open mqueue request to server
-    // * @param name mqueue name which should be opened by server
-    // * @return 0 in successful case, 1 - if client is not connected,
-    // * 2 - in case of exception
-    // */
-    // int open(const std::string& name);
-
     /**
     * @brief Sends open mqueue parametrized request to server
     * @param name mqueue name which should be opened by server
@@ -112,8 +100,10 @@ private:
     int openWithParams(MqParams& params);
 
     bool isconnected_ = false;
-    std::string in_mq_name_;
-    std::string out_mq_name_;
+    const std::string host_;
+    uint32_t port_;
+    MqParams in_mq_params_;
+    MqParams out_mq_params_;
     SDLRemoteTestAdapterClient* remote_adapter_client_ptr_ = nullptr;
     SDLRemoteTestAdapterReceiveThread* listener_ptr_ = nullptr;
 };
