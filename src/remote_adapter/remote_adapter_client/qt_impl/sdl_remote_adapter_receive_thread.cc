@@ -17,15 +17,14 @@ SDLRemoteTestAdapterReceiveThread::~SDLRemoteTestAdapterReceiveThread() {
 }
 
 void SDLRemoteTestAdapterReceiveThread::run() {
-    while(true) {
-        std::pair<std::string, int> receivedData = client_->receive();
-        if ((receivedData.first).empty()) {
-            emit sourceUnreachable();
-            break;
-        }
-        QString result((receivedData.first).c_str());
-        emit dataAvailable(result);
+    QString receivedData(client_->receive().first.c_str());
+
+    while(!receivedData.isEmpty()){
+        emit dataAvailable(receivedData);
+        receivedData = client_->receive().first.c_str();
     }
+
+    emit sourceUnreachable();
 }
 
 } // namespace lua_lib
