@@ -11,7 +11,7 @@ set (CMAKE_AUTOMOC ON)
 find_package(Qt5 COMPONENTS Core Network WebSockets REQUIRED)
 
 
-FIND_PACKAGE(Lua 5.2 EXACT REQUIRED)
+find_package(Lua 5.2 EXACT REQUIRED)
 
 list(GET LUA_LIBRARIES 0 LUA_LIB)
 list(GET LUA_LIBRARIES 1 LIBM_LIB)
@@ -27,6 +27,7 @@ set_target_properties(lua::lua
     IMPORTED_LINK_DEPENDENT_LIBRARIES ${LIBM_LIB}
     )
 
+set(LUA_FOUND TRUE)
 
 FetchContent_Declare(
   MqTCP
