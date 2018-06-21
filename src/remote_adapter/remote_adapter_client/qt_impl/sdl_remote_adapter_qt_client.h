@@ -1,13 +1,12 @@
 #pragma once
 
-#include <QtCore>
 #include <QObject>
 
 #include <string>
 #include <utility>
+#include <memory>
 
 #include "sdl_remote_adapter_client.h"
-// #include "qt_impl/sdl_remote_adapter_receive_thread.h"
 
 namespace lua_lib {
 
@@ -33,13 +32,6 @@ public:
 
     ~SDLRemoteTestAdapterQtClient();
 
-    // /**
-    // * @brief Connect client to server and open queue with default parameters
-    // * @param host server host to connect
-    // * @param port server port to connect
-    // */
-    // void connect(const std::string& host, uint32_t port, const std::string& name);
-
     /**
     * @brief Connect client to server and open queue with custom parameters
     */
@@ -62,21 +54,6 @@ public:
     // */
     std::pair<std::string, int> receive();
 
-    // /**
-    // * @brief Reads data from mqueue opened by server
-    // * @param name mqueue name from which data should be received
-    // * @return received data in successful case,
-    // * otherwise empty string
-    // */
-    // std::string receive(const std::string& name);
-
-    // /**
-    // * @brief Clears the system from mqueues opened by server
-    // * @return 0 in successful case,  - if client is not connected,
-    // * 2 - in case of exception
-    // */
-    // int clear();
-
 public slots:
     void connectionLost();
 
@@ -89,11 +66,7 @@ signals:
 private:
     /**
     * @brief Sends open mqueue parametrized request to server
-    * @param name mqueue name which should be opened by server
-    * @param max_messages_number -max messages number in mqueue
-    * @param max_message_size - max message size in mqueue
-    * @param flags - specifies flags that control the operation of the call
-    * @param mode - specifies the permissions to be placed on the new queue
+    * @param params mqueue parameters for mqueue which should be opened by server
     * @return 0 in successful case, 1 - if client is not connected,
     * 2 - in case of exception
     */
@@ -104,8 +77,8 @@ private:
     uint32_t port_;
     MqParams in_mq_params_;
     MqParams out_mq_params_;
-    SDLRemoteTestAdapterClient* remote_adapter_client_ptr_ = nullptr;
-    SDLRemoteTestAdapterReceiveThread* listener_ptr_ = nullptr;
+    std::unique_ptr<SDLRemoteTestAdapterClient> remote_adapter_client_ptr_;
+    std::unique_ptr<SDLRemoteTestAdapterReceiveThread> listener_ptr_;
 };
 
 } // namespace lua_lib

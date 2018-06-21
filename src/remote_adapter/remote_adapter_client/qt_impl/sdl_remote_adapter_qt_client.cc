@@ -2,6 +2,7 @@
 
 #include "qt_impl/sdl_remote_adapter_qt_client.h"
 #include "qt_impl/sdl_remote_adapter_receive_thread.h"
+#include "common/constants.h"
 
 namespace lua_lib {
 
@@ -18,27 +19,23 @@ SDLRemoteTestAdapterQtClient::SDLRemoteTestAdapterQtClient(
           out_mq_params_(out_params)  { }
 
 SDLRemoteTestAdapterQtClient::~SDLRemoteTestAdapterQtClient() {
-    if (nullptr != listener_ptr_) {
-        delete(listener_ptr_);
-    }
-
     if (nullptr != remote_adapter_client_ptr_) {
         remote_adapter_client_ptr_->clear();
-        delete(remote_adapter_client_ptr_);
     }
 }
 
 void SDLRemoteTestAdapterQtClient::connectMq() {
     if (!isconnected_) {
         try {
-            remote_adapter_client_ptr_ = new SDLRemoteTestAdapterClient(host_, port_);
+            remote_adapter_client_ptr_.reset(new SDLRemoteTestAdapterClient(host_, port_));
             int in_open_result = openWithParams(in_mq_params_);
             int out_open_result = openWithParams(out_mq_params_);
-            if ((0 == in_open_result) && (0 == out_open_result)) {
-                listener_ptr_ = new SDLRemoteTestAdapterReceiveThread(this);
-                connect(listener_ptr_, &SDLRemoteTestAdapterReceiveThread::dataAvailable,
+            if ((constants::error_codes::SUCCESS == in_open_result)
+                    && (constants::error_codes::SUCCESS == out_open_result)) {
+                listener_ptr_.reset(new SDLRemoteTestAdapterReceiveThread(this));
+                connect(listener_ptr_.get(), &SDLRemoteTestAdapterReceiveThread::dataAvailable,
                         this, &SDLRemoteTestAdapterQtClient::textMessageReceived);
-                connect(listener_ptr_, &SDLRemoteTestAdapterReceiveThread::sourceUnreachable,
+                connect(listener_ptr_.get(), &SDLRemoteTestAdapterReceiveThread::sourceUnreachable,
                         this, &SDLRemoteTestAdapterQtClient::connectionLost);
 
                 isconnected_ = true;
@@ -46,7 +43,6 @@ void SDLRemoteTestAdapterQtClient::connectMq() {
                 listener_ptr_->start();
             } else {
                 remote_adapter_client_ptr_->clear();
-                delete(remote_adapter_client_ptr_);
                 remote_adapter_client_ptr_ = nullptr;
             }
         } catch (std::exception& e) {
@@ -57,10 +53,10 @@ void SDLRemoteTestAdapterQtClient::connectMq() {
 
 int SDLRemoteTestAdapterQtClient::send(const std::string& data) {
     int result = remote_adapter_client_ptr_->send(out_mq_params_.name, data);
-    if (0 == result) {
+    if (constants::error_codes::SUCCESS == result) {
         emit bytesWritten(data.length());
     }
-    else if (1 == result) {
+    else if (constants::error_codes::NO_CONNECTION == result) {
         connectionLost();
     }
     return result;
@@ -81,8 +77,8 @@ int SDLRemoteTestAdapterQtClient::openWithParams(MqParams& params) {
 void SDLRemoteTestAdapterQtClient::connectionLost() {
     if (isconnected_) {
         isconnected_ = false;
-        delete(listener_ptr_);
-        delete(remote_adapter_client_ptr_);
+        listener_ptr_ = nullptr;
+        remote_adapter_client_ptr_ = nullptr;
         emit disconnected();
     }
 }
