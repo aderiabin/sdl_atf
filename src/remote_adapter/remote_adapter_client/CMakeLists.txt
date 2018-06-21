@@ -1,4 +1,4 @@
-project(RemoteTestingAdapterClient)
+project(RemoteHMIAdapter)
 cmake_minimum_required(VERSION 3.11)
 include(FetchContent)
 
@@ -24,22 +24,24 @@ endif()
 
 find_package(Qt5 COMPONENTS Core REQUIRED)
 find_package( Threads REQUIRED )
-FIND_PACKAGE(Lua 5.2 EXACT REQUIRED)
 
-# list(GET LUA_LIBRARIES 0 LUA_LIB)
-# list(GET LUA_LIBRARIES 1 LIBM_LIB)
+if(NOT LUA_FOUND)
+  find_package(Lua 5.2 EXACT REQUIRED)
+  list(GET LUA_LIBRARIES 0 LUA_LIB)
+  list(GET LUA_LIBRARIES 1 LIBM_LIB)
 
-# message(STATUS "lualib : ${LUA_LIB}")
-# message(STATUS "libmlib : ${LIBM_LIB}")
+  message(STATUS "lualib : ${LUA_LIB}")
+  message(STATUS "libmlib : ${LIBM_LIB}")
 
-# add_library(lua::lua UNKNOWN IMPORTED GLOBAL)
+  add_library(lua::lua UNKNOWN IMPORTED GLOBAL)
 
-# set_target_properties(lua::lua
-#   PROPERTIES
-#     INTERFACE_INCLUDE_DIRECTORIES "${LUA_INCLUDE_DIR}"
-#     IMPORTED_LOCATION ${LUA_LIB}
-#     IMPORTED_LINK_DEPENDENT_LIBRARIES ${LIBM_LIB}
-#     )
+  set_target_properties(lua::lua
+    PROPERTIES
+      INTERFACE_INCLUDE_DIRECTORIES "${LUA_INCLUDE_DIR}"
+      IMPORTED_LOCATION ${LUA_LIB}
+      IMPORTED_LINK_DEPENDENT_LIBRARIES ${LIBM_LIB}
+      )
+endif()
 
 add_library(${PROJECT_NAME} SHARED
                  sdl_remote_adapter_client.cc

@@ -30,7 +30,7 @@ if(NOT rpclib_POPULATED)
 endif()
 
 
-FIND_PACKAGE(Lua 5.2 EXACT REQUIRED)
+find_package(Lua 5.2 EXACT REQUIRED)
 message(STATUS "Lua found : " ${LUA_INCLUDE_DIR})
 add_subdirectory(remote_adapter_client)
 add_subdirectory(remote_adapter_server)
