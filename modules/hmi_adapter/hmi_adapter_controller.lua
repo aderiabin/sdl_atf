@@ -12,12 +12,15 @@ local HmiAdapterController = {}
 local hmiAdapter
 if config.hmiAdapterConfig.hmiAdapterType == "Remote" then
   hmiAdapter = require('hmi_adapter/remote_hmi_adapter')
-else if config.hmiAdapterConfig.hmiAdapterType == "WebSocket" then
+elseif config.hmiAdapterConfig.hmiAdapterType == "WebSocket" then
   hmiAdapter = require('hmi_adapter/websocket_hmi_adapter')
+else
+  error("Invalid value '".. config.hmiAdapterConfig.hmiAdapterType
+    .." for configuration parameter 'config.hmiAdapterConfig.hmiAdapterType'")
 end
 
-function HmiAdapterController.getHmiAdapter() {
+function HmiAdapterController.getHmiAdapter()
 	return hmiAdapter.Connection(config.hmiAdapterConfig[config.hmiAdapterConfig.hmiAdapterType])
-}
+end
 
 return HmiAdapterController
