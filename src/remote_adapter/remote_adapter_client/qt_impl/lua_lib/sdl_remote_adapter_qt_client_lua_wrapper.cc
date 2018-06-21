@@ -28,8 +28,8 @@ int SDLRemoteTestAdapterLuaWrapper::create_SDLRemoteTestAdapter(lua_State* L) {
   // Index -2 - string host
   // Index -3 - Library table
 
-  auto port = lua_tointeger(L, -3);
-  auto ip = lua_tostring(L, -4);
+  auto port = lua_tointeger(L, -1);
+  auto ip = lua_tostring(L, -2);
   lua_pop(L, 2);  // Remove 2 values from top of the stack
   // Index -1(top) - Library table
 
