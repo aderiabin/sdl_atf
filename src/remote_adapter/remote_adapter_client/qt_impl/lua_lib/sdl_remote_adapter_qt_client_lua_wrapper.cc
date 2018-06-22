@@ -33,24 +33,12 @@ int SDLRemoteTestAdapterLuaWrapper::create_SDLRemoteTestAdapter(lua_State* L) {
   lua_pop(L, 2);  // Remove 2 values from top of the stack
   // Index -1(top) - Library table
 
-  lua_newtable(L);  // Create instance table
-  // Index -1(top) - created instance table
-  // Index -2 - Library table
-
-  SDLRemoteTestAdapterLuaWrapper::registerSDLRemoteTestAdapter(L);
-  // Index -1 (top) - registered class table
-  // Index -2 - created instance table
-  // Index -3 - Library table
-
-  lua_setmetatable(L, -2);  // Set class table as metatable for instance table
-  // Index -1(top) - created instance table
-
   // Allocate memory for a pointer to client object
   SDLRemoteTestAdapterQtClient** s =
       (SDLRemoteTestAdapterQtClient**)lua_newuserdata(
           L, sizeof(SDLRemoteTestAdapterQtClient*));
-  // Index -1(top) - new userdata
-  // Index -2 - created instance table
+  // Index -1(top) - instance userdata
+  // Index -2 - Library table
 
   try {
     *s = new SDLRemoteTestAdapterQtClient(ip, port, in_mq_params, out_mq_params);
@@ -58,11 +46,16 @@ int SDLRemoteTestAdapterLuaWrapper::create_SDLRemoteTestAdapter(lua_State* L) {
     std::cout << e.what() << std::endl;
     return 0;
   }
-  lua_setfield(
-      L,
-      -2,
-      "__self");  // Set field '__self' of instance table to the user data
-  // Index -1(top) - created instance table
+
+  SDLRemoteTestAdapterLuaWrapper::registerSDLRemoteTestAdapter(L);
+  // Index -1 (top) - registered SDLRemoteTestAdapter metatable
+  // Index -2 - instance userdata
+  // Index -3 - Library table
+
+  lua_setmetatable(L, -2);  // Set class table as metatable for instance userdata
+  // Index -1(top) - instance table
+  // Index -2 - Library table
+
   return 1;
 }
 
@@ -77,55 +70,48 @@ void SDLRemoteTestAdapterLuaWrapper::registerSDLRemoteTestAdapter(
   static const luaL_Reg SDLRemoteTestAdapterFunctions[] = {
       {"connect", SDLRemoteTestAdapterLuaWrapper::lua_connect},
       {"write", SDLRemoteTestAdapterLuaWrapper::lua_write},
+      {NULL, NULL}
+    };
 
-      {NULL, NULL}};
+  luaL_newmetatable(L, "SDLRemoteTestAdapterQtClient");
+  // Index -1(top) - SDLRemoteTestAdapter metatable
 
   lua_newtable(L);
+  // Index -1(top) - created table
+  // Index -2 : SDLRemoteTestAdapter metatable
+
   luaL_setfuncs(L, SDLRemoteTestAdapterFunctions, 0);
-  // Index -1(top) : SDLRemoteTestAdapter class table
-
-//   lua_pushvalue(L, -1);
-//   // Index -1(top) : SDLRemoteTestAdapter class table
-//   // Index -2 : SDLRemoteTestAdapter class table
-
-//   lua_setglobal(L, "SDLRemoteTestAdapter");
-//   // Index -1(top) : SDLRemoteTestAdapter class table
-
-  lua_pushvalue(L, -1);
-  // Index -1(top) : SDLRemoteTestAdapter class table
-  // Index -2 : SDLRemoteTestAdapter class table
+  // Index -1(top) - table with SDLRemoteTestAdapterFunctions
+  // Index -2 : SDLRemoteTestAdapter metatable
 
   lua_setfield(
       L,
       -2,
-      "__index");  // Setup index lookup to it self for using it as metatable
-  // Index -1(top) : SDLRemoteTestAdapter class table
+      "__index");  // Setup created table as index lookup for  metatable
+  // Index -1(top) - SDLRemoteTestAdapter metatable
 
   lua_pushcfunction(L, SDLRemoteTestAdapterLuaWrapper::destroy_SDLRemoteTestAdapter);
-  // Index -1(top) : destroy_SDLRemoteTestAdapter function pointer
-  // Index -2 : SDLRemoteTestAdapter class table
+  // Index -1(top) - destroy_SDLRemoteTestAdapter function pointer
+  // Index -2 - SDLRemoteTestAdapter metatable
 
   lua_setfield(
       L,
       -2,
       "__gc"); // Set garbage collector function to metatable
-  // Index -1(top) : SDLRemoteTestAdapter class table
+  // Index -1(top) - SDLRemoteTestAdapter metatable
 }
 
 SDLRemoteTestAdapterQtClient* SDLRemoteTestAdapterLuaWrapper::get_instance(
     lua_State* L) {
   // Index 1 - lua instance
-  lua_getfield(
-      L, 1, "__self");  // get __self key from lua instance and put on top
-  // Index -1 (top) - user data ( poiner to C++ implementation pointer)
   SDLRemoteTestAdapterQtClient** user_data =
-      reinterpret_cast<SDLRemoteTestAdapterQtClient**>(lua_touserdata(L, -1));
-  lua_pop(L, 1);  // Remove user data from the top
+      reinterpret_cast<SDLRemoteTestAdapterQtClient**>(
+          luaL_checkudata(L, 1, "SDLRemoteTestAdapterQtClient"));
+
   if (nullptr == user_data) {
     return nullptr;
   }
-  SDLRemoteTestAdapterQtClient* adapter = *user_data;
-  return adapter;  //*((SDLRemoteTestAdapterQtClient**)ud);
+  return *user_data;  //*((SDLRemoteTestAdapterQtClient**)ud);
 }
 
 MqParams SDLRemoteTestAdapterLuaWrapper::build_MqParams(lua_State* L) {
