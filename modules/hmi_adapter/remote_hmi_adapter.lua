@@ -66,7 +66,7 @@ function RemoteHMIAdapter.mt.__index:OnInputData(func)
     local data = json.decode(text)
     func(this, data)
   end
-  qt.connect(self.connection.__self, "textMessageReceived(QString)", d, "textMessageReceived(QString)")
+  qt.connect(self.connection, "textMessageReceived(QString)", d, "textMessageReceived(QString)")
 end
 
 --- Set handler for OnDataSent
@@ -77,7 +77,7 @@ function RemoteHMIAdapter.mt.__index:OnDataSent(func)
   function d:bytesWritten(num)
     func(this, num)
   end
-  qt.connect(self.connection.__self, "bytesWritten(qint64)", d, "bytesWritten(qint64)")
+  qt.connect(self.connection, "bytesWritten(qint64)", d, "bytesWritten(qint64)")
 end
 
 --- Set handler for OnConnected
@@ -88,7 +88,7 @@ function RemoteHMIAdapter.mt.__index:OnConnected(func)
   end
   local this = self
   self.qtproxy.connected = function() func(this) end
-  qt.connect(self.connection.__self, "connected()", self.qtproxy, "connected()")
+  qt.connect(self.connection, "connected()", self.qtproxy, "connected()")
 end
 
 --- Set handler for OnDisconnected
@@ -99,7 +99,7 @@ function RemoteHMIAdapter.mt.__index:OnDisconnected(func)
   end
   local this = self
   self.qtproxy.disconnected = function() func(this) end
-  qt.connect(self.connection.__self, "disconnected()", self.qtproxy, "disconnected()")
+  qt.connect(self.connection, "disconnected()", self.qtproxy, "disconnected()")
 end
 
 --- Close connection

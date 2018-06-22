@@ -19,7 +19,7 @@ SDLRemoteTestAdapterQtClient::SDLRemoteTestAdapterQtClient(
           out_mq_params_(out_params)  { }
 
 SDLRemoteTestAdapterQtClient::~SDLRemoteTestAdapterQtClient() {
-    if (nullptr != remote_adapter_client_ptr_) {
+    if (remote_adapter_client_ptr_) {
         remote_adapter_client_ptr_->clear();
     }
 }
