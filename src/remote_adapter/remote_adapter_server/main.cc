@@ -138,8 +138,10 @@ int main(int argc, char* argv[]) {
                const auto res = mq_manager.MqClear();
                CheckError(res);
              });
-    // Run the server loop.
-    srv.run();
+
+    // Run the server loop with 2 worker threads.
+    srv.async_run(2);
+    std::cin.ignore();
   } catch (std::exception& e) {
     std::cout << "Error: " << e.what() << std::endl;
     std::cout << "Exception occured" << std::endl;
