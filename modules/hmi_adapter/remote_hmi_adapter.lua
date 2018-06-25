@@ -20,16 +20,14 @@ local RemoteHMIAdapter = {
 -- @tparam params parameters for Remote adapter
 -- @treturn RemoteHMIAdapter Constructed instance
 function RemoteHMIAdapter.Connection(params)
-  local res =
-  {
-    url = params.url,
-    port = params.port,
-    inMqConfig = params.inMqConfig,
-    outMqConfig = params.outMqConfig,
-  }
-  res.connection = remote_adapter:new(res.url, res.port, res.inMqConfig, res.outMqConfig)
-  setmetatable(res, RemoteHMIAdapter.mt)
+  local res = { }
+  res.connection = remote_adapter:new(params.url,
+                                      params.port,
+                                      params.SDLtoHMIMqConfig,
+                                      params.HMItoSDLMqConfig,
+                                      params.ControlMqConfig)
   res.qtproxy = qt.dynamic()
+  setmetatable(res, RemoteHMIAdapter.mt)
   return res
 end
 
@@ -47,6 +45,12 @@ function RemoteHMIAdapter.mt.__index:Connect()
   checkSelfArg(self)
   self.connection:connect()
   -- -- ToDo (aderiabin): Add unsuccess connect check
+end
+
+--- Send control message to SDL
+-- @tparam string text Message
+function RemoteHMIAdapter.mt.__index:SendControl(text)
+  self.connection:control(text)
 end
 
 --- Send message from HMI to SDL

@@ -8,7 +8,15 @@ namespace lua_lib {
 
 int SDLRemoteTestAdapterLuaWrapper::create_SDLRemoteTestAdapter(lua_State* L) {
   luaL_checktype(L, 1, LUA_TTABLE);
+  // Index -1(top) - table control_params
+  // Index -2 - table out_params
+  // Index -3 - table in_params
+  // Index -4 - number port
+  // Index -5 - string host
+  // index -6 - Library table
 
+  auto control_mq_params = build_MqParams(L);
+  lua_pop(L, 1);  // Remove value from the top of the stack
   // Index -1(top) - table out_params
   // Index -2 - table in_params
   // Index -3 - number port
@@ -41,7 +49,11 @@ int SDLRemoteTestAdapterLuaWrapper::create_SDLRemoteTestAdapter(lua_State* L) {
   // Index -2 - Library table
 
   try {
-    *s = new SDLRemoteTestAdapterQtClient(ip, port, in_mq_params, out_mq_params);
+    *s = new SDLRemoteTestAdapterQtClient(ip,
+                                          port,
+                                          in_mq_params,
+                                          out_mq_params,
+                                          control_mq_params);
   } catch (std::exception& e) {
     std::cout << e.what() << std::endl;
     return 0;
@@ -192,6 +204,17 @@ int SDLRemoteTestAdapterLuaWrapper::lua_write(lua_State* L) {
   auto instance = get_instance(L);
   auto data = lua_tostring(L, -1);
   int result = instance->send(data);
+  lua_pushinteger(L, result);
+  return 1;
+}
+
+int SDLRemoteTestAdapterLuaWrapper::lua_control(lua_State* L) {
+  // Index -1(top) - string control data
+  // Index -2 - table instance
+
+  auto instance = get_instance(L);
+  auto data = lua_tostring(L, -1);
+  int result = instance->sendControl(data);
   lua_pushinteger(L, result);
   return 1;
 }

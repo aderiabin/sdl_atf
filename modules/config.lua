@@ -12,34 +12,41 @@ config.color = true
 
 --- HMI configuration
 config.hmiAdapterConfig = {}
-config.hmiAdapterConfig.hmiAdapterType = "WebSocket"
+config.hmiAdapterConfig.hmiAdapterType = "Remote"
 --- Define configuration parameters for HMI connection on WebSocket base
 config.hmiAdapterConfig.WebSocket = {}
 config.hmiAdapterConfig.WebSocket.url = "ws://localhost"
 config.hmiAdapterConfig.WebSocket.port = 8087
 --- Define configuration parameters for Remote HMI connection
 config.hmiAdapterConfig.Remote = {}
-config.hmiAdapterConfig.Remote.url = "localhost"
-config.hmiAdapterConfig.Remote.port = 54321
--- Define configuration parameters for input Mq
+config.hmiAdapterConfig.Remote.url = "192.168.1.26"
+config.hmiAdapterConfig.Remote.port = 5555
+-- Define configuration parameters for HMItoSDL Mq
 -- for Remote HMI connection
-config.hmiAdapterConfig.Remote.inMqConfig = {}
-config.hmiAdapterConfig.Remote.inMqConfig.name = "/changeMe" -- ToDo: Wrong value. Must be set actual value
-config.hmiAdapterConfig.Remote.inMqConfig.max_messages_number = 1000 -- ToDo: Wrong value. Must be set actual value
-config.hmiAdapterConfig.Remote.inMqConfig.max_message_size = 1000 -- ToDo: Wrong value. Must be set actual value
-config.hmiAdapterConfig.Remote.inMqConfig.flags = 1 -- ToDo: Wrong value. Must be set actual value
-config.hmiAdapterConfig.Remote.inMqConfig.mode = 1 -- ToDo: Wrong value. Must be set actual value
--- Define configuration parameters for output Mq
+config.hmiAdapterConfig.Remote.HMItoSDLMqConfig = {}
+config.hmiAdapterConfig.Remote.HMItoSDLMqConfig.name = "/ToSDL"
+config.hmiAdapterConfig.Remote.HMItoSDLMqConfig.max_messages_number = 128
+config.hmiAdapterConfig.Remote.HMItoSDLMqConfig.max_message_size = 4095
+config.hmiAdapterConfig.Remote.HMItoSDLMqConfig.flags = 1025 -- O_WRONLY | O_CREAT
+config.hmiAdapterConfig.Remote.HMItoSDLMqConfig.mode = 1638 -- S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
+-- Define configuration parameters for SDLtoHMI Mq
 -- for Remote HMI connection
-config.hmiAdapterConfig.Remote.outMqConfig = {}
-config.hmiAdapterConfig.Remote.outMqConfig.name = "/changeMe" -- ToDo: Wrong value. Must be set actual value
-config.hmiAdapterConfig.Remote.outMqConfig.max_messages_number = 0 -- ToDo: Wrong value. Must be set actual value
-config.hmiAdapterConfig.Remote.outMqConfig.max_message_size = 0 -- ToDo: Wrong value. Must be set actual value
-config.hmiAdapterConfig.Remote.outMqConfig.flags = 0 -- ToDo: Wrong value. Must be set actual value
-config.hmiAdapterConfig.Remote.outMqConfig.mode = 0 -- ToDo: Wrong value. Must be set actual value
-
+config.hmiAdapterConfig.Remote.SDLtoHMIMqConfig = {}
+config.hmiAdapterConfig.Remote.SDLtoHMIMqConfig.name = "/FromSDL"
+config.hmiAdapterConfig.Remote.SDLtoHMIMqConfig.max_messages_number = 128
+config.hmiAdapterConfig.Remote.SDLtoHMIMqConfig.max_message_size = 4095
+config.hmiAdapterConfig.Remote.SDLtoHMIMqConfig.flags = 1024 -- O_RDONLY | O_CREAT
+config.hmiAdapterConfig.Remote.SDLtoHMIMqConfig.mode = 1638 -- S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
+-- Define configuration parameters for control (AppLinkSDLProxy) Mq
+-- for Remote HMI connection
+config.hmiAdapterConfig.Remote.ControlMqConfig = {}
+config.hmiAdapterConfig.Remote.ControlMqConfig.name = "/activeAppLinkSDLProxy"
+config.hmiAdapterConfig.Remote.ControlMqConfig.max_messages_number = 128
+config.hmiAdapterConfig.Remote.ControlMqConfig.max_message_size = 4095
+config.hmiAdapterConfig.Remote.ControlMqConfig.flags = 1025 -- O_WRONLY | O_CREAT
+config.hmiAdapterConfig.Remote.ControlMqConfig.mode = 1638 -- S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
 --- Define host for default mobile device connection
-config.mobileHost = "localhost"
+config.mobileHost = "192.168.1.26"
 --- Define port for default mobile device connection
 config.mobilePort = 12345
 --- Define timeout for Heartbeat in msec
