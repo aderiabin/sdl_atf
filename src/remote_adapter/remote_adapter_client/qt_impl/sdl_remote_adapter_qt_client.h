@@ -28,6 +28,7 @@ public:
                                  uint32_t port,
                                  MqParams& in_params,
                                  MqParams& out_params,
+                                 MqParams& control_params,
                                  QObject* parent = Q_NULLPTR);
 
     ~SDLRemoteTestAdapterQtClient();
@@ -39,7 +40,6 @@ public:
 
     /**
     * @brief Sends data to mqueue opened by server
-    * @param name mqueue name for data reading
     * @param data - data to be send to mqueue
     * @return 0 in successful case, 1 - if client is not connected,
     * 2 - in case of exception
@@ -48,11 +48,18 @@ public:
 
     // /**
     // * @brief Reads data from mqueue opened by server
-    // * @param name mqueue name from which data should be received
     // * @return received data in successful case,
     // * otherwise empty string
     // */
     std::pair<std::string, int> receive();
+
+    /**
+    * @brief Sends control data to mqueue opened by server
+    * @param data - data to be send to mqueue
+    * @return 0 in successful case, 1 - if client is not connected,
+    * 2 - in case of exception
+    */
+    int sendControl(const std::string& data);
 
 public slots:
     void connectionLost();
@@ -72,11 +79,21 @@ private:
     */
     int openWithParams(MqParams& params);
 
+    /**
+    * @brief Sends data to mqueue opened by server
+    * @param mq_name - name of mq data to be sent into
+    * @param data - data to be send to mqueue
+    * @return 0 in successful case, 1 - if client is not connected,
+    * 2 - in case of exception
+    */
+    int sendToMq(const std::string& data, bool isControl);
+
     bool isconnected_ = false;
     const std::string host_;
     uint32_t port_;
     MqParams in_mq_params_;
     MqParams out_mq_params_;
+    MqParams control_mq_params_;
     std::unique_ptr<SDLRemoteTestAdapterClient> remote_adapter_client_ptr_;
     std::unique_ptr<SDLRemoteTestAdapterReceiveThread> listener_ptr_;
 };
