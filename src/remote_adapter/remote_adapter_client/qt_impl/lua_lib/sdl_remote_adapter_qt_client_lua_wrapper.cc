@@ -82,6 +82,7 @@ void SDLRemoteTestAdapterLuaWrapper::registerSDLRemoteTestAdapter(
   static const luaL_Reg SDLRemoteTestAdapterFunctions[] = {
       {"connect", SDLRemoteTestAdapterLuaWrapper::lua_connect},
       {"write", SDLRemoteTestAdapterLuaWrapper::lua_write},
+      {"control", SDLRemoteTestAdapterLuaWrapper::lua_control},
       {NULL, NULL}
     };
 
