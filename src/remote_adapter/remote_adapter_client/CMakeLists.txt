@@ -24,15 +24,14 @@ endif()
 
 find_package(Qt5 COMPONENTS Core REQUIRED)
 find_package( Threads REQUIRED )
+find_package(Lua 5.2 EXACT REQUIRED)
 
-if(NOT LUA_FOUND)
-  find_package(Lua 5.2 EXACT REQUIRED)
-  list(GET LUA_LIBRARIES 0 LUA_LIB)
-  list(GET LUA_LIBRARIES 1 LIBM_LIB)
+list(GET LUA_LIBRARIES 0 LUA_LIB)
+list(GET LUA_LIBRARIES 1 LIBM_LIB)
+message(STATUS "lualib : ${LUA_LIB}")
+message(STATUS "libmlib : ${LIBM_LIB}")
 
-  message(STATUS "lualib : ${LUA_LIB}")
-  message(STATUS "libmlib : ${LIBM_LIB}")
-
+if (NOT TARGET lua::lua)
   add_library(lua::lua UNKNOWN IMPORTED GLOBAL)
 
   set_target_properties(lua::lua
