@@ -2,7 +2,9 @@
 
 #include <string>
 #include <utility>
+
 #include "rpc/client.h"
+#include "rpc/rpc_error.h"
 
 namespace lua_lib {
 
@@ -73,6 +75,9 @@ class SDLRemoteTestAdapterClient {
   int clear();
 
  private:
+  int handleRpcError(rpc::rpc_error& e);
+  int handleRpcTimeout(rpc::timeout& t);
+
   rpc::client connection_;
   friend struct SDLRemoteTestAdapterLuaWrapper;
 };
