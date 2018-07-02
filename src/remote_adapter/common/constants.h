@@ -21,5 +21,6 @@ static const int CLOSE_FAILURE = -4;
 static const int OPEN_FAILURE = -5;
 static const int NO_CONNECTION = -6;
 static const int EXCEPTION_THROWN = -7;
+static const int TIMEOUT_EXPIRED = -8;
 }  // namespace error_codes
 }  // namespace constants

@@ -81,7 +81,7 @@ int SDLRemoteTestAdapterQtClient::sendToMq(const std::string& data, bool isContr
     if (isControl) {
         mq_name = control_mq_params_.name;
     }
-    int result = remote_adapter_client_ptr_->send(out_mq_params_.name, data);
+    int result = remote_adapter_client_ptr_->send(mq_name, data);
     if (constants::error_codes::SUCCESS == result) {
         if (!isControl) {
             emit bytesWritten(data.length());
