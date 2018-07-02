@@ -5,7 +5,7 @@ set (CMAKE_CXX_STANDARD 11)
 find_package( Threads REQUIRED )
 add_executable(${PROJECT_NAME}
                  main.cc
-                 mqueue_manager.cc)
+                mqueue_manager.cc)
 
 target_link_libraries(${PROJECT_NAME}
                        rpc::rpclib
@@ -20,7 +20,7 @@ target_include_directories( ${PROJECT_NAME}  PRIVATE
 
 install(
   TARGETS ${PROJECT_NAME}
-  DESTINATION "${CMAKE_INSTALL_PREFIX}"
+  DESTINATION "${CMAKE_INSTALL_PREFIX}/RemoteTestingAdapterServer"
   PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
   COMPONENT sdl_atf
 )
