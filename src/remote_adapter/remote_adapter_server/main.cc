@@ -57,7 +57,7 @@ void CheckError(const int res) {
       stringified_error = strerror(res);
       break;
   }
-  const auto err_obj = std::make_tuple(res, stringified_error);
+  const auto err_obj = std::make_pair(res, stringified_error);
   rpc::this_handler().respond_error(err_obj);
 }
 
