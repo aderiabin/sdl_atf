@@ -59,13 +59,21 @@ class SDLRemoteTestAdapterClient {
    */
   std::pair<std::string, int> receive(const std::string& name);
 
-  //  /**
-  //   * @brief Reads data from mqueue opened by server
-  //   * @param name mqueue name from which data should be received
-  //   * @return received data in successful case,
-  //   * otherwise empty string
-  //   */
-  //  std::string receive(const std::string& name);
+   /**
+    * @brief Close mqueue opened by server
+    * @param name mqueue name to be closed
+    * @return 0 in successful case, 1 - if client is not connected,
+    * 2 - in case of exception
+    */
+  int close(const std::string& name);
+
+    /**
+    * @brief Unlink mqueue opened by server
+    * @param name mqueue name to be unlinked
+    * @return 0 in successful case, 1 - if client is not connected,
+    * 2 - in case of exception
+    */
+  int unlink(const std::string& name);
 
   /**
    * @brief Clears the system from mqueues opened by server
