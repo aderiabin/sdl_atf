@@ -1,6 +1,6 @@
 --- Module which provides transport level interface for emulate connection with HMI for SDL
 --
--- *Dependencies:* `RemoteHMIAdapter`
+-- *Dependencies:* `remote`
 --
 -- *Globals:* `xmlReporter`, `qt`, `timers`, `atf_logger`
 -- @module RemoteHMIAdapter
@@ -8,7 +8,7 @@
 -- @license <https://github.com/smartdevicelink/sdl_core/blob/master/LICENSE>
 
 local json = require("json")
-local remote_adapter = require("RemoteHMIAdapter")
+local remote = require("remote")
 local RemoteHMIAdapter = {
   mt = { __index = {} }
 }
@@ -16,16 +16,14 @@ local RemoteHMIAdapter = {
 --- Type which provides transport level interface for emulate connection with HMI for SDL
 -- @type RemoteHMIAdapter
 
---- Construct instance of WebSocketConnection type
+--- Construct instance of RemoteHMIAdapter type
 -- @tparam params parameters for Remote adapter
 -- @treturn RemoteHMIAdapter Constructed instance
 function RemoteHMIAdapter.Connection(params)
   local res = { }
-  res.connection = remote_adapter:new(params.url,
-                                      params.port,
-                                      params.SDLtoHMIMqConfig,
-                                      params.HMItoSDLMqConfig,
-                                      params.ControlMqConfig)
+  res.connection = remote:RemoteTestAdapter(params.connection:GetConnection(),
+                                            params.SDLtoHMIMqConfig,
+                                            params.HMItoSDLMqConfig)
   res.qtproxy = qt.dynamic()
   setmetatable(res, RemoteHMIAdapter.mt)
   return res
@@ -45,12 +43,6 @@ function RemoteHMIAdapter.mt.__index:Connect()
   checkSelfArg(self)
   self.connection:connect()
   -- -- ToDo (aderiabin): Add unsuccess connect check
-end
-
---- Send control message to SDL
--- @tparam string text Message
-function RemoteHMIAdapter.mt.__index:SendControl(text)
-  self.connection:control(text)
 end
 
 --- Send message from HMI to SDL

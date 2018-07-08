@@ -18,6 +18,7 @@ local tcp = require("tcp_connection")
 local file_connection = require("file_connection")
 local mobile_session = require("mobile_session")
 local hmi_adapter_controller = require("hmi_adapter/hmi_adapter_controller")
+local remote_connection = require("remote/remote_connection")
 local hmi_connection = require('hmi_connection')
 local events = require("events")
 local expectations = require('expectations')
@@ -25,14 +26,6 @@ local functionId = require('function_id')
 local SDL = require('SDL')
 local exit_codes = require('exit_codes')
 local load_schema = require('load_schema')
-
-local hmiAdapter
-if config.hmiAdapterType == "Remote" then
-  hmiAdapter = require('remote_hmi_adapter_connection')
-else if config.hmiAdapterType == "WebSocket" then
-  hmiAdapter = require('websocket_connection')
-end
-
 local mob_schema = load_schema.mob_schema
 local hmi_schema = load_schema.hmi_schema
 
@@ -45,13 +38,20 @@ local FAILED = expectations.FAILED
 --- Type Test extends Test from testbase module
 -- @type Test
 
+--- Remote connection
+if config.remoteConnection.enabled then
+  Test.remoteConnection = remote_connection.RemoteConnection(config.remoteConnection.url, config.remoteConnection.port)
+  Test.remoteConnection:Connect()
+end
+
 --- HMI connection
-Test.hmiConnection = hmi_connection.Connection(hmi_adapter_controller.getHmiAdapter())
-local tcpConnection = tcp.Connection(config.mobileHost, config.mobilePort)
-local fileConnection = file_connection.FileConnection("mobile.out", tcpConnection)
+Test.hmiConnection = hmi_connection.Connection(hmi_adapter_controller.getHmiAdapter({connection = remoteConnection}))
 
 --- Default mobile connection
+local tcpConnection = tcp.Connection(config.mobileHost, config.mobilePort)
+local fileConnection = file_connection.FileConnection("mobile.out", tcpConnection)
 Test.mobileConnection = mobile.MobileConnection(fileConnection)
+
 event_dispatcher:AddConnection(Test.hmiConnection)
 event_dispatcher:AddConnection(Test.mobileConnection)
 --- Notification counter

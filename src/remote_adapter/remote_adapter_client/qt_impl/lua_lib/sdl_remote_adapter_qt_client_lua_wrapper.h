@@ -17,7 +17,6 @@ struct SDLRemoteTestAdapterLuaWrapper {
 
   static int lua_connect(lua_State* L);
   static int lua_write(lua_State* L);
-  static int lua_control(lua_State* L);
 };
 
 } // namespace lua_lib
