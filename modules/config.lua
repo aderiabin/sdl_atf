@@ -10,6 +10,12 @@ local config = { }
 --- Flag which defines usage of color for reporting
 config.color = true
 
+--- Remote cofiguration
+config.remoteConnection = {}
+config.remoteConnection.enabled = true
+config.remoteConnection.url = "192.168.1.26"
+config.remoteConnection.port = 5555
+
 --- HMI configuration
 config.hmiAdapterConfig = {}
 config.hmiAdapterConfig.hmiAdapterType = "Remote"
@@ -19,8 +25,6 @@ config.hmiAdapterConfig.WebSocket.url = "ws://localhost"
 config.hmiAdapterConfig.WebSocket.port = 8087
 --- Define configuration parameters for Remote HMI connection
 config.hmiAdapterConfig.Remote = {}
-config.hmiAdapterConfig.Remote.url = "192.168.1.26"
-config.hmiAdapterConfig.Remote.port = 5555
 -- Define configuration parameters for HMItoSDL Mq
 -- for Remote HMI connection
 config.hmiAdapterConfig.Remote.HMItoSDLMqConfig = {}
@@ -37,14 +41,17 @@ config.hmiAdapterConfig.Remote.SDLtoHMIMqConfig.max_messages_number = 128
 config.hmiAdapterConfig.Remote.SDLtoHMIMqConfig.max_message_size = 4095
 config.hmiAdapterConfig.Remote.SDLtoHMIMqConfig.flags = 1024 -- O_RDONLY | O_CREAT
 config.hmiAdapterConfig.Remote.SDLtoHMIMqConfig.mode = 1638 -- S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
+
+--- Control configuration (Ford: Applink)
 -- Define configuration parameters for control (AppLinkSDLProxy) Mq
--- for Remote HMI connection
-config.hmiAdapterConfig.Remote.ControlMqConfig = {}
-config.hmiAdapterConfig.Remote.ControlMqConfig.name = "/activeAppLinkSDLProxy"
-config.hmiAdapterConfig.Remote.ControlMqConfig.max_messages_number = 128
-config.hmiAdapterConfig.Remote.ControlMqConfig.max_message_size = 4095
-config.hmiAdapterConfig.Remote.ControlMqConfig.flags = 1025 -- O_WRONLY | O_CREAT
-config.hmiAdapterConfig.Remote.ControlMqConfig.mode = 1638 -- S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
+-- for Remote connection
+config.controlMqConfig = {}
+config.controlMqConfig.name = "/AppLinkSDLProxy"
+config.controlMqConfig.max_messages_number = 128
+config.controlMqConfig.max_message_size = 4095
+config.controlMqConfig.flags = 1025 -- O_WRONLY | O_CREAT
+config.controlMqConfig.mode = 1638 -- S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
+
 --- Define host for default mobile device connection
 config.mobileHost = "192.168.1.26"
 --- Define port for default mobile device connection

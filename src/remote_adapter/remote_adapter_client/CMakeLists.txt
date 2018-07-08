@@ -1,4 +1,4 @@
-project(RemoteHMIAdapter)
+project(remote)
 cmake_minimum_required(VERSION 3.11)
 include(FetchContent)
 
@@ -44,10 +44,11 @@ endif()
 
 add_library(${PROJECT_NAME} SHARED
                  sdl_remote_adapter_client.cc
-                 qt_impl/sdl_remote_adapter_receive_thread.cc
                  qt_impl/sdl_remote_adapter_qt_client.cc
+                 qt_impl/sdl_remote_adapter_receive_thread.cc
+                 lua_lib/sdl_remote_adapter_client_lua_wrapper.cc
                  qt_impl/lua_lib/sdl_remote_adapter_qt_client_lua_wrapper.cc
-                 qt_impl/lua_lib/lua_sdl_remote_adapter_library.cc
+                 lua_lib/lua_remote_library.cc
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC

@@ -13,19 +13,15 @@ class SDLRemoteTestAdapterReceiveThread : public QThread {
 Q_OBJECT
 
 public:
-    SDLRemoteTestAdapterReceiveThread(SDLRemoteTestAdapterQtClient *client,
-                                      QObject *parent = Q_NULLPTR);
+  SDLRemoteTestAdapterReceiveThread(SDLRemoteTestAdapterQtClient *client,
+                                    QObject *parent = Q_NULLPTR);
 
-    ~SDLRemoteTestAdapterReceiveThread();
-
-signals:
-    void dataAvailable(const QString &data);
-    void sourceUnreachable();
+  ~SDLRemoteTestAdapterReceiveThread();
 
 private:
-    SDLRemoteTestAdapterQtClient* client_;
+  void run() Q_DECL_OVERRIDE;
 
-    void run() Q_DECL_OVERRIDE;
+  SDLRemoteTestAdapterQtClient* client_;
 };
 
 } // namespace lua_lib

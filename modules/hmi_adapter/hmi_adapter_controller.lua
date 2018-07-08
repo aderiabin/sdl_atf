@@ -19,8 +19,24 @@ else
     .." for configuration parameter 'config.hmiAdapterConfig.hmiAdapterType'")
 end
 
-function HmiAdapterController.getHmiAdapter()
-	return hmiAdapter.Connection(config.hmiAdapterConfig[config.hmiAdapterConfig.hmiAdapterType])
+--- Provide HMI adapter instance on base of ATF configuration
+-- @tparam table params Specific parameters for HDMI adapter
+-- @treturn table HMI adapter instance
+function HmiAdapterController.getHmiAdapter(params)
+  if config.hmiAdapterConfig.hmiAdapterType == "Remote" and
+      not config.remoteConnection.enabled then
+    error("Remote HMI adapter can not be instantiated: Remote connection disabled in config")
+  end
+  local hmiAdapterParams = config.hmiAdapterConfig[config.hmiAdapterConfig.hmiAdapterType]
+  for param, value in pairs(params) do
+    if hmiAdapterParams[param] then
+      print("Config HMI adapter parameter '" .. param
+          .. "' was overwritten with '" .. value .. "' value")
+    end
+    hmiAdapterParams[param] = value
+  end
+
+  return hmiAdapter.Connection(hmiAdapterParams)
 end
 
 return HmiAdapterController
