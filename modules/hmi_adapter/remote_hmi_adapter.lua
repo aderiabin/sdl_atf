@@ -47,7 +47,14 @@ end
 
 --- Send message from HMI to SDL
 -- @tparam string text Message
-function RemoteHMIAdapter.mt.__index:Send(text)
+function RemoteHMIAdapter.mt.__index:Send(data)
+  local text
+  if type(data) == "table" then
+    text = json.encode({data})
+  else
+    text = data
+  end
+
   atf_logger.LOG("HMItoSDL", text)
   self.connection:write(text)
 end
