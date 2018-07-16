@@ -1,0 +1,139 @@
+#include "shmemory_manager.h"
+#include <stdio.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/mman.h>
+#include <iostream>
+#include <cstring>
+#include "common/constants.h"
+
+namespace shmemory_wrappers {
+
+const char * SharedMemoryManager::shm_name_sdlqueue = "/SHNAME_SDLQUEUE";
+const char * SharedMemoryManager::shm_name_sdlqueue2 = "/SHNAME_SDLQUEUE2";
+const char * SharedMemoryManager::shm_name_sdlqueue3 = "/SHNAME_SDLQUEUE3";
+const char * SharedMemoryManager::shm_json_mem_ident = "[{SHARED_MEMORY}]";
+
+SharedMemoryManager::SharedMemoryManager() {
+  // Create the shared memory object
+  ShmOpen(shm_name_sdlqueue,PROT_WRITE);
+  ShmOpen(shm_name_sdlqueue2,PROT_READ);
+  ShmOpen(shm_name_sdlqueue3,PROT_READ);
+}
+
+SharedMemoryManager::~SharedMemoryManager(){
+    
+  for(const auto & mem_obj : handles_){
+       ftruncate(mem_obj.second.object_handle_, 0);
+       munmap(mem_obj.second.object_data_, sizeof(shmem_t));
+       close(mem_obj.second.object_handle_);   
+  }
+}
+
+int SharedMemoryManager::ShmOpen(const std::string& shm_name,const int prot) {
+  std::cout << "ShmOpen : " << shm_name << std::endl;  
+
+  object_descrp & mem_obj = handles_[shm_name];
+  mem_obj.object_handle_ = shm_open(shm_name.c_str(), O_RDWR | O_CREAT, 0777);
+  
+  if(-1 == mem_obj.object_handle_) {
+      handles_.erase(shm_name);
+      std::cout << "Open failed: " << strerror( errno ) << std::endl;
+      return EXIT_FAILURE;
+  }
+  
+  ftruncate(mem_obj.object_handle_, sizeof(shmem_t));
+  // Get a pointer to the shared memory, map it into our address space
+  mem_obj.object_data_ = (shmem_t*)mmap(0, sizeof(shmem_t), prot, MAP_SHARED,mem_obj.object_handle_, 0);
+
+  if(MAP_FAILED == mem_obj.object_data_){
+      handles_.erase(shm_name);
+      std::cout <<"mmap failed: " << strerror( errno ) << std::endl;
+      return EXIT_FAILURE;
+  }
+
+  printf( "Map  mem_obj.object_data_ is 0x%08x\n", mem_obj.object_data_);
+  
+  return constants::error_codes::SUCCESS;
+}
+
+int SharedMemoryManager::ShmWrite(const std::string& shm_name, const std::string& data) {
+  std::cout << "ShmWrite to : " << shm_name << " : " << data << std::endl;
+  
+  if(handles_.find(shm_name) != handles_.end()){
+      object_descrp & mem_obj = handles_[shm_name];
+      std::cout << "Handle found : " << mem_obj.object_handle_ << " " << std::endl;
+      printf( "Map  mem_obj.object_data_ is 0x%08x\n", mem_obj.object_data_);
+      
+      mem_obj.object_data_->size_ = data.length();      
+      memset(mem_obj.object_data_->text_, 0, sizeof(mem_obj.object_data_->size_));
+      memcpy(mem_obj.object_data_->text_, data.c_str(), data.length());
+      
+      return constants::error_codes::SUCCESS;
+  }
+  std::cerr << "Shared memory name : '" << shm_name << "' NOT found";
+  return constants::error_codes::PATH_NOT_FOUND;
+}
+
+SharedMemoryManager::ReceiveResult SharedMemoryManager::ShmRead(const std::string& shm_name) {
+  std::cout << "ShmRead from " << shm_name << std::endl;
+  if(handles_.find(shm_name) != handles_.end()) {
+      object_descrp & mem_obj = handles_[shm_name];
+      std::cout << "Handle found : " << mem_obj.object_handle_ << " " << std::endl;
+      printf( "Map  mem_obj.object_data_ is 0x%08x\n", mem_obj.object_data_);      
+      std::cout << "Returning successful result" << std::endl;
+      return std::make_pair(std::string(mem_obj.object_data_->text_,mem_obj.object_data_->size_),constants::error_codes::SUCCESS);
+  }
+  std::cerr << "Shared memory name : '" << shm_name << "' NOT found";
+  return std::make_pair(std::string(), constants::error_codes::PATH_NOT_FOUND);
+}
+
+int SharedMemoryManager::ShmClose(const std::string& shm_name) {
+  std::cout << "ShmClose " << shm_name << std::endl;
+  if (handles_.find(shm_name) != handles_.end()) {
+    std::cout << "Handle found : " << handles_[shm_name].object_handle_ << " " << std::endl;
+    errno = 0;
+    const int res = close(handles_[shm_name].object_handle_);
+    if (-1 == res) {
+      std::cout << "Error occurred: " << strerror(errno) << std::endl;
+      return errno;
+    }
+    handles_.erase(shm_name);
+    std::cout << "Returning successful result" << std::endl;
+    return constants::error_codes::SUCCESS;
+  }
+  std::cerr << "Shared memory name : '" << shm_name << "' NOT found";
+  return constants::error_codes::PATH_NOT_FOUND;
+}
+
+int SharedMemoryManager::ShmUnlink(const std::string& shm_name) {
+  std::cout << "ShmUnlink " << shm_name << std::endl;
+  errno = 0;
+  const int res = shm_unlink(shm_name.c_str());
+  if (-1 == res) {
+    std::cout << "Error occurred: " << strerror(errno) << std::endl;
+    return errno;
+  }
+  std::cout << "Returning successful result" << std::endl;
+  return constants::error_codes::SUCCESS;
+}
+
+bool SharedMemoryManager::IsShmName(const std::string& path,std::string& sh_name){
+  
+  static const char * const applink_shm_1 = "{SDL_TO_APPLINK_SHM_1}";
+  static const char * const applink_shm_2 = "{SDL_TO_APPLINK_SHM_2}";
+  
+  if(0 == path.compare(applink_shm_1)){
+    sh_name = shm_name_sdlqueue2;
+    return true;
+  }else if(0 == path.compare(applink_shm_2)){
+    sh_name = shm_name_sdlqueue3;
+    return true;    
+  }
+
+  return false;
+}
+
+}  // namespace shmemory_wrappers

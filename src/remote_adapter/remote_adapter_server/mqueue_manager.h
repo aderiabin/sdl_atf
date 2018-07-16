@@ -8,6 +8,8 @@
 #include <map>
 #include <string>
 
+#include "shmemory_manager.h"
+
 namespace mq_wrappers {
 
 class MQueueManager {
@@ -44,7 +46,7 @@ class MQueueManager {
    * @param data data to be written to mqueue
    * @return error no (0 if success)
    */
-  int MqSend(const std::string& path, const std::string& data);
+  int MqSend(const std::string& path,std::string data);
 
   /**
    * @brief MqReceive reads data from mqueue
@@ -67,6 +69,9 @@ class MQueueManager {
   int MqClear();
 
  private:
+  
+  shmemory_wrappers::SharedMemoryManager shm_manager;
+  
   class Defaults {
    public:
     static const int MSGQ_MAX_MESSAGES = 10;

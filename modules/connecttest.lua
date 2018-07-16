@@ -45,7 +45,7 @@ if config.remoteConnection.enabled then
 end
 
 --- HMI connection
-Test.hmiConnection = hmi_connection.Connection(hmi_adapter_controller.getHmiAdapter({connection = remoteConnection}))
+Test.hmiConnection = hmi_connection.Connection(hmi_adapter_controller.getHmiAdapter({connection = Test.remoteConnection}))
 
 --- Default mobile connection
 local tcpConnection = tcp.Connection(config.mobileHost, config.mobilePort)
