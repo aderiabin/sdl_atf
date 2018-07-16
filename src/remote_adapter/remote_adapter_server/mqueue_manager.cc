@@ -41,8 +41,14 @@ int MQueueManager::MqOpenWithParams(const std::string& path,
   return errno;
 }
 
-int MQueueManager::MqSend(const std::string& path, const std::string& data) {
-  std::cout << "MqSend to : " << path << " : " << data << std::endl;
+int MQueueManager::MqSend(const std::string& path,std::string data) {
+  std::cout << "MqSend to : " << path <<" Size: "<<data.length()<<" : " << data << std::endl;
+
+  if(data.length() >= Defaults::MAX_QUEUE_MSG_SIZE){   
+      shm_manager.ShmWrite(shm_manager.shm_name_sdlqueue,data);
+      data = shm_manager.shm_json_mem_ident;    
+  }
+  
   if (handles_.find(path) != handles_.end()) {
     std::cout << "Handle found : " << handles_[path] << " " << std::endl;
     errno = 0;
@@ -64,11 +70,17 @@ MQueueManager::ReceiveResult MQueueManager::MqReceive(const std::string& path) {
   if (handles_.find(path) != handles_.end()) {
     std::cout << "Handle found : " << handles_[path] << " " << std::endl;
 
+    std::string shm_name;
+    if(shm_manager.IsShmName(path,shm_name)){
+      return shm_manager.ShmRead(shm_name);
+    }
+
     char buffer[Defaults::MAX_QUEUE_MSG_SIZE];
     errno = 0;
     const ssize_t length =
         mq_receive(handles_[path], buffer, sizeof(buffer), 0);
     std::cout << "Length of read data = " << length << std::endl;
+    std::cout << "Read data: " << buffer << std::endl;
     if (-1 == length) {
       std::cout << "Error occurred: " << strerror(errno) << std::endl;
       return std::make_pair(std::string(), errno);
