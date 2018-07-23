@@ -31,7 +31,7 @@ config.hmiAdapterConfig.Remote.HMItoSDLMqConfig = {}
 config.hmiAdapterConfig.Remote.HMItoSDLMqConfig.name = "/ToSDL"
 config.hmiAdapterConfig.Remote.HMItoSDLMqConfig.max_messages_number = 128
 config.hmiAdapterConfig.Remote.HMItoSDLMqConfig.max_message_size = 4095
-config.hmiAdapterConfig.Remote.HMItoSDLMqConfig.flags = 1025 -- O_WRONLY | O_CREAT
+config.hmiAdapterConfig.Remote.HMItoSDLMqConfig.flags = 257 -- O_WRONLY | O_CREAT
 config.hmiAdapterConfig.Remote.HMItoSDLMqConfig.mode = 1638 -- S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
 -- Define configuration parameters for SDLtoHMI Mq
 -- for Remote HMI connection
@@ -39,7 +39,7 @@ config.hmiAdapterConfig.Remote.SDLtoHMIMqConfig = {}
 config.hmiAdapterConfig.Remote.SDLtoHMIMqConfig.name = "/FromSDL"
 config.hmiAdapterConfig.Remote.SDLtoHMIMqConfig.max_messages_number = 128
 config.hmiAdapterConfig.Remote.SDLtoHMIMqConfig.max_message_size = 4095
-config.hmiAdapterConfig.Remote.SDLtoHMIMqConfig.flags = 1024 -- O_RDONLY | O_CREAT
+config.hmiAdapterConfig.Remote.SDLtoHMIMqConfig.flags = 256 -- O_RDONLY | O_CREAT
 config.hmiAdapterConfig.Remote.SDLtoHMIMqConfig.mode = 1638 -- S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
 
 --- Control configuration (Ford: Applink)
@@ -49,13 +49,13 @@ config.controlMqConfig = {}
 config.controlMqConfig.name = "/AppLinkSDLProxy"
 config.controlMqConfig.max_messages_number = 128
 config.controlMqConfig.max_message_size = 4095
-config.controlMqConfig.flags = 1025 -- O_WRONLY | O_CREAT
+config.controlMqConfig.flags = 257 -- O_WRONLY | O_CREAT
 config.controlMqConfig.mode = 1638 -- S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
 
 --- Define host for default mobile device connection
 config.mobileHost = "192.168.1.26"
 --- Define port for default mobile device connection
-config.mobilePort = 12345
+config.mobilePort = 12346
 --- Define timeout for Heartbeat in msec
 config.heartbeatTimeout = 7000
 --- Define timeout to wait for the events that should not occur
