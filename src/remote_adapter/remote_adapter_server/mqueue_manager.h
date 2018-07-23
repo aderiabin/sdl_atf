@@ -74,6 +74,21 @@ class MQueueManager {
    */ 
   void MqClearMsg(const mqd_t mq_descriptor);
 
+  /**
+   * @brief ShmOpen create descriptor that's associated with the shared “memory object”
+   * specified by name and maps a region within the descriptor
+   * @param shm_name name which associated with the shared “memory object”
+   * @return error no (0 if success)
+   */
+  int ShmOpen(const std::string& shm_name,const int prot);
+
+  /**
+   * @brief MqClose closes shared memory specified by name
+   * @param shm_name name shared object to close
+   * @return error no (0 if success)
+   */
+  int ShmClose(const std::string& shm_name);
+
  private:
   
   shmemory_wrappers::SharedMemoryManager shm_manager;
