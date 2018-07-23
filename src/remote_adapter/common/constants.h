@@ -11,6 +11,8 @@ static std::string send = "mq_send";
 static std::string receive = "mq_receive";
 static std::string clear = "mq_clear";
 static std::string client_connected = "client_connected";
+static std::string shm_open = "shm_open";
+static std::string shm_close = "shm_close";
 
 namespace error_codes {
 static const int SUCCESS = 0;
@@ -22,5 +24,6 @@ static const int OPEN_FAILURE = -5;
 static const int NO_CONNECTION = -6;
 static const int EXCEPTION_THROWN = -7;
 static const int TIMEOUT_EXPIRED = -8;
+static const int ALREADY_EXISTS = -9;
 }  // namespace error_codes
 }  // namespace constants

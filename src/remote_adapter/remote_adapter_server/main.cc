@@ -73,6 +73,9 @@ void CheckError(const int res) {
     case constants::error_codes::CLOSE_FAILURE:
       stringified_error = "Mqueue closing failure";
       break;
+    case constants::error_codes::ALREADY_EXISTS:
+      stringified_error = "Channel already exists";
+      break;
     default:
       stringified_error = strerror(res);
       break;
@@ -159,6 +162,19 @@ int main(int argc, char* argv[]) {
     srv.bind(constants::clear,
              [&mq_manager]() {
                const auto res = mq_manager.MqClear();
+               CheckError(res);
+             });
+
+    srv.bind(constants::shm_open,
+             [&mq_manager](std::string shm_name,
+                           const int prot){
+               const int res = mq_manager.ShmOpen(shm_name,prot);
+               CheckError(res);
+             });
+
+    srv.bind(constants::shm_close,
+             [&mq_manager](std::string shm_name){
+               const int res = mq_manager.ShmClose(shm_name);
                CheckError(res);
              });
 
