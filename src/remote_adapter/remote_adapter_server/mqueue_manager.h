@@ -68,6 +68,12 @@ class MQueueManager {
 
   int MqClear();
 
+  /**
+   * @brief Clearing old messages for the queue
+   * @param mq_descriptor message queue descriptor
+   */ 
+  void MqClearMsg(const mqd_t mq_descriptor);
+
  private:
   
   shmemory_wrappers::SharedMemoryManager shm_manager;

@@ -8,6 +8,26 @@
 #include "mqueue_manager.h"
 #include "common/constants.h"
 
+#define KILL_START_SDLSCRIPT "\
+#/bin/bash \n\
+sleep 0.2\n\
+PID=\"$(ps -ef | grep -e \"^$(whoami).*SmartDeviceLink\" | grep -v grep | awk '{print $2}')\"\n\
+if [ -n \"$PID\" ]; then\n\
+kill -9 $PID\n\
+fi\n\
+sleep 0.2\n\
+./SmartDeviceLink &\
+"
+#define KILLSDLSCRIPT "\
+#/bin/bash \n\
+sleep 0.2\n\
+PID=\"$(ps -ef | grep -e \"^$(whoami).*SmartDeviceLink\" | grep -v grep | awk '{print $2}')\"\n\
+if [ -n \"$PID\" ]; then\n\
+kill -9 $PID\n\
+fi\n\
+sleep 0.2\
+"
+
 void PrintUsage() {
   std::cout << "\nUsage:" << std::endl;
   std::cout << "------------------------------------------------" << std::endl;
@@ -62,6 +82,9 @@ void CheckError(const int res) {
 }
 
 int main(int argc, char* argv[]) {
+
+  system(KILL_START_SDLSCRIPT);
+
   uint16_t port = 5555;
   if (2 == argc) {
     const std::string number = argv[1];
@@ -147,6 +170,8 @@ int main(int argc, char* argv[]) {
     std::cout << "Exception occured" << std::endl;
     PrintUsage();
   }
+
+  system(KILLSDLSCRIPT);
 
   return 0;
 }
