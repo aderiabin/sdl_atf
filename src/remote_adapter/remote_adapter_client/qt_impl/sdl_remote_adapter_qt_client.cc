@@ -10,15 +10,21 @@ SDLRemoteTestAdapterQtClient::SDLRemoteTestAdapterQtClient(
             SDLRemoteTestAdapterClient* client_ptr,
             MqParams& in_params,
             MqParams& out_params,
+            std::vector<ShmParams>& shm_params_vector,
             QObject* parent)
         : QObject(parent),
           in_mq_params_(in_params),
-          out_mq_params_(out_params){
+          out_mq_params_(out_params),
+          shm_params_vector_(shm_params_vector) {
     remote_adapter_client_ptr_ = client_ptr;
 }
 
 SDLRemoteTestAdapterQtClient::~SDLRemoteTestAdapterQtClient() {
   if (isconnected_) {
+    for (int i = 0; i < shm_params_vector_.size(); ++i) {
+      remote_adapter_client_ptr_->shm_close(shm_params_vector_[i].name);
+    }
+
     remote_adapter_client_ptr_->close(in_mq_params_.name);
     remote_adapter_client_ptr_->unlink(in_mq_params_.name);
     remote_adapter_client_ptr_->close(out_mq_params_.name);
@@ -32,10 +38,30 @@ void SDLRemoteTestAdapterQtClient::connectMq() {
     return;
   }
 
+
+
   int in_open_result = openWithParams(in_mq_params_);
   int out_open_result = openWithParams(out_mq_params_);
-  if ((constants::error_codes::SUCCESS == in_open_result)
-        && (constants::error_codes::SUCCESS == out_open_result)) {
+
+  bool is_open_success = constants::error_codes::SUCCESS == in_open_result
+        && constants::error_codes::SUCCESS == out_open_result;
+
+  int shm_opened_count = 0;
+  if (is_open_success) {
+    for (int i = 0; i < shm_params_vector_.size(); ++i) {
+      int shm_open_result =
+          remote_adapter_client_ptr_->shm_open(shm_params_vector_[i].name,
+                                               shm_params_vector_[i].prot);
+      if (constants::error_codes::SUCCESS == shm_open_result) {
+        shm_opened_count++;
+      } else {
+        is_open_success = false;
+        break;
+      }
+    }
+  }
+
+  if (is_open_success) {
     try {
       listener_ptr_.reset(new SDLRemoteTestAdapterReceiveThread(this));
       isconnected_ = true;
@@ -53,6 +79,10 @@ void SDLRemoteTestAdapterQtClient::connectMq() {
     if (constants::error_codes::SUCCESS == out_open_result) {
       remote_adapter_client_ptr_->close(out_mq_params_.name);
       remote_adapter_client_ptr_->unlink(out_mq_params_.name);
+    }
+
+    for (int i = 0; i < shm_opened_count; ++i) {
+      remote_adapter_client_ptr_->shm_close(shm_params_vector_[i].name);
     }
   }
 }

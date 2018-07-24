@@ -25,7 +25,7 @@ config.hmiAdapterConfig.WebSocket.url = "ws://localhost"
 config.hmiAdapterConfig.WebSocket.port = 8087
 --- Define configuration parameters for Remote HMI connection
 config.hmiAdapterConfig.Remote = {}
--- Define configuration parameters for HMItoSDL Mq
+-- Define configuration parameters of HMItoSDL Mq
 -- for Remote HMI connection
 config.hmiAdapterConfig.Remote.HMItoSDLMqConfig = {}
 config.hmiAdapterConfig.Remote.HMItoSDLMqConfig.name = "/ToSDL"
@@ -33,7 +33,7 @@ config.hmiAdapterConfig.Remote.HMItoSDLMqConfig.max_messages_number = 128
 config.hmiAdapterConfig.Remote.HMItoSDLMqConfig.max_message_size = 4095
 config.hmiAdapterConfig.Remote.HMItoSDLMqConfig.flags = 257 -- O_WRONLY | O_CREAT
 config.hmiAdapterConfig.Remote.HMItoSDLMqConfig.mode = 1638 -- S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
--- Define configuration parameters for SDLtoHMI Mq
+-- Define configuration parameters of SDLtoHMI Mq
 -- for Remote HMI connection
 config.hmiAdapterConfig.Remote.SDLtoHMIMqConfig = {}
 config.hmiAdapterConfig.Remote.SDLtoHMIMqConfig.name = "/FromSDL"
@@ -41,9 +41,18 @@ config.hmiAdapterConfig.Remote.SDLtoHMIMqConfig.max_messages_number = 128
 config.hmiAdapterConfig.Remote.SDLtoHMIMqConfig.max_message_size = 4095
 config.hmiAdapterConfig.Remote.SDLtoHMIMqConfig.flags = 256 -- O_RDONLY | O_CREAT
 config.hmiAdapterConfig.Remote.SDLtoHMIMqConfig.mode = 1638 -- S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
+-- Define configuration parameters of shared memories
+-- for Remote HMI connection
+config.hmiAdapterConfig.Remote.sharedMemoryConfig = {{}, {}, {}}
+config.hmiAdapterConfig.Remote.sharedMemoryConfig[1].name = "/SHNAME_SDLQUEUE"
+config.hmiAdapterConfig.Remote.sharedMemoryConfig[1].prot = 512 -- PROT_WRITE
+config.hmiAdapterConfig.Remote.sharedMemoryConfig[2].name = "/SHNAME_SDLQUEUE2"
+config.hmiAdapterConfig.Remote.sharedMemoryConfig[2].prot = 256 -- PROT_READ
+config.hmiAdapterConfig.Remote.sharedMemoryConfig[3].name = "/SHNAME_SDLQUEUE3"
+config.hmiAdapterConfig.Remote.sharedMemoryConfig[3].prot = 256 -- PROT_READ
 
 --- Control configuration (Ford: Applink)
--- Define configuration parameters for control (AppLinkSDLProxy) Mq
+-- Define configuration parameters of control (AppLinkSDLProxy) Mq
 -- for Remote connection
 config.controlMqConfig = {}
 config.controlMqConfig.name = "/AppLinkSDLProxy"
