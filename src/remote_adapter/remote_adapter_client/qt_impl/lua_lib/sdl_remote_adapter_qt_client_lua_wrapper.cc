@@ -8,6 +8,14 @@ namespace lua_lib {
 
 int SDLRemoteTestAdapterLuaWrapper::create_SDLRemoteTestAdapter(lua_State* L) {
   luaL_checktype(L, 1, LUA_TTABLE);
+  // Index -1(top) - table shm_params_array
+  // Index -2 - table out_params
+  // Index -3 - table in_params
+  // Index -4 - SDLRemoteTestAdapterClient instance
+  // index -5 - Library table
+
+  std::vector<ShmParams> shm_params_vector = build_ShmParamsVector(L);
+  lua_pop(L, 1);  // Remove value from the top of the stack
   // Index -1(top) - table out_params
   // Index -2 - table in_params
   // Index -3 - SDLRemoteTestAdapterClient instance
@@ -39,7 +47,10 @@ int SDLRemoteTestAdapterLuaWrapper::create_SDLRemoteTestAdapter(lua_State* L) {
 
   try {
     SDLRemoteTestAdapterQtClient*  qt_client =
-        new SDLRemoteTestAdapterQtClient(client, in_mq_params, out_mq_params);
+        new SDLRemoteTestAdapterQtClient(client,
+                                         in_mq_params,
+                                         out_mq_params,
+                                         shm_params_vector);
 
     // Allocate memory for a pointer to client object
     SDLRemoteTestAdapterQtClient** s =
@@ -185,6 +196,58 @@ MqParams SDLRemoteTestAdapterLuaWrapper::build_MqParams(lua_State* L) {
   };
 
   return mq_params;
+}
+
+std::vector<ShmParams> SDLRemoteTestAdapterLuaWrapper::build_ShmParamsVector(lua_State* L) {
+  // Index -1(top) - table shm_params_array
+
+  std::vector<ShmParams> shm_params_vector;
+  int lua_array_size = luaL_len(L, -1);
+  for (int i = 1; i <= lua_array_size; ++i) {
+    lua_pushinteger(L, i); // Pushes onto the stack the value i
+    // Index -1(top) - number i
+    // Index -2 - table shm_params array
+    lua_gettable(L, -2); //Pushes onto the stack the value shm_params_array[i]
+    // Index -1(top) - table shm_params
+    // Index -2 - table shm_params array
+
+    ShmParams value = build_ShmParams(L);
+    lua_pop(L, 1);  // Remove value from the top of the stack
+    // Index -1(top) - table shm_params_array
+
+    shm_params_vector.push_back(value);
+  }
+
+  return shm_params_vector;
+}
+
+ShmParams SDLRemoteTestAdapterLuaWrapper::build_ShmParams(lua_State* L) {
+  // Index -1(top) - table shm_params
+
+  lua_getfield(
+      L, -1, "name"); //Pushes onto the stack the value shm_params[name]
+  // Index -1(top) - string name
+  // Index -2 - table shm_params
+
+  const char* name = lua_tostring(L, -1);
+  lua_pop(L, 1);  // remove value from the top of the stack
+  // Index -1(top) - table shm_params
+
+  lua_getfield(
+      L, -1, "prot"); //Pushes onto the stack the value shm_params[prot]
+  // Index -1(top) - number prot
+  // Index -2 - table shm_params
+
+  const int prot = lua_tointeger(L, -1);
+  lua_pop(L, 1);  // Remove value from the top of the stack
+  // Index -1(top) - table shm_params
+
+  ShmParams shm_params = {
+    std::string(name),
+    prot
+  };
+
+  return shm_params;
 }
 
 int SDLRemoteTestAdapterLuaWrapper::lua_connect(lua_State* L) {

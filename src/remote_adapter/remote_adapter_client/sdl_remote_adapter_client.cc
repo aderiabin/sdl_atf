@@ -147,6 +147,34 @@ int SDLRemoteTestAdapterClient::send(const std::string& name,
   return handleRpcTimeout(t);
 }
 
+int SDLRemoteTestAdapterClient::shm_open(const std::string& name, const int prot) try {
+  std::cout << "Open shared memory " << name << " on remote host:" << std::endl;
+  if (connected()) {
+    connection_.call(constants::shm_open, name, prot);
+    std::cout << "SUCCESS\n" << std::endl;
+    return constants::error_codes::SUCCESS;
+  }
+  return constants::error_codes::NO_CONNECTION;
+} catch (rpc::rpc_error& e) {
+  return handleRpcError(e);
+} catch (rpc::timeout &t) {
+  return handleRpcTimeout(t);
+}
+
+int SDLRemoteTestAdapterClient::shm_close(const std::string& name) try {
+  std::cout << "Close shared memory " << name << " on remote host:" << std::endl;
+  if (connected()) {
+    connection_.call(constants::shm_close, name);
+    std::cout << "SUCCESS\n" << std::endl;
+    return constants::error_codes::SUCCESS;
+  }
+  return constants::error_codes::NO_CONNECTION;
+} catch (rpc::rpc_error& e) {
+  return handleRpcError(e);
+} catch (rpc::timeout &t) {
+  return handleRpcTimeout(t);
+}
+
 int SDLRemoteTestAdapterClient::handleRpcError(rpc::rpc_error& e) {
   std::cout << "EXCEPTION Occured in function: "
             << e.get_function_name() <<  std::endl;

@@ -23,7 +23,8 @@ function RemoteHMIAdapter.Connection(params)
   local res = { }
   res.connection = remote:RemoteTestAdapter(params.connection:GetConnection(),
                                             params.SDLtoHMIMqConfig,
-                                            params.HMItoSDLMqConfig)
+                                            params.HMItoSDLMqConfig,
+                                            params.sharedMemoryConfig)
   res.qtproxy = qt.dynamic()
   setmetatable(res, RemoteHMIAdapter.mt)
   return res

@@ -5,6 +5,7 @@
 #include <string>
 #include <utility>
 #include <memory>
+#include <vector>
 
 #include "sdl_remote_adapter_client.h"
 
@@ -18,6 +19,11 @@ struct MqParams {
   const int mode;
 };
 
+struct ShmParams {
+  const std::string name;
+  const int prot;
+};
+
 class SDLRemoteTestAdapterReceiveThread;
 
 class SDLRemoteTestAdapterQtClient : public QObject {
@@ -27,6 +33,7 @@ public:
   SDLRemoteTestAdapterQtClient(SDLRemoteTestAdapterClient* client_ptr,
                                MqParams& in_params,
                                MqParams& out_params,
+                               std::vector<ShmParams>& shm_params_vector,
                                QObject* parent = Q_NULLPTR);
 
   ~SDLRemoteTestAdapterQtClient();
@@ -74,6 +81,7 @@ private:
   bool isconnected_ = false;
   MqParams in_mq_params_;
   MqParams out_mq_params_;
+  std::vector<ShmParams> shm_params_vector_;
   SDLRemoteTestAdapterClient* remote_adapter_client_ptr_;
   std::unique_ptr<SDLRemoteTestAdapterReceiveThread> listener_ptr_;
 };

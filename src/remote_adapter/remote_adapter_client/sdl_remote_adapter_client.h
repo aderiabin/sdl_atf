@@ -82,6 +82,23 @@ class SDLRemoteTestAdapterClient {
    */
   int clear();
 
+  /**
+   * @brief Sends open shared memory request to server
+   * @param name shared memory name which should be opened by server
+   * *param prot shared memory prot which should be opened by server
+   * @return 0 in successful case, 1 - if client is not connected,
+   * 2 - in case of exception
+   */
+  int shm_open(const std::string& name, const int prot);
+
+  /**
+   * @brief Sends close shared memory request to server
+   * @param name shared memory name which should be closed by server
+     * @return 0 in successful case, 1 - if client is not connected,
+   * 2 - in case of exception
+   */
+  int shm_close(const std::string& name);
+
  private:
   int handleRpcError(rpc::rpc_error& e);
   int handleRpcTimeout(rpc::timeout& t);
