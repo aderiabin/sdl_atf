@@ -16,12 +16,7 @@ const char * SharedMemoryManager::shm_name_sdlqueue2 = "/SHNAME_SDLQUEUE2";
 const char * SharedMemoryManager::shm_name_sdlqueue3 = "/SHNAME_SDLQUEUE3";
 const char * SharedMemoryManager::shm_json_mem_ident = "[{SHARED_MEMORY}]";
 
-SharedMemoryManager::SharedMemoryManager() {
-  // Create the shared memory object
-  ShmOpen(shm_name_sdlqueue,PROT_WRITE);
-  ShmOpen(shm_name_sdlqueue2,PROT_READ);
-  ShmOpen(shm_name_sdlqueue3,PROT_READ);
-}
+SharedMemoryManager::SharedMemoryManager() {}
 
 SharedMemoryManager::~SharedMemoryManager(){
     
@@ -35,13 +30,17 @@ SharedMemoryManager::~SharedMemoryManager(){
 int SharedMemoryManager::ShmOpen(const std::string& shm_name,const int prot) {
   std::cout << "ShmOpen : " << shm_name << std::endl;  
 
+  if(handles_.find(shm_name) != handles_.end()){
+    return constants::error_codes::ALREADY_EXISTS;
+  }
+
   object_descrp & mem_obj = handles_[shm_name];
   mem_obj.object_handle_ = shm_open(shm_name.c_str(), O_RDWR | O_CREAT, 0777);
   
   if(-1 == mem_obj.object_handle_) {
       handles_.erase(shm_name);
       std::cout << "Open failed: " << strerror( errno ) << std::endl;
-      return EXIT_FAILURE;
+      return constants::error_codes::OPEN_FAILURE;
   }
   
   ftruncate(mem_obj.object_handle_, sizeof(shmem_t));
@@ -49,9 +48,9 @@ int SharedMemoryManager::ShmOpen(const std::string& shm_name,const int prot) {
   mem_obj.object_data_ = (shmem_t*)mmap(0, sizeof(shmem_t), prot, MAP_SHARED,mem_obj.object_handle_, 0);
 
   if(MAP_FAILED == mem_obj.object_data_){
-      handles_.erase(shm_name);
       std::cout <<"mmap failed: " << strerror( errno ) << std::endl;
-      return EXIT_FAILURE;
+      ShmClose(shm_name);
+      return constants::error_codes::OPEN_FAILURE;     
   }
 
   printf( "Map  mem_obj.object_data_ is 0x%08x\n", mem_obj.object_data_);

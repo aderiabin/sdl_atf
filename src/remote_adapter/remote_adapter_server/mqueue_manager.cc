@@ -253,4 +253,14 @@ void MQueueManager::MqClearMsg(const mqd_t mq_descriptor){
   }
 }
 
+int MQueueManager::ShmOpen(const std::string& shm_name,const int prot){
+
+    return shm_manager.ShmOpen(shm_name,prot);  
+}
+
+int MQueueManager::ShmClose(const std::string& shm_name){
+
+    return shm_manager.ShmClose(shm_name);  
+}
+
 }  // namespace mq_wrappers
