@@ -32,7 +32,8 @@ find_package( Threads REQUIRED )
 add_executable(${PROJECT_NAME}
                 main.cc
                 mqueue_manager.cc
-                shmemory_manager.cc)
+                shmemory_manager.cc
+                utils_manager.cc)
 
 target_link_libraries(${PROJECT_NAME}
                        rpc::rpclib
