@@ -58,6 +58,30 @@ int SharedMemoryManager::ShmOpen(const std::string& shm_name,const int prot) {
   return constants::error_codes::SUCCESS;
 }
 
+int SharedMemoryManager::ShmClose(const std::string& shm_name) {
+  std::cout << "ShmClose " << shm_name << std::endl;
+  if (handles_.find(shm_name) != handles_.end()) {
+    object_descrp & mem_obj = handles_[shm_name];
+
+    std::cout << "Handle found : " << mem_obj.object_handle_ << " " << std::endl;
+
+    ftruncate(mem_obj.object_handle_, 0);
+    munmap(mem_obj.object_data_, sizeof(shmem_t));
+
+    errno = 0;
+    const int res = close(mem_obj.object_handle_);
+    if (-1 == res) {
+      std::cout << "Error occurred: " << strerror(errno) << std::endl;
+      return errno;
+    }
+    handles_.erase(shm_name);
+    std::cout << "Returning successful result" << std::endl;
+    return constants::error_codes::SUCCESS;
+  }
+  std::cerr << "Shared memory name : '" << shm_name << "' NOT found";
+  return constants::error_codes::PATH_NOT_FOUND;
+}
+
 int SharedMemoryManager::ShmWrite(const std::string& shm_name, const std::string& data) {
   std::cout << "ShmWrite to : " << shm_name << " : " << data << std::endl;
   
@@ -89,24 +113,6 @@ SharedMemoryManager::ReceiveResult SharedMemoryManager::ShmRead(const std::strin
   return std::make_pair(std::string(), constants::error_codes::PATH_NOT_FOUND);
 }
 
-int SharedMemoryManager::ShmClose(const std::string& shm_name) {
-  std::cout << "ShmClose " << shm_name << std::endl;
-  if (handles_.find(shm_name) != handles_.end()) {
-    std::cout << "Handle found : " << handles_[shm_name].object_handle_ << " " << std::endl;
-    errno = 0;
-    const int res = close(handles_[shm_name].object_handle_);
-    if (-1 == res) {
-      std::cout << "Error occurred: " << strerror(errno) << std::endl;
-      return errno;
-    }
-    handles_.erase(shm_name);
-    std::cout << "Returning successful result" << std::endl;
-    return constants::error_codes::SUCCESS;
-  }
-  std::cerr << "Shared memory name : '" << shm_name << "' NOT found";
-  return constants::error_codes::PATH_NOT_FOUND;
-}
-
 int SharedMemoryManager::ShmUnlink(const std::string& shm_name) {
   std::cout << "ShmUnlink " << shm_name << std::endl;
   errno = 0;
@@ -121,13 +127,10 @@ int SharedMemoryManager::ShmUnlink(const std::string& shm_name) {
 
 bool SharedMemoryManager::IsShmName(const std::string& path,std::string& sh_name){
   
-  static const char * const applink_shm_1 = "{SDL_TO_APPLINK_SHM_1}";
-  static const char * const applink_shm_2 = "{SDL_TO_APPLINK_SHM_2}";
-  
-  if(0 == path.compare(applink_shm_1)){
+  if(0 == path.compare(constants::shm_1_applink)){
     sh_name = shm_name_sdlqueue2;
     return true;
-  }else if(0 == path.compare(applink_shm_2)){
+  }else if(0 == path.compare(constants::shm_2_applink)){
     sh_name = shm_name_sdlqueue3;
     return true;    
   }
