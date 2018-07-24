@@ -116,13 +116,13 @@ int main(int argc, char* argv[]) {
                std::cout << "Client connected" << std::endl;
              });
 
-    srv.bind(constants::open,
+    srv.bind(constants::mq_open,
              [&mq_manager](std::string path) {
                const int res = mq_manager.MqOpen(path);
                CheckError(res);
              });
 
-    srv.bind(constants::open_with_params,
+    srv.bind(constants::mq_open_with_params,
              [&mq_manager](std::string path,
                            const int max_messages_number,
                            const int max_message_size,
@@ -133,25 +133,25 @@ int main(int argc, char* argv[]) {
                CheckError(res);
              });
 
-    srv.bind(constants::close,
+    srv.bind(constants::mq_close,
              [&mq_manager](std::string path) {
                const int res = mq_manager.MqClose(path);
                CheckError(res);
              });
 
-    srv.bind(constants::unlink,
+    srv.bind(constants::mq_unlink,
              [&mq_manager](std::string path) {
                const int res = mq_manager.MqUnlink(path);
                CheckError(res);
              });
 
-    srv.bind(constants::send,
+    srv.bind(constants::mq_send,
              [&mq_manager](std::string path, std::string data) {
                const int res = mq_manager.MqSend(path, data);
                CheckError(res);
              });
 
-    srv.bind(constants::receive,
+    srv.bind(constants::mq_receive,
              [&mq_manager](std::string path) -> std::pair<std::string, int> {
                const auto receive_result = mq_manager.MqReceive(path);
                auto res = receive_result.second;
@@ -159,7 +159,7 @@ int main(int argc, char* argv[]) {
                return receive_result;
              });
 
-    srv.bind(constants::clear,
+    srv.bind(constants::mq_clear,
              [&mq_manager]() {
                const auto res = mq_manager.MqClear();
                CheckError(res);
