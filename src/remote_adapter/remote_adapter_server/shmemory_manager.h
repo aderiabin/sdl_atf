@@ -28,6 +28,13 @@ class SharedMemoryManager {
    * @return error no (0 if success)
    */
   int ShmOpen(const std::string& shm_name,const int prot);
+
+  /**
+   * @brief MqClose closes shared memory specified by name
+   * @param shm_name name shared object to close
+   * @return error no (0 if success)
+   */
+  int ShmClose(const std::string& shm_name);
   
   /**
    * @brief ShmWrite write data to shared memory
@@ -47,17 +54,11 @@ class SharedMemoryManager {
   ReceiveResult ShmRead(const std::string& shm_name);
 
   /**
-   * @brief MqClose closes shared memory specified by name
-   * @param shm_name name shared object to close
-   * @return error no (0 if success)
-   */
-  int ShmClose(const std::string& shm_name);
-  
-  /**
    * @brief ShmUnlink removing an object previously created by ShmOpen.
    * @param shm_name name shared object to remove
    */
   int ShmUnlink(const std::string& shm_name);  
+  
   /**
    * @brief IsShmName checks is the path memory object name or queue name
    * @param path path to mqueue or memory object name
