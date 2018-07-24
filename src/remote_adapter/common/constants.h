@@ -15,6 +15,13 @@ static std::string shm_open = "shm_open";
 static std::string shm_close = "shm_close";
 static const char * const shm_1_applink = "{SDL_TO_APPLINK_SHM_1}";
 static const char * const shm_2_applink = "{SDL_TO_APPLINK_SHM_2}";
+static std::string app_start = "app_start";
+static std::string app_stop = "app_stop";
+static std::string app_check_status = "app_check_status";
+static std::string file_backup = "file_backup";
+static std::string file_restore = "file_restore";
+static std::string file_update = "file_update";
+
 
 namespace error_codes {
 static const int SUCCESS = 0;
