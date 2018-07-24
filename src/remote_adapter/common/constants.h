@@ -3,16 +3,18 @@
 #include <string>
 
 namespace constants {
-static std::string open = "mq_open";
-static std::string open_with_params = "mq_open_with_params";
-static std::string close = "mq_close";
-static std::string unlink = "mq_unlink";
-static std::string send = "mq_send";
-static std::string receive = "mq_receive";
-static std::string clear = "mq_clear";
 static std::string client_connected = "client_connected";
+static std::string mq_open = "mq_open";
+static std::string mq_open_with_params = "mq_open_with_params";
+static std::string mq_close = "mq_close";
+static std::string mq_unlink = "mq_unlink";
+static std::string mq_send = "mq_send";
+static std::string mq_receive = "mq_receive";
+static std::string mq_clear = "mq_clear";
 static std::string shm_open = "shm_open";
 static std::string shm_close = "shm_close";
+static const char * const shm_1_applink = "{SDL_TO_APPLINK_SHM_1}";
+static const char * const shm_2_applink = "{SDL_TO_APPLINK_SHM_2}";
 
 namespace error_codes {
 static const int SUCCESS = 0;
