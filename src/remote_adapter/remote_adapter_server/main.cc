@@ -6,27 +6,8 @@
 #include "rpc/this_handler.h"
 
 #include "mqueue_manager.h"
+#include "utils_manager.h"
 #include "common/constants.h"
-
-#define KILL_START_SDLSCRIPT "\
-#/bin/bash \n\
-sleep 0.2\n\
-PID=\"$(ps -ef | grep -e \"^$(whoami).*SmartDeviceLink\" | grep -v grep | awk '{print $2}')\"\n\
-if [ -n \"$PID\" ]; then\n\
-kill -9 $PID\n\
-fi\n\
-sleep 0.2\n\
-./SmartDeviceLink &\
-"
-#define KILLSDLSCRIPT "\
-#/bin/bash \n\
-sleep 0.2\n\
-PID=\"$(ps -ef | grep -e \"^$(whoami).*SmartDeviceLink\" | grep -v grep | awk '{print $2}')\"\n\
-if [ -n \"$PID\" ]; then\n\
-kill -9 $PID\n\
-fi\n\
-sleep 0.2\
-"
 
 void PrintUsage() {
   std::cout << "\nUsage:" << std::endl;
@@ -86,7 +67,10 @@ void CheckError(const int res) {
 
 int main(int argc, char* argv[]) {
 
-  system(KILL_START_SDLSCRIPT);
+  utils_wrappers::UtilsManager::StopApp("AppLinkService");
+  utils_wrappers::UtilsManager::StopApp("SmartDeviceLink");
+
+  utils_wrappers::UtilsManager::StartApp("/fs/mp/bin/","SmartDeviceLink");  
 
   uint16_t port = 5555;
   if (2 == argc) {
@@ -178,6 +162,80 @@ int main(int argc, char* argv[]) {
                CheckError(res);
              });
 
+    srv.bind(constants::app_start,
+             [](std::string app_path,std::string app_name){
+               const int res = utils_wrappers::UtilsManager::StartApp(app_path,app_name);
+               //CheckError(res);
+               return res;
+             });
+
+    srv.bind(constants::app_stop,
+             [](std::string app_name){
+               const int res = utils_wrappers::UtilsManager::StopApp(app_name);
+               //CheckError(res);
+               return res;
+             });
+
+    srv.bind(constants::app_check_status,
+             [](std::string app_name){
+               const int res = utils_wrappers::UtilsManager::CheckStatusApp(app_name);
+               //CheckError(res);
+               return res;
+             });
+
+    srv.bind(constants::file_backup,
+             [](std::string file_path,std::string file_name){
+               const int res = utils_wrappers::UtilsManager::FileBackup(file_path,file_name);
+               CheckError(res);
+             });
+
+    srv.bind(constants::file_restore,
+             [](std::string file_path,std::string file_name,std::string file_content){
+               const int res = utils_wrappers::UtilsManager::FileUpdate(file_path,file_name,file_content);
+               //CheckError(res);
+               return res;
+             });
+
+    srv.bind(constants::file_exists,
+             [](std::string file_path,std::string file_name){
+               const int res = utils_wrappers::UtilsManager::FileExists(file_path,file_name);
+               //CheckError(res);
+               return res;
+             });
+
+    srv.bind(constants::folder_exists,
+             [](std::string folder_path,std::string folder_name){
+               const int res = utils_wrappers::UtilsManager::FolderExists(folder_path,folder_name);
+               //CheckError(res);
+               return res;
+             });
+
+    srv.bind(constants::file_content,
+             [](std::string file_path,std::string file_name){
+               std::string file_content = utils_wrappers::UtilsManager::GetFileContent(file_path,file_name);
+               if(file_content.length()){
+                   return std::make_pair(file_content,
+                          constants::error_codes::SUCCESS);
+               }
+
+               return std::make_pair(file_content,
+                          constants::error_codes::FAILED);               
+             });
+
+    srv.bind(constants::file_delete,
+             [](std::string file_path,std::string file_name){
+               const int res = utils_wrappers::UtilsManager::FileDelete(file_path,file_name);               
+               return res;
+             });
+
+    srv.bind(constants::folder_delete,
+             [](std::string folder_path){
+               const int res = utils_wrappers::UtilsManager::FolderDelete(folder_path);               
+               return res;
+             });
+
+
+
     // Run the server loop with 2 worker threads.
     srv.async_run(2);
     std::cin.ignore();
@@ -187,7 +245,7 @@ int main(int argc, char* argv[]) {
     PrintUsage();
   }
 
-  system(KILLSDLSCRIPT);
+  utils_wrappers::UtilsManager::StopApp("SmartDeviceLink");
 
   return 0;
 }
