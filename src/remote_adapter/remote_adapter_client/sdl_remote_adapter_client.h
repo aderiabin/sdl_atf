@@ -85,7 +85,7 @@ class SDLRemoteTestAdapterClient {
   /**
    * @brief Sends open shared memory request to server
    * @param name shared memory name which should be opened by server
-   * *param prot shared memory prot which should be opened by server
+   * @param prot shared memory prot which should be opened by server
    * @return 0 in successful case, 1 - if client is not connected,
    * 2 - in case of exception
    */
@@ -98,6 +98,116 @@ class SDLRemoteTestAdapterClient {
    * 2 - in case of exception
    */
   int shm_close(const std::string& name);
+
+  /**
+   * @brief Sends start application request to server
+   * @param path Path to application
+   * @param name Name of application
+   * @return 0 in successful case, 1 - if client is not connected,
+   * 2 - in case of exception
+   */
+  int app_start(const std::string& path, const std::string& name);
+
+  /**
+   * @brief Sends stop application request to server
+   * @param name Name of application
+   * @return 0 in successful case, 1 - if client is not connected,
+   * 2 - in case of exception
+   */
+  int app_stop(const std::string& name);
+
+  /**
+   * @brief Sends check application status request to server
+   * @param name Name of application
+   * @return 0 in successful case, 1 - if client is not connected,
+   * 2 - in case of exception
+   */
+  int app_check_status(const std::string& name);
+
+  /**
+   * @brief Sends check file existing request to server
+   * @param path Path to file
+   * @param name Name of file
+   * @return 0 in successful case, 1 - if client is not connected,
+   * 2 - in case of exception
+   */
+  int file_exists(const std::string& path, const std::string& name);
+
+  /**
+   * @brief Sends update file content request to server
+   * @param path Path to file
+   * @param name Name of file
+   * @param content Content of file
+   * @return 0 in successful case, 1 - if client is not connected,
+   * 2 - in case of exception
+   */
+  int file_update(const std::string& path,
+                  const std::string& name,
+                  const std::string& content);
+
+  /**
+   * @brief Sends get file content request to server
+   * @param path Path to file
+   * @param name Name of file
+   * @return 0 in successful case, 1 - if client is not connected,
+   * 2 - in case of exception
+   */
+  std::pair<std::string, int> file_content(const std::string& path,
+                                           const std::string& name);
+
+  /**
+   * @brief Sends delete file request to server
+   * @param path Path to file
+   * @param name Name of file
+   * @return 0 in successful case, 1 - if client is not connected,
+   * 2 - in case of exception
+   */
+  int file_delete(const std::string& path, const std::string& name);
+
+  /**
+   * @brief Sends backup file request to server
+   * @param path Path to file
+   * @param name Name of file
+   * @return 0 in successful case, 1 - if client is not connected,
+   * 2 - in case of exception
+   */
+  int file_backup(const std::string& path, const std::string& name);
+
+  /**
+   * @brief Sends restore backuped file request to server
+   * @param path Path to file
+   * @param name Name of file
+   * @return 0 in successful case, 1 - if client is not connected,
+   * 2 - in case of exception
+   */
+  int file_restore(const std::string& path, const std::string& name);
+
+  /**
+   * @brief Check existance of folder request to server
+   * @param path Path to file
+   * @param name Name of file
+   * @return 0 in successful case, 1 - if client is not connected,
+   * 2 - in case of exception
+   */
+  int folder_exists(const std::string& path, const std::string& name);
+
+  /**
+   * @brief Sends create folder request to server
+   * @param path Path to file
+   * @param name Name of file
+   * @return 0 in successful case, 1 - if client is not connected,
+   * 2 - in case of exception
+   */
+  int folder_create(const std::string& path, const std::string& name);
+
+  /**
+   * @brief Sends delete folder request to server
+   * @param path Path to file
+   * @param name Name of file
+   * @return 0 in successful case, 1 - if client is not connected,
+   * 2 - in case of exception
+   */
+  int folder_delete(const std::string& path, const std::string& name);
 
  private:
   int handleRpcError(rpc::rpc_error& e);

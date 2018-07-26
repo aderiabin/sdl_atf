@@ -21,10 +21,11 @@ static std::string app_check_status = "app_check_status";
 static std::string file_backup = "file_backup";
 static std::string file_restore = "file_restore";
 static std::string file_update = "file_update";
-static std::string file_exists = "file_exists"; 
+static std::string file_exists = "file_exists";
 static std::string file_content = "file_content";
 static std::string file_delete = "file_delete";
 static std::string folder_exists = "folder_exists";
+static std::string folder_create = "folder_create";
 static std::string folder_delete = "folder_delete";
 
 namespace stat_app_codes{

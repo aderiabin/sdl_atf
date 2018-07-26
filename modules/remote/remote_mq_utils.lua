@@ -3,22 +3,22 @@
 -- *Dependencies:* none
 --
 -- *Globals:* none
--- @module RemoteMqHandler
+-- @module RemoteMqUtils
 -- @copyright [Ford Motor Company](https://smartdevicelink.com/partners/ford/) and [SmartDeviceLink Consortium](https://smartdevicelink.com/consortium/)
 -- @license <https://github.com/smartdevicelink/sdl_core/blob/master/LICENSE>
 
-local RemoteMqHandler = {
+local RemoteMqUtils = {
   mt = { __index = {} }
 }
 
 --- Type which provides transport level interface for emulate connection with HMI for SDL
--- @type RemoteMqHandler
+-- @type RemoteMqUtils
 
---- Construct instance of RemoteMqHandler type
--- @tparam connection RemoteConnection instance
--- @tparam mqConfig Parameters to create/open MQ
--- @treturn RemoteMqHandler Constructed instance
-function RemoteMqHandler.RemoteMqHandler(connection, mqConfig)
+--- Construct instance of RemoteMqUtils type
+-- @tparam RemoteConnection connection RemoteConnection instance
+-- @tparam table mqConfig Parameters to create/open MQ
+-- @treturn RemoteMqUtils Constructed instance
+function RemoteMqUtils.RemoteMqUtils(connection, mqConfig)
   local res = {
     name = mqConfig.name,
     max_messages_number = mqConfig.max_messages_number,
@@ -27,19 +27,19 @@ function RemoteMqHandler.RemoteMqHandler(connection, mqConfig)
     mode = mqConfig.mode
   }
   res.connection = connection:GetConnection()
-  setmetatable(res, RemoteMqHandler.mt)
+  setmetatable(res, RemoteMqUtils.mt)
   return res
 end
 
 --- Check connection
 -- @treturn boolean Return true in case connection is active
-function RemoteMqHandler.mt.__index:Connected()
+function RemoteMqUtils.mt.__index:Connected()
   return self.connection:connected()
 end
 
 --- Open Mq with default params
 -- @treturn number Return 0 in case of success
-function RemoteMqHandler.mt.__index:Open()
+function RemoteMqUtils.mt.__index:Open()
   max_messages_number = nil
   max_message_size = nil
   flags = nil
@@ -49,7 +49,7 @@ end
 
 --- Open Mq with params
 -- @treturn number Return 0 in case of success
-function RemoteMqHandler.mt.__index:OpenWithParams()
+function RemoteMqUtils.mt.__index:OpenWithParams()
   return self.connection:open_with_params(self.name,
                                           self.max_messages_number,
                                           self.max_message_size,
@@ -58,34 +58,35 @@ function RemoteMqHandler.mt.__index:OpenWithParams()
 end
 
 --- Send data to Mq
+-- @tparam string data Data to send
 -- @treturn number Return 0 in case of success
-function RemoteMqHandler.mt.__index:Send(data)
+function RemoteMqUtils.mt.__index:Send(data)
   return self.connection:send(self.name, data)
 end
 
 --- Receive data from Mq
 -- @treturn number Return 0 in case of success
 -- @treturn string Received data
-function RemoteMqHandler.mt.__index:Receive()
+function RemoteMqUtils.mt.__index:Receive()
   return self.connection:receive(self.name)
 end
 
 --- Close Mq
 -- @treturn number Return 0 in case of success
-function RemoteMqHandler.mt.__index:Close()
+function RemoteMqUtils.mt.__index:Close()
   self.connection:close(self.name)
 end
 
 --- Unlink Mq
 -- @treturn number Return 0 in case of success
-function RemoteMqHandler.mt.__index:Unlink()
+function RemoteMqUtils.mt.__index:Unlink()
   self.connection:unlink(self.name)
 end
 
 --- Clear Mq
 -- @treturn number Return 0 in case of success
-function RemoteMqHandler.mt.__index:Clear()
+function RemoteMqUtils.mt.__index:Clear()
   self.connection:clear()
 end
 
-return RemoteMqHandler
+return RemoteMqUtils
