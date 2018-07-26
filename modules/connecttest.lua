@@ -19,6 +19,9 @@ local file_connection = require("file_connection")
 local mobile_session = require("mobile_session")
 local hmi_adapter_controller = require("hmi_adapter/hmi_adapter_controller")
 local remote_connection = require("remote/remote_connection")
+local remote_file_utils = require("remote/remote_file_utils")
+local remote_application_utils = require("remote/remote_application_utils")
+local remote_mq_utils = require("remote/remote_mq_utils")
 local hmi_connection = require('hmi_connection')
 local events = require("events")
 local expectations = require('expectations')
@@ -38,10 +41,15 @@ local FAILED = expectations.FAILED
 --- Type Test extends Test from testbase module
 -- @type Test
 
---- Remote connection
+--- Remote connection and utils
 if config.remoteConnection.enabled then
   Test.remoteConnection = remote_connection.RemoteConnection(config.remoteConnection.url, config.remoteConnection.port)
   Test.remoteConnection:Connect()
+
+  Test.remoteUtils = {}
+  Test.remoteUtils.file = remote_file_utils.RemoteFileUtils(Test.remoteConnection)
+  Test.remoteUtils.app = remote_application_utils.RemoteAppUtils(Test.remoteConnection)
+  Test.remoteUtils.mq = remote_mq_utils.RemoteMqUtils(Test.remoteConnection)
 end
 
 --- HMI connection

@@ -57,7 +57,7 @@ int SDLRemoteClientLuaWrapper::destroy_SDLRemoteMqClient(lua_State* L) {
 
 void SDLRemoteClientLuaWrapper::registerSDLRemoteMqClient(lua_State* L) {
   static const luaL_Reg SDLRemoteMqClientFunctions[] = {
-      {"connect", SDLRemoteClientLuaWrapper::lua_connected},
+      {"connected", SDLRemoteClientLuaWrapper::lua_connected},
       {"open", SDLRemoteClientLuaWrapper::lua_open},
       {"open_with_params", SDLRemoteClientLuaWrapper::lua_open_with_params},
       {"send", SDLRemoteClientLuaWrapper::lua_send},
@@ -65,6 +65,17 @@ void SDLRemoteClientLuaWrapper::registerSDLRemoteMqClient(lua_State* L) {
       {"close", SDLRemoteClientLuaWrapper::lua_close},
       {"unlink", SDLRemoteClientLuaWrapper::lua_unlink},
       {"clear", SDLRemoteClientLuaWrapper::lua_clear},
+      {"app_start", SDLRemoteClientLuaWrapper::lua_app_start},
+      {"app_stop", SDLRemoteClientLuaWrapper::lua_app_stop},
+      {"app_check_status", SDLRemoteClientLuaWrapper::lua_app_check_status},
+      {"file_exists", SDLRemoteClientLuaWrapper::lua_file_exists},
+      {"file_update", SDLRemoteClientLuaWrapper::lua_file_update},
+      {"file_content", SDLRemoteClientLuaWrapper::lua_file_content},
+      {"file_delete", SDLRemoteClientLuaWrapper::lua_file_delete},
+      {"file_backup", SDLRemoteClientLuaWrapper::lua_file_backup},
+      {"file_restore", SDLRemoteClientLuaWrapper::lua_file_restore},
+      {"folder_create", SDLRemoteClientLuaWrapper::lua_folder_create},
+      {"folder_delete", SDLRemoteClientLuaWrapper::lua_folder_delete},
       {NULL, NULL}
     };
 
@@ -203,6 +214,161 @@ int SDLRemoteClientLuaWrapper::lua_clear(lua_State* L) {
 
   auto instance = get_instance(L);
   int result = instance->clear();
+  lua_pushinteger(L, result);
+  return 1;
+}
+
+int SDLRemoteClientLuaWrapper::lua_app_start(lua_State* L) {
+  // Index -1(top) - string app name
+  // Index -2 - string path to app
+  // Index -3 - userdata instance
+
+  auto instance = get_instance(L);
+  auto path = lua_tostring(L, -2);
+  auto name = lua_tostring(L, -1);
+  int result = instance->app_start(path, name);
+  lua_pushinteger(L, result);
+  return 1;
+}
+
+int SDLRemoteClientLuaWrapper::lua_app_stop(lua_State* L) {
+  // Index -1(top) - string app name
+  // Index -2 - userdata instance
+
+  auto instance = get_instance(L);
+  auto name = lua_tostring(L, -1);
+  int result = instance->app_stop(name);
+  lua_pushinteger(L, result);
+  return 1;
+}
+
+int SDLRemoteClientLuaWrapper::lua_app_check_status(lua_State* L) {
+  // Index -1(top) - string app name
+  // Index -2 - userdata instance
+
+  auto instance = get_instance(L);
+  auto name = lua_tostring(L, -1);
+  int result = instance->app_check_status(name);
+  lua_pushinteger(L, result);
+  return 1;
+}
+
+int SDLRemoteClientLuaWrapper::lua_file_exists(lua_State* L) {
+  // Index -1(top) - string file name
+  // Index -2 - string path to file
+  // Index -3 - userdata instance
+
+  auto instance = get_instance(L);
+  auto path = lua_tostring(L, -2);
+  auto name = lua_tostring(L, -1);
+  int result = instance->file_exists(path, name);
+  lua_pushinteger(L, result);
+  return 1;
+}
+
+int SDLRemoteClientLuaWrapper::lua_file_update(lua_State* L) {
+  // Index -1(top) - string file content
+  // Index -2 - string file name
+  // Index -3 - string path to file
+  // Index -4 - userdata instance
+
+  auto instance = get_instance(L);
+  auto path = lua_tostring(L, -3);
+  auto name = lua_tostring(L, -2);
+  auto content = lua_tostring(L, -1);
+  int result = instance->file_update(path, name, content);
+  lua_pushinteger(L, result);
+  return 1;
+}
+
+int SDLRemoteClientLuaWrapper::lua_file_content(lua_State* L) {
+  // Index -1(top) - string file name
+  // Index -2 - string path to file
+  // Index -3 - userdata instance
+
+  auto instance = get_instance(L);
+  auto path = lua_tostring(L, -2);
+  auto name = lua_tostring(L, -1);
+  const auto data_and_error = instance->file_content(path, name);
+  lua_pushinteger(L, data_and_error.second);
+  lua_pushstring(L, data_and_error.first.c_str());
+  return 2;
+}
+
+int SDLRemoteClientLuaWrapper::lua_file_delete(lua_State* L) {
+  // Index -1(top) - string file name
+  // Index -2 - string path to file
+  // Index -3 - userdata instance
+
+  auto instance = get_instance(L);
+  auto path = lua_tostring(L, -2);
+  auto name = lua_tostring(L, -1);
+  int result = instance->file_delete(path, name);
+  lua_pushinteger(L, result);
+  return 1;
+}
+
+int SDLRemoteClientLuaWrapper::lua_file_backup(lua_State* L) {
+  // Index -1(top) - string file name
+  // Index -2 - string path to file
+  // Index -3 - userdata instance
+
+  auto instance = get_instance(L);
+  auto path = lua_tostring(L, -2);
+  auto name = lua_tostring(L, -1);
+  int result = instance->file_backup(path, name);
+  lua_pushinteger(L, result);
+  return 1;
+}
+
+int SDLRemoteClientLuaWrapper::lua_file_restore(lua_State* L) {
+  // Index -1(top) - string file name
+  // Index -2 - string path to file
+  // Index -3 - userdata instance
+
+  auto instance = get_instance(L);
+  auto path = lua_tostring(L, -2);
+  auto name = lua_tostring(L, -1);
+  int result = instance->file_restore(path, name);
+  lua_pushinteger(L, result);
+  return 1;
+}
+
+int SDLRemoteClientLuaWrapper::lua_folder_exists(lua_State* L) {
+  // Index -1(top) - string folder name
+  // Index -2 - string path to folder
+  // Index -3 - userdata instance
+
+  auto instance = get_instance(L);
+  auto path = lua_tostring(L, -2);
+  auto name = lua_tostring(L, -1);
+  int result = instance->folder_exists(path, name);
+  lua_pushinteger(L, result);
+  return 1;
+}
+
+int SDLRemoteClientLuaWrapper::lua_folder_create(lua_State* L) {
+  // Index -1(top) - string folder name
+  // Index -2 - string path to folder
+  // Index -3 - userdata instance
+
+  auto instance = get_instance(L);
+  auto path = lua_tostring(L, -2);
+  auto name = lua_tostring(L, -1);
+  int result = instance->folder_create(path, name);
+  lua_pushinteger(L, result);
+  return 1;
+}
+
+int SDLRemoteClientLuaWrapper::lua_folder_delete(lua_State* L) {
+  // Index -1(top) - string folder name
+  // Index -2 - string path to folder
+  // Index -3 - userdata instance
+
+  auto instance = get_instance(L);
+  auto path = lua_tostring(L, -2);
+  auto name = lua_tostring(L, -1);
+  int result = instance->folder_delete(path, name);
   lua_pushinteger(L, result);
   return 1;
 }
