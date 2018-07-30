@@ -21,7 +21,7 @@ local hmi_adapter_controller = require("hmi_adapter/hmi_adapter_controller")
 local remote_connection = require("remote/remote_connection")
 local remote_file_utils = require("remote/remote_file_utils")
 local remote_application_utils = require("remote/remote_application_utils")
-local remote_mq_utils = require("remote/remote_mq_utils")
+local applink_connection = require("applink_connection")
 local hmi_connection = require('hmi_connection')
 local events = require("events")
 local expectations = require('expectations')
@@ -45,11 +45,11 @@ local FAILED = expectations.FAILED
 if config.remoteConnection.enabled then
   Test.remoteConnection = remote_connection.RemoteConnection(config.remoteConnection.url, config.remoteConnection.port)
   Test.remoteConnection:Connect()
-
   Test.remoteUtils = {}
   Test.remoteUtils.file = remote_file_utils.RemoteFileUtils(Test.remoteConnection)
   Test.remoteUtils.app = remote_application_utils.RemoteAppUtils(Test.remoteConnection)
-  Test.remoteUtils.mq = remote_mq_utils.RemoteMqUtils(Test.remoteConnection)
+  Test.applinkConnection = applink_connection.ApplinkConnection(Test.remoteConnection)
+--  Test.remoteUtils.mq = remote_mq_utils.RemoteMqUtils(Test.remoteConnection) todo AStarodub recheck!
 end
 
 --- HMI connection
