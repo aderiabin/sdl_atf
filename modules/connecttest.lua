@@ -49,7 +49,6 @@ if config.remoteConnection.enabled then
   Test.remoteUtils.file = remote_file_utils.RemoteFileUtils(Test.remoteConnection)
   Test.remoteUtils.app = remote_application_utils.RemoteAppUtils(Test.remoteConnection)
   Test.applinkConnection = applink_connection.ApplinkConnection(Test.remoteConnection)
---  Test.remoteUtils.mq = remote_mq_utils.RemoteMqUtils(Test.remoteConnection) todo AStarodub recheck!
 end
 
 --- HMI connection

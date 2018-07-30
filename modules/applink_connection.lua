@@ -13,18 +13,17 @@ local remote_mq_utils = require("remote/remote_mq_utils")
 local ApplinkConnection = {
   mt = { __index = {} }
 }
-
---- Appink messege type enumeration
+---Appink messege type enumeration
 ApplinkConnection.SDLMsgType ={
-	SDL_MSG_SDL_START = 0x10,
-	SDL_MSG_SDL_STOP = 0x11,
-	SDL_MSG_SDL_JSON = 0x12,
-	SDL_MSG_APPLINK_JSON = 0x13,
-	SDL_MSG_BT_DEVICE_CONNECT = 0x14,
-	SDL_MSG_BT_DEVICE_CONNECT_ACK = 0x15,
+  SDL_MSG_SDL_START = 0x10,
+  SDL_MSG_SDL_STOP = 0x11,
+  SDL_MSG_SDL_JSON = 0x12,
+  SDL_MSG_APPLINK_JSON = 0x13,
+  SDL_MSG_BT_DEVICE_CONNECT = 0x14,
+  SDL_MSG_BT_DEVICE_CONNECT_ACK = 0x15,
   SDL_MSG_BT_DEVICE_SPP_DISCONNECT = 0x16,
-	SDL_MSG_BT_DEVICE_DISCONNECT = 0x17,
-	SDL_MSG_BT_DEVICE_DISCONNECT_ACK = 0x18,
+  SDL_MSG_BT_DEVICE_DISCONNECT = 0x17,
+  SDL_MSG_BT_DEVICE_DISCONNECT_ACK = 0x18,
   SDL_MSG_BT_DEVICE_CONNECT_END = 0x19,
   SDL_MSG_IPOD_DEVICE_CONNECT = 0x1A,
   SDL_MSG_IPOD_DEVICE_CONNECT_ACK = 0x1B,
@@ -61,7 +60,7 @@ end
 -- @tparam string signal Data to send
 -- @treturn number Return 0 in case of success
 function ApplinkConnection.mt.__index:sendSignal(signal)
-	return self.connection:Send(string.char(signal))
+  return self.connection:Send(string.char(signal))
 end
 
 return ApplinkConnection
