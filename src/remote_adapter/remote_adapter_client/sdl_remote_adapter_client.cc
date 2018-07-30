@@ -206,35 +206,39 @@ int SDLRemoteTestAdapterClient::app_stop(const std::string& name) try {
   return handleRpcTimeout(t);
 }
 
-int SDLRemoteTestAdapterClient::app_check_status(const std::string& name) try {
+std::pair<int, int> SDLRemoteTestAdapterClient::app_check_status(const std::string& name) try {
   std::cout << "Check status of application " << name
             << " on remote host" << std::endl;
   if (connected()) {
-    connection_.call(constants::app_check_status, name);
-    std::cout << "SUCCESS\n" << std::endl;
-    return constants::error_codes::SUCCESS;
+    using result = std::pair<int, int>;
+    const std::pair<int, int> received =
+        connection_.call(constants::app_check_status, name).as<result>();
+    std::cout << "SUCCESS\nReceived data: " << received.first << "\n" << std::endl;
+    return std::make_pair(received.first, received.second);
   }
-  return constants::error_codes::NO_CONNECTION;
+  return std::make_pair(0, constants::error_codes::NO_CONNECTION);
 } catch (rpc::rpc_error& e) {
-  return handleRpcError(e);
+  return std::make_pair(0, handleRpcError(e));
 } catch (rpc::timeout &t) {
-  return handleRpcTimeout(t);
+  return std::make_pair(0, handleRpcTimeout(t));
 }
 
-int SDLRemoteTestAdapterClient::file_exists(const std::string& path,
+std::pair<bool, int> SDLRemoteTestAdapterClient::file_exists(const std::string& path,
                                           const std::string& name) try {
   std::cout << "Check existance of file " << name << " on remote host"
       << "\nPath to file: "<< path << std::endl;
   if (connected()) {
-    connection_.call(constants::file_exists, path, name);
-    std::cout << "SUCCESS\n" << std::endl;
-    return constants::error_codes::SUCCESS;
+    using result = std::pair<bool, int>;
+    const std::pair<bool, int> received =
+        connection_.call(constants::file_exists, path, name).as<result>();
+    std::cout << "SUCCESS\nReceived data: " << received.first << "\n" << std::endl;
+    return std::make_pair(received.first, received.second);
   }
-  return constants::error_codes::NO_CONNECTION;
+  return std::make_pair(false, constants::error_codes::NO_CONNECTION);
 } catch (rpc::rpc_error& e) {
-  return handleRpcError(e);
+  return std::make_pair(false, handleRpcError(e));
 } catch (rpc::timeout &t) {
-  return handleRpcTimeout(t);
+  return std::make_pair(false, handleRpcTimeout(t));
 }
 
 int SDLRemoteTestAdapterClient::file_update(const std::string& path,
@@ -321,20 +325,22 @@ int SDLRemoteTestAdapterClient::file_restore(const std::string& path,
   return handleRpcTimeout(t);
 }
 
-int SDLRemoteTestAdapterClient::folder_exists(const std::string& path,
+std::pair<bool, int> SDLRemoteTestAdapterClient::folder_exists(const std::string& path,
                                           const std::string& name) try {
   std::cout << "Check existance of folder  " << name << " on remote host"
       << "\nPath to file: "<< path << std::endl;
   if (connected()) {
-    connection_.call(constants::folder_exists, path, name);
-    std::cout << "SUCCESS\n" << std::endl;
-    return constants::error_codes::SUCCESS;
+    using result = std::pair<bool, int>;
+    const std::pair<bool, int> received =
+        connection_.call(constants::folder_exists, path, name).as<result>();
+    std::cout << "SUCCESS\nReceived data: " << received.first << "\n" << std::endl;
+    return std::make_pair(received.first, received.second);
   }
-  return constants::error_codes::NO_CONNECTION;
+  return std::make_pair(false, constants::error_codes::NO_CONNECTION);
 } catch (rpc::rpc_error& e) {
-  return handleRpcError(e);
+  return std::make_pair(false, handleRpcError(e));
 } catch (rpc::timeout &t) {
-  return handleRpcTimeout(t);
+  return std::make_pair(false, handleRpcTimeout(t));
 }
 
 int SDLRemoteTestAdapterClient::folder_create(const std::string& path,
