@@ -7,9 +7,38 @@
 -- @copyright [Ford Motor Company](https://smartdevicelink.com/partners/ford/) and [SmartDeviceLink Consortium](https://smartdevicelink.com/consortium/)
 -- @license <https://github.com/smartdevicelink/sdl_core/blob/master/LICENSE>
 
+local constants = require("remote/remote_constants")
+
 local RemoteMqUtils = {
   mt = { __index = {} }
 }
+
+local function HandleResult(result, data)
+  local isResultValid = false
+  for _, v in pairs(constants.ERROR_CODE) do
+    if result == v then
+      isResultValid = true
+      break;
+    end
+  end
+
+  if not isResultValid then
+    error("Module RemoteMqUtils received invalid result value: " .. result)
+  end
+
+  if result == constants.ERROR_CODE.SUCCESS then
+    if data != nil then
+      return true
+    else
+      return true, data
+    end
+  end
+  if data != nil then
+    return false
+  else
+    return false, nil
+  end
+end
 
 --- Type which provides transport level interface for emulate connection with HMI for SDL
 -- @type RemoteMqUtils
@@ -38,55 +67,56 @@ function RemoteMqUtils.mt.__index:Connected()
 end
 
 --- Open Mq with default params
--- @treturn number Return 0 in case of success
+-- @treturn boolean Return true in case of success
 function RemoteMqUtils.mt.__index:Open()
   max_messages_number = nil
   max_message_size = nil
   flags = nil
   mode = nil
-  return self.connection:open(self.name)
+  return HandleResult(self.connection:open(self.name))
 end
 
 --- Open Mq with params
--- @treturn number Return 0 in case of success
+-- @treturn boolean Return true in case of success
 function RemoteMqUtils.mt.__index:OpenWithParams()
-  return self.connection:open_with_params(self.name,
-                                          self.max_messages_number,
-                                          self.max_message_size,
-                                          self.flags,
-                                          self.mode)
+  return HandleResult(
+      self.connection:open_with_params(self.name,
+                                       self.max_messages_number,
+                                       self.max_message_size,
+                                       self.flags,
+                                       self.mode))
 end
 
 --- Send data to Mq
 -- @tparam string data Data to send
--- @treturn number Return 0 in case of success
+-- @treturn boolean Return true in case of success
 function RemoteMqUtils.mt.__index:Send(data)
-  return self.connection:send(self.name, data)
+  return HandleResult(self.connection:send(self.name, data))
 end
 
 --- Receive data from Mq
--- @treturn number Return 0 in case of success
+-- @treturn boolean Return true in case of success
 -- @treturn string Received data
 function RemoteMqUtils.mt.__index:Receive()
-  return self.connection:receive(self.name)
+  return HandleResult(self.connection:receive(self.name))
 end
 
 --- Close Mq
--- @treturn number Return 0 in case of success
+-- @treturn boolean Return true in case of success
 function RemoteMqUtils.mt.__index:Close()
-  self.connection:close(self.name)
+  return HandleResult(self.connection:close(self.name))
 end
 
 --- Unlink Mq
--- @treturn number Return 0 in case of success
+-- @treturn boolean Return true in case of success
 function RemoteMqUtils.mt.__index:Unlink()
-  self.connection:unlink(self.name)
+  return HandleResult(self.connection:unlink(self.name))
 end
 
 --- Clear Mq
--- @treturn number Return 0 in case of success
+-- @treturn boolean Return true in case of success
 function RemoteMqUtils.mt.__index:Clear()
-  self.connection:clear()
+  HandleResult(self.connection:clear())
 end
 
 return RemoteMqUtils
