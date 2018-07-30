@@ -3,13 +3,42 @@
 -- *Dependencies:* none
 --
 -- *Globals:* none
--- @module RemoteFileUtils
+-- @module remote.remote_file_utils
 -- @copyright [Ford Motor Company](https://smartdevicelink.com/partners/ford/) and [SmartDeviceLink Consortium](https://smartdevicelink.com/consortium/)
 -- @license <https://github.com/smartdevicelink/sdl_core/blob/master/LICENSE>
 
+local constants = require("remote/remote_constants")
+
 local RemoteFileUtils = {
 	mt = { __index = {} }
-  }
+}
+
+local function HandleResult(result, data)
+  local isResultValid = false
+  for _, v in pairs(constants.ERROR_CODE) do
+    if result == v then
+      isResultValid = true
+      break;
+    end
+  end
+
+  if not isResultValid then
+    error("Module RemoteFileUtils received invalid result value: " .. result)
+  end
+
+  if result == constants.ERROR_CODE.SUCCESS then
+    if data != nil then
+      return true
+    else
+      return true, data
+    end
+  end
+  if data != nil then
+    return false
+  else
+    return false, nil
+  end
+end
 
 --- Module which provides utils interface for file management on remote host
 -- @type RemoteFileUtils
@@ -33,9 +62,10 @@ end
 --- Check file existance on remote host
 -- @tparam string remotePathToFile Path to file on remote host
 -- @tparam string fileName Name of file
+-- @treturn boolean Return true in case of success
 -- @treturn boolean Return true in case of file exists
 function RemoteFileUtils.mt.__index:IsFileExists(remotePathToFile, fileName)
-  -- self.connection:clear()
+  return HandleResult(self.connection:file_exists(remotePathToFile, fileName))
 end
 
 --- Create new file with content on remote host
@@ -44,7 +74,8 @@ end
 -- @tparam string fileContent Content of file
 -- @treturn boolean Return true in case of success
 function RemoteFileUtils.mt.__index:CreateFile(remotePathToFile, fileName, fileContent)
-	if self:IsFileExists(remotePathToFile, fileName) then
+  local result, isExists = self:IsFileExists(remotePathToFile, fileName)
+  if not result or (result and isExists) then
 		return false
 	end
 	return self:UpdateFileContent(remotePathToFile, fileName, fileContent)
@@ -55,7 +86,7 @@ end
 -- @tparam string fileName Name of file
 -- @treturn boolean Return true in case of success
 function RemoteFileUtils.mt.__index:DeleteFile(remotePathToFile, fileName)
-  -- self.connection:clear()
+  return HandleResult(self.connection:file_delete(remotePathToFile, fileName))
 end
 
 --- Backup file on remote host
@@ -63,7 +94,7 @@ end
 -- @tparam string fileName Name of file
 -- @treturn boolean Return true in case of success
 function RemoteFileUtils.mt.__index:BackupFile(remotePathToFile, fileName)
-  -- self.connection:clear()
+  return HandleResult(self.connection:file_backup(remotePathToFile, fileName))
 end
 
 --- Restore backuped file on remote host
@@ -71,7 +102,7 @@ end
 -- @tparam string fileName Name of file
 -- @treturn boolean Return true in case of success
 function RemoteFileUtils.mt.__index:RestoreFile(remotePathToFile, fileName)
-  -- self.connection:clear()
+  return HandleResult(self.connection:file_restore(remotePathToFile, fileName))
 end
 
 --- Update file with content on remote host
@@ -80,7 +111,7 @@ end
 -- @tparam string fileContent Content of file
 -- @treturn boolean Return true in case of success
 function RemoteFileUtils.mt.__index:UpdateFileContent(remotePathToFile, fileName, fileContent)
-  -- self.connection:clear()
+  return HandleResult(self.connection:file_update(remotePathToFile, fileName))
 end
 
 --- Get file content from remote host
@@ -89,15 +120,16 @@ end
 -- @treturn boolean Return true in case of success
 -- @treturn string Content of file
 function RemoteFileUtils.mt.__index:GetFileContent(remotePathToFile, fileName)
-  -- self.connection:clear()
+  return HandleResult(self.connection:file_content(remotePathToFile, fileName))
 end
 
 --- Check folder existance on remote host
 -- @tparam string remotePathToFolder Path to folder on remote host
 -- @tparam string folderName Name of folder
+-- @treturn boolean Return true in case of success
 -- @treturn boolean Return true in case of folder exists
 function RemoteFileUtils.mt.__index:IsFolderExists(remotePathToFolder, folderName)
-  -- self.connection:clear()
+  return HandleResult(self.connection:folder_exists(remotePathToFolder, folderName))
 end
 
 --- Create folder on remote host
@@ -105,7 +137,7 @@ end
 -- @tparam string folderName Name of folder
 -- @treturn boolean Return true in case of success
 function RemoteFileUtils.mt.__index:CreateFolder(remotePathToFolder, folderName)
-  -- self.connection:clear()
+  return HandleResult(self.connection:folder_create(remotePathToFolder, folderName))
 end
 
 --- Delete folder on remote host
@@ -113,7 +145,7 @@ end
 -- @tparam string folderName Name of folder
 -- @treturn boolean Return true in case of success
 function RemoteFileUtils.mt.__index:DeleteFolder(remotePathToFolder, folderName)
-  -- self.connection:clear()
+  return HandleResult(self.connection:folder_delete(remotePathToFolder, folderName))
 end
 
 return RemoteFileUtils
