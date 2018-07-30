@@ -122,7 +122,7 @@ class SDLRemoteTestAdapterClient {
    * @return 0 in successful case, 1 - if client is not connected,
    * 2 - in case of exception
    */
-  int app_check_status(const std::string& name);
+  std::pair<int, int> app_check_status(const std::string& name);
 
   /**
    * @brief Sends check file existing request to server
@@ -131,7 +131,7 @@ class SDLRemoteTestAdapterClient {
    * @return 0 in successful case, 1 - if client is not connected,
    * 2 - in case of exception
    */
-  int file_exists(const std::string& path, const std::string& name);
+  std::pair<bool, int> file_exists(const std::string& path, const std::string& name);
 
   /**
    * @brief Sends update file content request to server
@@ -189,7 +189,7 @@ class SDLRemoteTestAdapterClient {
    * @return 0 in successful case, 1 - if client is not connected,
    * 2 - in case of exception
    */
-  int folder_exists(const std::string& path, const std::string& name);
+  std::pair<bool, int> folder_exists(const std::string& path, const std::string& name);
 
   /**
    * @brief Sends create folder request to server

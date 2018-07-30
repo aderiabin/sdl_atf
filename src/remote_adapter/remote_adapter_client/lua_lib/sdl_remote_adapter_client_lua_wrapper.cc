@@ -74,6 +74,7 @@ void SDLRemoteClientLuaWrapper::registerSDLRemoteMqClient(lua_State* L) {
       {"file_delete", SDLRemoteClientLuaWrapper::lua_file_delete},
       {"file_backup", SDLRemoteClientLuaWrapper::lua_file_backup},
       {"file_restore", SDLRemoteClientLuaWrapper::lua_file_restore},
+      {"folder_exists", SDLRemoteClientLuaWrapper::lua_folder_exists},
       {"folder_create", SDLRemoteClientLuaWrapper::lua_folder_create},
       {"folder_delete", SDLRemoteClientLuaWrapper::lua_folder_delete},
       {NULL, NULL}
@@ -248,9 +249,10 @@ int SDLRemoteClientLuaWrapper::lua_app_check_status(lua_State* L) {
 
   auto instance = get_instance(L);
   auto name = lua_tostring(L, -1);
-  int result = instance->app_check_status(name);
-  lua_pushinteger(L, result);
-  return 1;
+  const auto data_and_error = instance->app_check_status(name);
+  lua_pushinteger(L, data_and_error.second);
+  lua_pushinteger(L, data_and_error.first);
+  return 2;
 }
 
 int SDLRemoteClientLuaWrapper::lua_file_exists(lua_State* L) {
@@ -261,9 +263,10 @@ int SDLRemoteClientLuaWrapper::lua_file_exists(lua_State* L) {
   auto instance = get_instance(L);
   auto path = lua_tostring(L, -2);
   auto name = lua_tostring(L, -1);
-  int result = instance->file_exists(path, name);
-  lua_pushinteger(L, result);
-  return 1;
+  const auto data_and_error = instance->file_exists(path, name);
+  lua_pushinteger(L, data_and_error.second);
+  lua_pushboolean(L, data_and_error.first);
+  return 2;
 }
 
 int SDLRemoteClientLuaWrapper::lua_file_update(lua_State* L) {
@@ -342,9 +345,10 @@ int SDLRemoteClientLuaWrapper::lua_folder_exists(lua_State* L) {
   auto instance = get_instance(L);
   auto path = lua_tostring(L, -2);
   auto name = lua_tostring(L, -1);
-  int result = instance->folder_exists(path, name);
-  lua_pushinteger(L, result);
-  return 1;
+  const auto data_and_error = instance->folder_exists(path, name);
+  lua_pushinteger(L, data_and_error.second);
+  lua_pushboolean(L, data_and_error.first);
+  return 2;
 }
 
 int SDLRemoteClientLuaWrapper::lua_folder_create(lua_State* L) {
