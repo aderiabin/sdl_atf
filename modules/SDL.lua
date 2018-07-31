@@ -1,8 +1,8 @@
 --- The module which is responsible for managing SDL from ATF
 --
--- *Dependencies:* `os`, `sdl_logger`, `config`, `atf.util`, `console`
+-- *Dependencies:* `os`, `sdl_logger`, `config`, `atf.util`
 --
--- *Globals:* `sleep()`, `CopyFile()`, `CopyInterface()`, `xmlReporter`
+-- *Globals:* `sleep()`, `CopyFile()`, `CopyInterface()`, `xmlReporter`, `console`, `ATF`
 -- @module SDL
 -- @copyright [Ford Motor Company](https://smartdevicelink.com/partners/ford/) and [SmartDeviceLink Consortium](https://smartdevicelink.com/consortium/)
 -- @license <https://github.com/smartdevicelink/sdl_core/blob/master/LICENSE>
@@ -11,7 +11,8 @@ require('os')
 local sdl_logger = require('sdl_logger')
 local config = require('config')
 local console = require('console')
-local util = require ("atf.util")
+local remote_constants = require('modules/remote/remote_constants')
+local SDLUtils = require('SDLUtils')
 local SDL = { }
 
 require('atf.util')
@@ -25,36 +26,19 @@ SDL.STOPPED = 0
 SDL.RUNNING = 1
 --- SDL state constant: SDL crashed
 SDL.CRASH = -1
+--- SDL state constant: SDL in idle mode (for remote only)
+SDL.IDLE = -2
 
 --- Structure of SDL build options what to be set
-local usedBuildOptions = {
-  remoteControl =  {
-    sdlBuildParameter = "REMOTE_CONTROL",
-    defaultValue = "ON"
-  },
-  extendedPolicy =  {
-    sdlBuildParameter = "EXTENDED_POLICY",
-    defaultValue = "PROPRIETARY"
-  }
-}
-
---- Read specified parameter from build_config.txt file
--- @tparam string paramName Parameter to read value
--- @treturn string The main result. Value read of parameter.
--- Can be nil in case parameter was not found.
--- @treturn string Type of read parameter
-local function readParameterFromBuildConfigFile(paramName)
-  local pathToFile = config.pathToSDL .. "/build_config.txt"
-  if is_file_exists(pathToFile) then
-    local paramValue, paramType
-    for line in io.lines(pathToFile) do
-      paramType, paramValue = string.match(line, "^%s*" .. paramName .. ":(.+)=(%S*)")
-      if paramValue then
-        return paramValue, paramType
-      end
-    end
+local function getDefaultBuildOptions()
+  local options = { }
+  options.remoteControl = { sdlBuildParameter = "REMOTE_CONTROL", defaultValue = "ON" }
+  if config.remoteConnection.enabled then
+    options.extendedPolicy = { sdlBuildParameter = "EXTENDED_POLICY", defaultValue = "EXTERNAL_PROPRIETARY" }
+  else
+    options.extendedPolicy = { sdlBuildParameter = "EXTENDED_POLICY", defaultValue = "PROPRIETARY" }
   end
-  return nil
+  return options
 end
 
 --- Set SDL build option as values of SDL module property
@@ -63,9 +47,13 @@ end
 -- @tparam string sdlBuildParam SDL build parameter to read value
 -- @tparam string defaultValue Default value of set option
 local function setSdlBuildOption(self, optionName, sdlBuildParam, defaultValue)
-  local value, paramType = readParameterFromBuildConfigFile(sdlBuildParam)
+  local value, paramType = SDLUtils.BuildOptions.get(sdlBuildParam)
   if value == nil then
     value = defaultValue
+    local msg = "SDL build option " ..
+      sdlBuildParam .. " is unavailable.\nAssume that SDL was built with " ..
+      sdlBuildParam .. " = " .. defaultValue
+    print(console.setattr(msg, "cyan", 1))
   else
     if paramType == "UNINITIALIZED" then
       value = nil
@@ -80,7 +68,7 @@ end
 --- Set all SDL build options for SDL module of ATF
 -- @tparam table self Reference to SDL module
 local function setAllSdlBuildOptions(self)
-  for option, data in pairs(usedBuildOptions) do
+  for option, data in pairs(getDefaultBuildOptions()) do
     setSdlBuildOption(self, option, data.sdlBuildParameter, data.defaultValue)
   end
 end
@@ -98,6 +86,7 @@ end
 -- @treturn boolean The main result. Indicates whether the launch of SDL was successful
 -- @treturn string Additional information on the main SDL startup result
 function SDL:StartSDL(pathToSDL, smartDeviceLinkCore, ExitOnCrash)
+  local result
   if ExitOnCrash ~= nil then
     self.exitOnCrash = ExitOnCrash
   end
@@ -109,14 +98,17 @@ function SDL:StartSDL(pathToSDL, smartDeviceLinkCore, ExitOnCrash)
     print(console.setattr(msg, "cyan", 1))
     return false, msg
   end
-
-  local result = os.execute ('./tools/StartSDL.sh ' .. pathToSDL .. ' ' .. smartDeviceLinkCore)
+  if config.remoteConnection.enabled then
+     result = ATF.remoteUtils.app:StartApp(pathToSDL, smartDeviceLinkCore)
+  else
+     result = os.execute ('./tools/StartSDL.sh ' .. pathToSDL .. ' ' .. smartDeviceLinkCore)
+  end
 
   local msg
   if result then
     msg = "SDL started"
     if config.storeFullSDLLogs == true then
-      sdl_logger.init_log(util.runner.get_script_file_name())
+      sdl_logger.init_log(get_script_file_name())
     end
   else
     msg = "SDL had already started not from ATF or unexpectedly crashed"
@@ -132,8 +124,12 @@ end
 function SDL:StopSDL()
   self.autoStarted = false
   local status = self:CheckStatusSDL()
-  if status == self.RUNNING then
-    os.execute('./tools/StopSDL.sh')
+  if status == self.RUNNING or status == self.IDLE then
+    if config.remoteConnection.enabled then
+      ATF.remoteUtils.app:StopApp(config.SDL)
+    else
+      os.execute('./tools/StopSDL.sh')
+    end
   else
     local msg = "SDL had already stopped"
     xmlReporter.AddMessage("StopSDL", {["message"] = msg})
@@ -153,16 +149,33 @@ end
 -- SDL.RUNNING = 1 Running
 --
 -- SDL.CRASH = -1 Crash
+--
+-- SDL.IDLE = -2 Idle (for remote only)
 function SDL:CheckStatusSDL()
-  local testFile = os.execute ('test -e sdl.pid')
-  if testFile then
-    local testCatFile = os.execute ('test -e /proc/$(cat sdl.pid)')
-    if not testCatFile then
-      return self.CRASH
+  if config.remoteConnection.enabled then
+    local result, data = ATF.remoteUtils.app:CheckAppStatus(config.SDL)
+    if result then
+      if data == remote_constants.APPLICATION_STATUS.IDLE then
+        return self.IDLE
+      elseif data == remote_constants.APPLICATION_STATUS.NOT_RUNNING then
+        return self.STOPPED
+      elseif data == remote_constants.APPLICATION_STATUS.RUNNING then
+        return self.RUNNING
+      end
+    else
+      error("Remote utils: unable to get Appstatus of SDL")
     end
-    return self.RUNNING
+  else
+    local testFile = os.execute ('test -e sdl.pid')
+    if testFile then
+      local testCatFile = os.execute ('test -e /proc/$(cat sdl.pid)')
+      if not testCatFile then
+        return self.CRASH
+      end
+      return self.RUNNING
+    end
+    return self.STOPPED
   end
-  return self.STOPPED
 end
 
 --- Deleting an SDL process indicator file
@@ -175,11 +188,6 @@ end
 --- Update SDL log4cxx.properties in order SDL will be able to write logs through Telnet
 local function updateSDLLogProperties()
   if config.storeFullSDLLogs then
-    local pathToFile = config.pathToSDL .. "/log4cxx.properties"
-    local f = io.open(pathToFile, "r")
-    local content = f:read("*all")
-    f:close()
-
     local paramsToUpdate = {
       {
         name = "log4j.rootLogger",
@@ -190,16 +198,14 @@ local function updateSDLLogProperties()
         value = "%%-5p [%%d{yyyy-MM-dd HH-mm:ss,SSS}][%%t][%%c] %%F:%%L %%M: %%m"
       }
     }
-
     for _, item in pairs(paramsToUpdate) do
-      content = string.gsub(content, item.name .. "=.-\n", item.name .. "=" .. item.value .. "\n")
+      SDLUtils.LOG.set(item.name, item.value)
     end
-
-    f = io.open(pathToFile, "w")
-    f:write(content)
-    f:close()
   end
 end
+
+config.pathToSDL = SDLUtils.addSlashToPath(config.pathToSDL)
+config.pathToSDLConfig = SDLUtils.addSlashToPath(config.pathToSDLConfig)
 
 setAllSdlBuildOptions(SDL)
 

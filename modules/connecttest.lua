@@ -171,7 +171,12 @@ function Test:runSDL()
     SDL.autoStarted = false
     return
   end
-  local result, errmsg = SDL:StartSDL(config.pathToSDL, config.SDL, config.ExitOnCrash)
+  if config.remoteConnection.enabled then
+    local result, errmsg = SDL:StartSDL(config.pathToSDL, config.SDL, config.ExitOnCrash)
+    self.applinkConnection:sendSignal(remote_application_utils.SDLMsgType.SDL_MSG_SDL_START)
+  else
+    local result, errmsg = SDL:StartSDL(config.pathToSDL, config.SDL, config.ExitOnCrash)
+  end
   if not result then
     quit(exit_codes.aborted)
   end
@@ -192,37 +197,40 @@ function Test:initHMI()
       end
     end
   end
-
-  EXPECT_HMIEVENT(events.connectedEvent, "Connected websocket")
-  :Do(function()
-      registerComponent("Buttons", {"Buttons.OnButtonSubscription"})
-      registerComponent("TTS")
-      registerComponent("VR")
-      registerComponent("BasicCommunication",
-        {
-          "BasicCommunication.OnPutFile",
-          "SDL.OnStatusUpdate",
-          "SDL.OnAppPermissionChanged",
-          "BasicCommunication.OnSDLPersistenceComplete",
-          "BasicCommunication.OnFileRemoved",
-          "BasicCommunication.OnAppRegistered",
-          "BasicCommunication.OnAppUnregistered",
-          "BasicCommunication.PlayTone",
-          "BasicCommunication.OnSDLClose",
-          "SDL.OnSDLConsentNeeded",
-          "BasicCommunication.OnResumeAudioSource"
-        })
-      registerComponent("UI",
-        {
-          "UI.OnRecordStart"
-        })
-      registerComponent("VehicleInfo")
-      registerComponent("Navigation",
-        {
-          "Navigation.OnAudioDataStreaming",
-          "Navigation.OnVideoDataStreaming"
-        })
-    end)
+  if config.remoteConnection.enabled then
+    EXPECT_HMIEVENT(events.connectedEvent, "Connected websocket")
+  else
+     EXPECT_HMIEVENT(events.connectedEvent, "Connected websocket")
+    :Do(function()
+        registerComponent("Buttons", {"Buttons.OnButtonSubscription"})
+        registerComponent("TTS")
+        registerComponent("VR")
+        registerComponent("BasicCommunication",
+          {
+            "BasicCommunication.OnPutFile",
+            "SDL.OnStatusUpdate",
+            "SDL.OnAppPermissionChanged",
+            "BasicCommunication.OnSDLPersistenceComplete",
+            "BasicCommunication.OnFileRemoved",
+            "BasicCommunication.OnAppRegistered",
+            "BasicCommunication.OnAppUnregistered",
+            "BasicCommunication.PlayTone",
+            "BasicCommunication.OnSDLClose",
+            "SDL.OnSDLConsentNeeded",
+            "BasicCommunication.OnResumeAudioSource"
+          })
+        registerComponent("UI",
+          {
+            "UI.OnRecordStart"
+          })
+        registerComponent("VehicleInfo")
+        registerComponent("Navigation",
+          {
+            "Navigation.OnAudioDataStreaming",
+            "Navigation.OnVideoDataStreaming"
+          })
+      end)
+  end
   self.hmiConnection:Connect()
 end
 
