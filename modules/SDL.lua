@@ -195,11 +195,11 @@ function SDL:CheckStatusSDL()
   if config.remoteConnection.enabled then
     local result, data = ATF.remoteUtils.app:CheckAppStatus(config.SDL)
     if result then
-      if data ==remote_constants.RemoteConstants.APPLICATION_STATUS.CRASHED then
+      if data ==remote_constants.APPLICATION_STATUS.CRASHED then
         return self.CRASH
-      elseif data == remote_constants.RemoteConstants.APPLICATION_STATUS.NOT_RUNNING then
+      elseif data == remote_constants.APPLICATION_STATUS.NOT_RUNNING then
         return self.STOPPED
-      elseif data == remote_constants.RemoteConstants.APPLICATION_STATUS.RUNNING then
+      elseif data == remote_constants.APPLICATION_STATUS.RUNNING then
         return self.RUNNING
       end
     else
