@@ -171,13 +171,12 @@ function Test:runSDL()
     SDL.autoStarted = false
     return
   end
-  if config.remoteConnection.enabled then
-    local result, errmsg = SDL:StartSDL(config.pathToSDL, config.SDL, config.ExitOnCrash)
-    self.applinkConnection:sendSignal(remote_application_utils.SDLMsgType.SDL_MSG_SDL_START)
+  local result, errmsg = SDL:StartSDL(config.pathToSDL, config.SDL, config.ExitOnCrash)
+  if result then
+    if config.remoteConnection.enabled then
+      self.applinkConnection:sendSignal(remote_application_utils.SDLMsgType.SDL_MSG_SDL_START)
+    end
   else
-    local result, errmsg = SDL:StartSDL(config.pathToSDL, config.SDL, config.ExitOnCrash)
-  end
-  if not result then
     quit(exit_codes.aborted)
   end
   SDL.autoStarted = true
@@ -197,11 +196,9 @@ function Test:initHMI()
       end
     end
   end
-  if config.remoteConnection.enabled then
-    EXPECT_HMIEVENT(events.connectedEvent, "Connected websocket")
-  else
-     EXPECT_HMIEVENT(events.connectedEvent, "Connected websocket")
-    :Do(function()
+  local connectEventExp = EXPECT_HMIEVENT(events.connectedEvent, "Connected websocket")
+  if not config.remoteConnection.enabled then
+    connectEventExp:Do(function()
         registerComponent("Buttons", {"Buttons.OnButtonSubscription"})
         registerComponent("TTS")
         registerComponent("VR")

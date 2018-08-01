@@ -11,6 +11,7 @@ require('os')
 local sdl_logger = require('sdl_logger')
 local config = require('config')
 local console = require('console')
+local remote_constants = require('modules/remote/remote_constants')
 local SDL = { }
 
 require('atf.util')
@@ -44,19 +45,30 @@ local usedBuildOptions = {
 -- @treturn string Type of read parameter
 local function readParameterFromCMakeCacheFile(paramName)
   local paramValue, paramType
-  if config.remoteConnection.enabled and ATF.remoteUtils.file:IsFileExists(config.pathToSDL .. "/","CMakeCache.txt") then
-    local content = ATF.remoteUtils.file:GetFileContent(config.pathToSDL .. "/","smartDeviceLink.ini")
-    local function getLine(s) -- Function needed for Lines parsing at Remote ATF file contents
-      if s:sub(-1) ~= "\n" then
-        s = s .. "\n"
+  if config.remoteConnection.enabled then
+    local result, isexist = ATF.remoteUtils.file:IsFileExists(config.pathToSDL .. "/","CMakeCache.txt")
+    if resut then
+      if isexist then
+        local content_res, content = ATF.remoteUtils.file:GetFileContent(config.pathToSDL .. "/","smartDeviceLink.ini")
+        if content_res then
+          local function getLine(s) -- Function needed for Lines parsing at Remote ATF file contents
+            if s:sub(-1) ~= "\n" then
+              s = s .. "\n"
+            end
+            return s:gmatch("(.-)\n")
+          end
+          for line in getLine(content) do
+            paramType, paramValue = string.match(line, "^%s*" .. paramName .. ":(.+)=(%S*)")
+            if paramValue then
+              return paramValue, paramType
+            end
+          end
+        else
+          error("remote utils unable to get file content of " .. config.pathToSDL .. "/smartDeviceLink.ini")
+        end
       end
-      return s:gmatch("(.-)\n")
-    end
-    for line in getLine(content) do
-      paramType, paramValue = string.match(line, "^%s*" .. paramName .. ":(.+)=(%S*)")
-      if paramValue then
-        return paramValue, paramType
-      end
+    else
+      error("remote utils unable to check for file existens of ".. config.pathToSDL .. "/CMakeCache.txt")
     end
   else
     local pathToFile = config.pathToSDL .. "/CMakeCache.txt"
@@ -181,13 +193,13 @@ end
 -- SDL.CRASH = -1 Crash
 function SDL:CheckStatusSDL()
   if config.remoteConnection.enabled then
-    local result,data = ATF.remoteUtils.app:CheckAppStatus(config.SDL)
+    local result, data = ATF.remoteUtils.app:CheckAppStatus(config.SDL)
     if result then
-      if data == -1 then
+      if data ==remote_constants.RemoteConstants.APPLICATION_STATUS.CRASHED then
         return self.CRASH
-      elseif data == 0 then
+      elseif data == remote_constants.RemoteConstants.APPLICATION_STATUS.NOT_RUNNING then
         return self.STOPPED
-      else
+      elseif data == remote_constants.RemoteConstants.APPLICATION_STATUS.RUNNING then
         return self.RUNNING
       end
     else
@@ -217,7 +229,10 @@ end
 local function updateSDLLogProperties()
   if config.storeFullSDLLogs then
     if config.remoteConnection.enabled then
-      local content = ATF.remoteUtils.file:GetFileContent(config.pathToSDL .. "/","log4cxx.properties")
+      local content_res, content = ATF.remoteUtils.file:GetFileContent(config.pathToSDL .. "/","log4cxx.properties")
+      if not content_res then
+        error("Remote utils unable to get content of " .. config.pathToSDL .. "/log4cxx.properties")
+      end
     else
       local pathToFile = config.pathToSDL .. "/log4cxx.properties"
       local f = io.open(pathToFile, "r")
