@@ -2,7 +2,7 @@
 --
 -- *Dependencies:* `os`, `sdl_logger`, `config`, `atf.util`
 --
--- *Globals:* `sleep()`, `CopyFile()`, `CopyInterface()`, `xmlReporter`, `console`
+-- *Globals:* `sleep()`, `CopyFile()`, `CopyInterface()`, `xmlReporter`, `console`, `ATF`
 -- @module SDL
 -- @copyright [Ford Motor Company](https://smartdevicelink.com/partners/ford/) and [SmartDeviceLink Consortium](https://smartdevicelink.com/consortium/)
 -- @license <https://github.com/smartdevicelink/sdl_core/blob/master/LICENSE>
@@ -11,6 +11,7 @@ require('os')
 local sdl_logger = require('sdl_logger')
 local config = require('config')
 local console = require('console')
+local remote_constants = require('modules/remote/remote_constants')
 local SDL = { }
 
 require('atf.util')
@@ -43,13 +44,40 @@ local usedBuildOptions = {
 -- Can be nil in case parameter was not found.
 -- @treturn string Type of read parameter
 local function readParameterFromCMakeCacheFile(paramName)
-  local pathToFile = config.pathToSDL .. "/CMakeCache.txt"
-  if is_file_exists(pathToFile) then
-    local paramValue, paramType
-    for line in io.lines(pathToFile) do
-      paramType, paramValue = string.match(line, "^%s*" .. paramName .. ":(.+)=(%S*)")
-      if paramValue then
-        return paramValue, paramType
+  local paramValue, paramType
+  if config.remoteConnection.enabled then
+    local result, isexist = ATF.remoteUtils.file:IsFileExists(config.pathToSDL .. "/","CMakeCache.txt")
+    if resut then
+      if isexist then
+        local content_res, content = ATF.remoteUtils.file:GetFileContent(config.pathToSDL .. "/","smartDeviceLink.ini")
+        if content_res then
+          local function getLine(s) -- Function needed for Lines parsing at Remote ATF file contents
+            if s:sub(-1) ~= "\n" then
+              s = s .. "\n"
+            end
+            return s:gmatch("(.-)\n")
+          end
+          for line in getLine(content) do
+            paramType, paramValue = string.match(line, "^%s*" .. paramName .. ":(.+)=(%S*)")
+            if paramValue then
+              return paramValue, paramType
+            end
+          end
+        else
+          error("remote utils unable to get file content of " .. config.pathToSDL .. "/smartDeviceLink.ini")
+        end
+      end
+    else
+      error("remote utils unable to check for file existens of ".. config.pathToSDL .. "/CMakeCache.txt")
+    end
+  else
+    local pathToFile = config.pathToSDL .. "/CMakeCache.txt"
+    if is_file_exists(pathToFile) then
+      for line in io.lines(pathToFile) do
+        paramType, paramValue = string.match(line, "^%s*" .. paramName .. ":(.+)=(%S*)")
+        if paramValue then
+          return paramValue, paramType
+        end
       end
     end
   end
@@ -112,8 +140,11 @@ function SDL:StartSDL(pathToSDL, smartDeviceLinkCore, ExitOnCrash)
     print(console.setattr(msg, "cyan", 1))
     return false, msg
   end
-
-  local result = os.execute ('./tools/StartSDL.sh ' .. pathToSDL .. ' ' .. smartDeviceLinkCore)
+  if config.remoteConnection.enabled then
+    local result = ATF.remoteUtils.app:StartApp(pathToSDL, smartDeviceLinkCore)
+  else
+    local result = os.execute ('./tools/StartSDL.sh ' .. pathToSDL .. ' ' .. smartDeviceLinkCore)
+  end
 
   local msg
   if result then
@@ -136,7 +167,11 @@ function SDL:StopSDL()
   self.autoStarted = false
   local status = self:CheckStatusSDL()
   if status == self.RUNNING then
-    os.execute('./tools/StopSDL.sh')
+    if config.remoteConnection.enabled then
+      ATF.remoteUtils.app:StopApp(config.SDL)
+    else
+      os.execute('./tools/StopSDL.sh')
+    end
   else
     local msg = "SDL had already stopped"
     xmlReporter.AddMessage("StopSDL", {["message"] = msg})
@@ -157,15 +192,30 @@ end
 --
 -- SDL.CRASH = -1 Crash
 function SDL:CheckStatusSDL()
-  local testFile = os.execute ('test -e sdl.pid')
-  if testFile then
-    local testCatFile = os.execute ('test -e /proc/$(cat sdl.pid)')
-    if not testCatFile then
-      return self.CRASH
+  if config.remoteConnection.enabled then
+    local result, data = ATF.remoteUtils.app:CheckAppStatus(config.SDL)
+    if result then
+      if data ==remote_constants.APPLICATION_STATUS.CRASHED then
+        return self.CRASH
+      elseif data == remote_constants.APPLICATION_STATUS.NOT_RUNNING then
+        return self.STOPPED
+      elseif data == remote_constants.APPLICATION_STATUS.RUNNING then
+        return self.RUNNING
+      end
+    else
+      error("Remote utils: unable to get Appstatus of SDL")
     end
-    return self.RUNNING
+  else
+    local testFile = os.execute ('test -e sdl.pid')
+    if testFile then
+      local testCatFile = os.execute ('test -e /proc/$(cat sdl.pid)')
+      if not testCatFile then
+        return self.CRASH
+      end
+      return self.RUNNING
+    end
+    return self.STOPPED
   end
-  return self.STOPPED
 end
 
 --- Deleting an SDL process indicator file
@@ -178,11 +228,17 @@ end
 --- Update SDL log4cxx.properties in order SDL will be able to write logs through Telnet
 local function updateSDLLogProperties()
   if config.storeFullSDLLogs then
-    local pathToFile = config.pathToSDL .. "/log4cxx.properties"
-    local f = io.open(pathToFile, "r")
-    local content = f:read("*all")
-    f:close()
-
+    if config.remoteConnection.enabled then
+      local content_res, content = ATF.remoteUtils.file:GetFileContent(config.pathToSDL .. "/","log4cxx.properties")
+      if not content_res then
+        error("Remote utils: unable to get content of " .. config.pathToSDL .. "/log4cxx.properties")
+      end
+    else
+      local pathToFile = config.pathToSDL .. "/log4cxx.properties"
+      local f = io.open(pathToFile, "r")
+      local content = f:read("*all")
+      f:close()
+    end
     local paramsToUpdate = {
       {
         name = "log4j.rootLogger",
@@ -197,10 +253,13 @@ local function updateSDLLogProperties()
     for _, item in pairs(paramsToUpdate) do
       content = string.gsub(content, item.name .. "=.-\n", item.name .. "=" .. item.value .. "\n")
     end
-
-    f = io.open(pathToFile, "w")
-    f:write(content)
-    f:close()
+    if config.remoteConnection.enabled then
+      ATF.remoteUtils.file:UpdateFileContent(config.pathToSDL .. "/","log4cxx.properties",content)
+    else
+      f = io.open(pathToFile, "w")
+      f:write(content)
+      f:close()
+    end
   end
 end
 
