@@ -2,7 +2,7 @@
 --
 -- *Dependencies:* `os`, `sdl_logger`, `config`, `atf.util`
 --
--- *Globals:* `sleep()`, `CopyFile()`, `CopyInterface()`, `xmlReporter`, `console`
+-- *Globals:* `sleep()`, `CopyFile()`, `CopyInterface()`, `xmlReporter`, `console`, `ATF`
 -- @module SDL
 -- @copyright [Ford Motor Company](https://smartdevicelink.com/partners/ford/) and [SmartDeviceLink Consortium](https://smartdevicelink.com/consortium/)
 -- @license <https://github.com/smartdevicelink/sdl_core/blob/master/LICENSE>
@@ -156,7 +156,7 @@ function SDL:StopSDL()
   local status = self:CheckStatusSDL()
   if status == self.RUNNING then
     if config.remoteConnection.enabled then
-      local result = ATF.remoteUtils.app:StopApp(config.SDL)
+      ATF.remoteUtils.app:StopApp(config.SDL)
     else
       os.execute('./tools/StopSDL.sh')
     end
