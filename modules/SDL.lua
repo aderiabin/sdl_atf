@@ -203,7 +203,7 @@ function SDL:CheckStatusSDL()
         return self.RUNNING
       end
     else
-      error("Protocol handler: Encryption error")
+      error("Remote utils: unable to get Appstatus of SDL")
     end
   else
     local testFile = os.execute ('test -e sdl.pid')
@@ -231,7 +231,7 @@ local function updateSDLLogProperties()
     if config.remoteConnection.enabled then
       local content_res, content = ATF.remoteUtils.file:GetFileContent(config.pathToSDL .. "/","log4cxx.properties")
       if not content_res then
-        error("Remote utils unable to get content of " .. config.pathToSDL .. "/log4cxx.properties")
+        error("Remote utils: unable to get content of " .. config.pathToSDL .. "/log4cxx.properties")
       end
     else
       local pathToFile = config.pathToSDL .. "/log4cxx.properties"
