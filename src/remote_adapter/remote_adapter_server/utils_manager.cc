@@ -1,6 +1,10 @@
 #include "utils_manager.h"
+#ifdef __QNX__
 #include <sys/syspage.h>
 #include <sys/debug.h> 
+#else
+#include <string.h>
+#endif
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/types.h>
@@ -22,7 +26,11 @@ int UtilsManager::StartApp(const std::string & app_path,const std::string & app_
     char * const argv[] = {strdup(app_name.c_str()),NULL};  
 
     errno = 0;
+#ifdef __QNX__
     pid_t app_pid = spawnp(app_full_path.c_str(), 0, NULL,NULL, argv, NULL);
+#else
+    pid_t app_pid = error_codes::FAILED;
+#endif
 
     free(argv[0]);
 
@@ -32,7 +40,7 @@ int UtilsManager::StartApp(const std::string & app_path,const std::string & app_
         }
     }
 
-    printf("\n%s:\n%s\n",strerror(errno));
+    printf("\n%s",strerror(errno));
     return error_codes::FAILED;
 }
 
@@ -75,12 +83,14 @@ int UtilsManager::CheckStatusApp(const std::string & app_name){
     }
 
     int num_threads = 0;
+#ifdef __QNX__
     procfs_info info;
 
     for(const auto & app_pid : arr_pid){
         GetNameApp(app_pid,&info);
         num_threads += info.num_threads;
     }
+#endif
     printf ("\n%s has: %d thread ",app_name.c_str(),num_threads);
     if(num_threads > 1){
         printf ("\n%s is RUNNING",app_name.c_str());
@@ -161,16 +171,17 @@ UtilsManager::ArrayPid UtilsManager::GetPidApp(const std::string & app_name){
 std::string UtilsManager::GetNameApp(int app_pid,procfs_info * proc_info){  
 
     char      paths [PATH_MAX];
+#ifdef __QNX__
     int       fd;
     static struct {
     procfs_debuginfo    info;
-    char                buff [PATH_MAX];
+    char                buff [BUFSIZ];
     } name;
 
     sprintf (paths, "/proc/%d/as", app_pid);
 
     if ((fd = open (paths, O_RDONLY)) == -1) {
-    return "";
+        return "";
     }
 
     if(devctl (fd, DCMD_PROC_MAPDEBUG_BASE, &name,sizeof (name), 0) != EOK){
@@ -192,6 +203,20 @@ std::string UtilsManager::GetNameApp(int app_pid,procfs_info * proc_info){
     close (fd);
 
     return std::string(strrchr(name.info.path, '/') + 1);
+#else
+    sprintf(paths, "/proc/%d/cmdline", app_pid);
+    if(FILE * hFile = fopen(paths, "r")){
+        size_t size = fread(paths,sizeof(char),sizeof(paths),hFile);
+		if(size > 0){
+            if('\n' == paths[size - 1]){
+                paths[size - 1] = '\0';
+            }
+            return std::string(strrchr(paths, '/') + 1);
+		}
+		fclose(hFile);
+    }
+    return "";
+#endif
 }
 
 int UtilsManager::KillApp(const pid_t app_pid,const int sig,const char * app_name){

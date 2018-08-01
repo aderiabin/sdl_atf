@@ -4,7 +4,12 @@
 #include <vector>
 #include <sys/procfs.h>
 #include <signal.h>
+
 namespace utils_wrappers {
+
+#ifndef __QNX__
+typedef void procfs_info;
+#endif
 
 class UtilsManager {
  public:
