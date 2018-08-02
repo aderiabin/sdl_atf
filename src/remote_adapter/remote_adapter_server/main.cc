@@ -70,7 +70,7 @@ int main(int argc, char* argv[]) {
   utils_wrappers::UtilsManager::StopApp("AppLinkService");
   utils_wrappers::UtilsManager::StopApp("SmartDeviceLink");
 
-  utils_wrappers::UtilsManager::StartApp("/fs/mp/bin/","SmartDeviceLink");  
+  utils_wrappers::UtilsManager::StartApp("/fs/mp/bin/SmartDeviceLink","SmartDeviceLink");  
 
   uint16_t port = 5555;
   if (2 == argc) {
@@ -229,8 +229,17 @@ int main(int argc, char* argv[]) {
              });
 
     srv.bind(constants::folder_delete,
-             [](std::string folder_path){
-               const int res = utils_wrappers::UtilsManager::FolderDelete(folder_path);               
+             [](std::string folder_path,std::string folder_name){
+               const int res = utils_wrappers::UtilsManager::FolderDelete(folder_path,folder_name);               
+               return res ? 
+                constants::error_codes::FAILED
+                :
+                constants::error_codes::SUCCESS;
+             });
+
+    srv.bind(constants::folder_create,
+             [](std::string folder_path,std::string folder_name){
+               const int res = utils_wrappers::UtilsManager::FolderCreate(folder_path,folder_name);               
                return res;
              });
 
