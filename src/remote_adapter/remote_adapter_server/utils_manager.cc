@@ -12,22 +12,23 @@
 #include <stdlib.h>
 #include <spawn.h>
 #include <errno.h>
+#include <fstream>
+#include <unistd.h>
 #include "common/constants.h"
 
 namespace utils_wrappers {
+
+const char * const kPostFixBackup = "_origin";
 
 using namespace constants;
 
 int UtilsManager::StartApp(const std::string & app_path,const std::string & app_name){
 
-    std::string app_full_path = app_path;
-    app_full_path.append(app_name);
-
-    char * const argv[] = {strdup(app_name.c_str()),NULL};  
+    char * const argv[] = {strdup(app_path.c_str()),NULL};
 
     errno = 0;
 #ifdef __QNX__
-    pid_t app_pid = spawnp(app_full_path.c_str(), 0, NULL,NULL, argv, NULL);
+    pid_t app_pid = spawnp(app_path.c_str(), 0, NULL,NULL, argv, NULL);
 #else
     pid_t app_pid = error_codes::FAILED;
 #endif
@@ -102,41 +103,149 @@ int UtilsManager::CheckStatusApp(const std::string & app_name){
 
 int UtilsManager::FileBackup(const std::string & file_path,const std::string & file_name){
     printf ("\nUtilsManager::FileBackup");
-    return error_codes::SUCCESS;
+    std::string file_dest_path = 
+        std::string(file_path).append(kPostFixBackup);
+
+    std::ifstream src(file_path.c_str(), std::ios::binary);
+    std::ofstream dest(file_dest_path.c_str(), std::ios::binary);
+    dest << src.rdbuf();
+
+    return src && dest ? 
+        error_codes::SUCCESS
+        :
+        error_codes::FAILED;
 }
 
 int UtilsManager::FileRestore(const std::string & file_path,const std::string & file_name){
     printf ("\nUtilsManager::FileRestore");
-    return error_codes::SUCCESS;
+    std::string file_src_path = 
+        std::string(file_path).append(kPostFixBackup);
+
+    std::ifstream src(file_src_path.c_str(), std::ios::binary);
+    std::ofstream dest(file_path.c_str(), std::ios::binary);
+    dest << src.rdbuf();
+
+    return src && dest ? 
+        error_codes::SUCCESS
+        :
+        error_codes::FAILED;
 }
 
 int UtilsManager::FileUpdate(const std::string & file_path,const std::string & file_name,const std::string & file_content){
     printf ("\nUtilsManager::FileUpdate");
-    return error_codes::SUCCESS;
+    std::ofstream ofs (file_path.c_str(),std::ofstream::binary);
+    ofs << file_content.c_str();
+    return ofs ?
+        error_codes::SUCCESS
+        :
+        error_codes::FAILED;
 }
 
 int UtilsManager::FileExists(const std::string & file_path,const std::string & file_name){
-    printf ("\nUtilsManager::FileUpdate");
-    return error_codes::SUCCESS;
+    printf ("\nUtilsManager::FileExists");
+    struct stat stat_buff;
+    return 0 == (stat(file_path.c_str(), &stat_buff)) ?
+        error_codes::SUCCESS
+        :
+		error_codes::FAILED;
 }
 
 int UtilsManager::FileDelete(const std::string & file_path,const std::string & file_name){
     printf ("\nUtilsManager::FileDelete");
+    if(remove(file_path.c_str()) != 0 ){
+        return error_codes::FAILED;
+    }
     return error_codes::SUCCESS;
 }
 
 std::string UtilsManager::GetFileContent(const std::string & file_path,const std::string & file_name){
     printf ("\nUtilsManager::GetFileContent");
-    return std::string();
+	FILE * hfile = fopen(file_path.c_str(), "rb");
+	if (!hfile){
+		printf("\nUnable to open file %s", file_path.c_str());
+		return std::string();
+	}
+	
+    fseek(hfile, 0, SEEK_END);
+	unsigned long fileLen = ftell(hfile);
+	fseek(hfile, 0, SEEK_SET);
+	
+    char * buffer = (char *)malloc(fileLen+1);
+	if (!buffer){
+		printf("\nMemory error!");
+        fclose(hfile);
+		return std::string();
+	}
+
+    memset(buffer,0,fileLen+1);	
+    fread(buffer, fileLen, 1, hfile);
+	fclose(hfile);
+
+	std::string file_content(buffer,fileLen);
+
+	free(buffer);
+    return file_content;
 }
 
 int UtilsManager::FolderExists(const std::string & folder_path,const std::string & folder_name){
     printf ("\nUtilsManager::FolderExists");
-    return error_codes::SUCCESS;
+    return FileExists(folder_path,folder_name);
 }
 
-int UtilsManager::FolderDelete(const std::string & folder_path){
+int UtilsManager::FolderDelete(const std::string & folder_path,const std::string & folder_name){
     printf ("\nUtilsManager::FolderDelete");
+    DIR * dir = opendir(folder_path.c_str());
+    size_t path_len = folder_path.length();
+    int res = -1;
+    
+    if (dir){
+        struct dirent * ent_dir;
+        res = 0;
+        
+        while(!res && (ent_dir = readdir(dir))){
+            char * buff;
+            size_t len;
+            
+            if(!strcmp(ent_dir->d_name, ".") || !strcmp(ent_dir->d_name, "..")){
+                continue;
+            }
+            
+            res = -1;
+            len = path_len + strlen(ent_dir->d_name) + 2;
+            buff = static_cast<char *>(malloc(len));
+            
+            if(buff){
+                struct stat statbuf;
+                snprintf(buff, len, "%s/%s", folder_path.c_str(), ent_dir->d_name);
+                
+                if(!stat(buff, &statbuf)){
+                    if(S_ISDIR(statbuf.st_mode)){
+                        res = FolderDelete(buff,std::string(ent_dir->d_name));
+                    }else{
+                        res = unlink(buff);
+                    }
+                }
+                
+                free(buff);
+            }
+        }
+        closedir(dir);
+    }
+    
+    if(!res){
+        res = rmdir(folder_path.c_str());
+    }
+    
+    return res;
+}
+
+int UtilsManager::FolderCreate(const std::string & folder_path,const std::string & folder_name){
+    printf ("\nUtilsManager::FolderCreate");
+    const int dir_err = mkdir(folder_path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+    if (-1 == dir_err){
+        printf("\nError creating directory: %s",folder_path.c_str());   
+        return error_codes::FAILED;     
+    }
     return error_codes::SUCCESS;
 }
 

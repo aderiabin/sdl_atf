@@ -25,7 +25,8 @@ class UtilsManager {
     static int FileDelete(const std::string & file_path,const std::string & file_name);
     static std::string GetFileContent(const std::string & file_path,const std::string & file_name);
     static int FolderExists(const std::string & folder_path,const std::string & folder_name);
-    static int FolderDelete(const std::string & folder_path);
+    static int FolderDelete(const std::string & folder_path,const std::string & folder_name);
+    static int FolderCreate(const std::string & folder_path,const std::string & folder_name);
 
  private:
     static ArrayPid GetPidApp(const std::string & app_name);
