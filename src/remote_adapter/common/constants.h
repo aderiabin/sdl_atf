@@ -28,6 +28,8 @@ static std::string folder_exists = "folder_exists";
 static std::string folder_create = "folder_create";
 static std::string folder_delete = "folder_delete";
 
+static const size_t kMaxSizeData = 1048576;//1MB
+
 namespace stat_app_codes{
 static const int CRASHED = -1;
 static const int NOT_RUNNING = 0;

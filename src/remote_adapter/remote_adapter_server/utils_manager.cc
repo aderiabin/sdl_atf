@@ -158,31 +158,54 @@ int UtilsManager::FileDelete(const std::string & file_path,const std::string & f
     return error_codes::SUCCESS;
 }
 
-std::string UtilsManager::GetFileContent(const std::string & file_path,const std::string & file_name){
-    printf ("\nUtilsManager::GetFileContent");
+std::string UtilsManager::GetFileContent(
+    const std::string & file_path,
+    const std::string & file_name,
+    size_t & offset,
+    const size_t max_size_content)
+{
+    printf ("\nUtilsManager::GetFileContent\n");
 	FILE * hfile = fopen(file_path.c_str(), "rb");
 	if (!hfile){
-		printf("\nUnable to open file %s", file_path.c_str());
+		printf("\nUnable to open file %s\n", file_path.c_str());
+        offset = error_codes::FAILED;
 		return std::string();
 	}
 	
     fseek(hfile, 0, SEEK_END);
-	unsigned long fileLen = ftell(hfile);
-	fseek(hfile, 0, SEEK_SET);
+	unsigned long fileLen = ftell(hfile) - offset;
+	fseek(hfile, offset, SEEK_SET);
+    printf ("\nUtilsManager::file offset %lu rest size of the file %lu\n",offset,fileLen);
+    if(max_size_content){
+        fileLen = max_size_content > fileLen ?
+                            fileLen
+                            :
+                            max_size_content;
+    }
 	
-    char * buffer = (char *)malloc(fileLen+1);
+    char * buffer = (char *)malloc(fileLen);
 	if (!buffer){
-		printf("\nMemory error!");
+		printf("\nMemory error!\n");
         fclose(hfile);
+        offset = error_codes::FAILED;
 		return std::string();
 	}
 
-    memset(buffer,0,fileLen+1);	
     fread(buffer, fileLen, 1, hfile);
+    fseek(hfile, 0, SEEK_END);
+    
+    size_t read = fileLen;
+	fileLen = ftell(hfile);
 	fclose(hfile);
 
-	std::string file_content(buffer,fileLen);
+    offset = (read + offset) == fileLen ?
+                    error_codes::SUCCESS
+                    :
+                    read + offset;
 
+	std::string file_content(buffer,read);
+
+    printf ("\nUtilsManager::New file offset: %lu\n",offset);
 	free(buffer);
     return file_content;
 }

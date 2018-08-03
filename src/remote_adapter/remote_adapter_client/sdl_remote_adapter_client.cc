@@ -260,15 +260,60 @@ int SDLRemoteTestAdapterClient::file_update(const std::string& path,
 
 std::pair<std::string, int> SDLRemoteTestAdapterClient::file_content(
                                               const std::string& path,
-                                              const std::string& name) try {
+                                              const std::string& name) try {  
   std::cout << "Get content of file " << name << " on remote host"
       << "\nPath to file: "<< path << std::endl;
+ 
+  using namespace constants;
   if (connected()) {
     using result = std::pair<std::string, int>;
-    const std::pair<std::string, int> received =
-        connection_.call(constants::file_content, path, name).as<result>();
+        
+    result received = connection_.call(
+                                  constants::file_content,
+                                  path,
+                                  name,
+                                  0,
+                                  constants::kMaxSizeData
+                        ).as<result>();
+    
+    if(error_codes::FAILED == received.second){
+      std::cout << "\nFailed: Get file data from HU!!!\n";
+      return received;
+    }
+
+    std::string tmp_path("/tmp/");
+    tmp_path.append(name);
+    
+    remove(tmp_path.c_str());
+    
+    FILE * hFile = fopen(tmp_path.c_str(),"a");
+    if(!hFile){
+      std::cout << "\nFailed: Can't created file: " << tmp_path << "\n" << std::endl;
+      return std::make_pair(std::string("Can't created file"),error_codes::FAILED);
+    }     
+    
+    if(error_codes::SUCCESS != received.second){
+      
+      do{
+       
+        fwrite(received.first.c_str(),received.first.length(),1,hFile);
+
+        received = connection_.call(
+            constants::file_content,
+            path,
+            name,
+            received.second,
+            constants::kMaxSizeData
+            ).as<result>();
+      
+      }while(error_codes::SUCCESS != received.second);   
+    }
+    
+    fwrite(received.first.c_str(),received.first.length(),1,hFile);
+    fclose(hFile);
+    
     std::cout << "SUCCESS\nReceived data: " << received.first << "\n" << std::endl;
-    return std::make_pair(received.first, received.second);
+    return std::make_pair(tmp_path, received.second);
   }
   return std::make_pair(std::string(), constants::error_codes::NO_CONNECTION);
 } catch (rpc::rpc_error& e) {
