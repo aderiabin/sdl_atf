@@ -23,7 +23,11 @@ class UtilsManager {
     static int FileUpdate(const std::string & file_path,const std::string & file_name,const std::string & file_content);
     static int FileExists(const std::string & file_path,const std::string & file_name);
     static int FileDelete(const std::string & file_path,const std::string & file_name);
-    static std::string GetFileContent(const std::string & file_path,const std::string & file_name);
+    static std::string GetFileContent(
+        const std::string & file_path,
+        const std::string & file_name,
+        size_t & offset,
+        const size_t max_size_content = 0);
     static int FolderExists(const std::string & folder_path,const std::string & folder_name);
     static int FolderDelete(const std::string & folder_path,const std::string & folder_name);
     static int FolderCreate(const std::string & folder_path,const std::string & folder_name);

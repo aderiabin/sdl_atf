@@ -9,6 +9,8 @@
 #include "utils_manager.h"
 #include "common/constants.h"
 
+using utils_wrappers::UtilsManager;
+
 void PrintUsage() {
   std::cout << "\nUsage:" << std::endl;
   std::cout << "------------------------------------------------" << std::endl;
@@ -67,10 +69,10 @@ void CheckError(const int res) {
 
 int main(int argc, char* argv[]) {
 
-  utils_wrappers::UtilsManager::StopApp("AppLinkService");
-  utils_wrappers::UtilsManager::StopApp("SmartDeviceLink");
+  UtilsManager::StopApp("AppLinkService");
+  UtilsManager::StopApp("SmartDeviceLink");
 
-  utils_wrappers::UtilsManager::StartApp("/fs/mp/bin/SmartDeviceLink","SmartDeviceLink");  
+  UtilsManager::StartApp("/fs/mp/bin/SmartDeviceLink","SmartDeviceLink");  
 
   uint16_t port = 5555;
   if (2 == argc) {
@@ -164,73 +166,81 @@ int main(int argc, char* argv[]) {
 
     srv.bind(constants::app_start,
              [](std::string app_path,std::string app_name){
-               const int res = utils_wrappers::UtilsManager::StartApp(app_path,app_name);
+               const int res = UtilsManager::StartApp(app_path,app_name);
                //CheckError(res);
                return res;
              });
 
     srv.bind(constants::app_stop,
              [](std::string app_name){
-               const int res = utils_wrappers::UtilsManager::StopApp(app_name);
+               const int res = UtilsManager::StopApp(app_name);
                //CheckError(res);
                return res;
              });
 
     srv.bind(constants::app_check_status,
              [](std::string app_name){
-               const int res = utils_wrappers::UtilsManager::CheckStatusApp(app_name);
+               const int res = UtilsManager::CheckStatusApp(app_name);
                //CheckError(res);
                return res;
              });
 
     srv.bind(constants::file_backup,
              [](std::string file_path,std::string file_name){
-               const int res = utils_wrappers::UtilsManager::FileBackup(file_path,file_name);
+               const int res = UtilsManager::FileBackup(file_path,file_name);
                CheckError(res);
              });
 
     srv.bind(constants::file_restore,
              [](std::string file_path,std::string file_name,std::string file_content){
-               const int res = utils_wrappers::UtilsManager::FileUpdate(file_path,file_name,file_content);
+               const int res = UtilsManager::FileUpdate(file_path,file_name,file_content);
                //CheckError(res);
                return res;
              });
 
     srv.bind(constants::file_exists,
              [](std::string file_path,std::string file_name){
-               const int res = utils_wrappers::UtilsManager::FileExists(file_path,file_name);
+               const int res = UtilsManager::FileExists(file_path,file_name);
                //CheckError(res);
                return res;
              });
 
     srv.bind(constants::folder_exists,
              [](std::string folder_path,std::string folder_name){
-               const int res = utils_wrappers::UtilsManager::FolderExists(folder_path,folder_name);
+               const int res = UtilsManager::FolderExists(folder_path,folder_name);
                //CheckError(res);
                return res;
              });
 
     srv.bind(constants::file_content,
-             [](std::string file_path,std::string file_name){
-               std::string file_content = utils_wrappers::UtilsManager::GetFileContent(file_path,file_name);
-               if(file_content.length()){
-                   return std::make_pair(file_content,
-                          constants::error_codes::SUCCESS);
-               }
-
-               return std::make_pair(file_content,
-                          constants::error_codes::FAILED);               
+             [](std::string file_path,
+                std::string file_name,
+                size_t offset,
+                size_t max_size_content){
+                  
+                  std::string file_content = 
+                           UtilsManager::GetFileContent(
+                                          file_path,
+                                          file_name,
+                                          offset,
+                                          max_size_content
+                                          );
+                                          
+                  return std::make_pair(
+                                  file_content,
+                                  offset
+                                  );                       
              });
 
     srv.bind(constants::file_delete,
              [](std::string file_path,std::string file_name){
-               const int res = utils_wrappers::UtilsManager::FileDelete(file_path,file_name);               
+               const int res = UtilsManager::FileDelete(file_path,file_name);               
                return res;
              });
 
     srv.bind(constants::folder_delete,
              [](std::string folder_path,std::string folder_name){
-               const int res = utils_wrappers::UtilsManager::FolderDelete(folder_path,folder_name);               
+               const int res = UtilsManager::FolderDelete(folder_path,folder_name);               
                return res ? 
                 constants::error_codes::FAILED
                 :
@@ -239,7 +249,7 @@ int main(int argc, char* argv[]) {
 
     srv.bind(constants::folder_create,
              [](std::string folder_path,std::string folder_name){
-               const int res = utils_wrappers::UtilsManager::FolderCreate(folder_path,folder_name);               
+               const int res = UtilsManager::FolderCreate(folder_path,folder_name);               
                return res;
              });
 
@@ -254,7 +264,7 @@ int main(int argc, char* argv[]) {
     PrintUsage();
   }
 
-  utils_wrappers::UtilsManager::StopApp("SmartDeviceLink");
+  UtilsManager::StopApp("SmartDeviceLink");
 
   return 0;
 }
