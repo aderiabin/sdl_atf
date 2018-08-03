@@ -129,6 +129,7 @@ end
 -- @treturn boolean The main result. Indicates whether the launch of SDL was successful
 -- @treturn string Additional information on the main SDL startup result
 function SDL:StartSDL(pathToSDL, smartDeviceLinkCore, ExitOnCrash)
+  local result
   if ExitOnCrash ~= nil then
     self.exitOnCrash = ExitOnCrash
   end
@@ -141,9 +142,9 @@ function SDL:StartSDL(pathToSDL, smartDeviceLinkCore, ExitOnCrash)
     return false, msg
   end
   if config.remoteConnection.enabled then
-    local result = ATF.remoteUtils.app:StartApp(pathToSDL, smartDeviceLinkCore)
+     result = ATF.remoteUtils.app:StartApp(pathToSDL, smartDeviceLinkCore)
   else
-    local result = os.execute ('./tools/StartSDL.sh ' .. pathToSDL .. ' ' .. smartDeviceLinkCore)
+     result = os.execute ('./tools/StartSDL.sh ' .. pathToSDL .. ' ' .. smartDeviceLinkCore)
   end
 
   local msg
@@ -228,15 +229,19 @@ end
 --- Update SDL log4cxx.properties in order SDL will be able to write logs through Telnet
 local function updateSDLLogProperties()
   if config.storeFullSDLLogs then
+    local content
+    local pathToFile
+    local f
     if config.remoteConnection.enabled then
-      local content_res, content = ATF.remoteUtils.file:GetFileContent(config.pathToSDL .. "/","log4cxx.properties")
+      local content_res
+      content_res, content = ATF.remoteUtils.file:GetFileContent(config.pathToSDL .. "/","log4cxx.properties")
       if not content_res then
         error("Remote utils: unable to get content of " .. config.pathToSDL .. "/log4cxx.properties")
       end
     else
-      local pathToFile = config.pathToSDL .. "/log4cxx.properties"
-      local f = io.open(pathToFile, "r")
-      local content = f:read("*all")
+      pathToFile = config.pathToSDL .. "/log4cxx.properties"
+      f = io.open(pathToFile, "r")
+      content = f:read("*all")
       f:close()
     end
     local paramsToUpdate = {
