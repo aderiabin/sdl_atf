@@ -140,10 +140,11 @@ function SDL:StartSDL(pathToSDL, smartDeviceLinkCore, ExitOnCrash)
     print(console.setattr(msg, "cyan", 1))
     return false, msg
   end
+  local result
   if config.remoteConnection.enabled then
-    local result = ATF.remoteUtils.app:StartApp(pathToSDL, smartDeviceLinkCore)
+    result = ATF.remoteUtils.app:StartApp(pathToSDL, smartDeviceLinkCore)
   else
-    local result = os.execute ('./tools/StartSDL.sh ' .. pathToSDL .. ' ' .. smartDeviceLinkCore)
+    result = os.execute ('./tools/StartSDL.sh ' .. pathToSDL .. ' ' .. smartDeviceLinkCore)
   end
 
   local msg
@@ -228,15 +229,17 @@ end
 --- Update SDL log4cxx.properties in order SDL will be able to write logs through Telnet
 local function updateSDLLogProperties()
   if config.storeFullSDLLogs then
+    local content
+    local pathToFile
     if config.remoteConnection.enabled then
       local content_res, content = ATF.remoteUtils.file:GetFileContent(config.pathToSDL .. "/","log4cxx.properties")
       if not content_res then
         error("Remote utils: unable to get content of " .. config.pathToSDL .. "/log4cxx.properties")
       end
     else
-      local pathToFile = config.pathToSDL .. "/log4cxx.properties"
+      pathToFile = config.pathToSDL .. "/log4cxx.properties"
       local f = io.open(pathToFile, "r")
-      local content = f:read("*all")
+      content = f:read("*all")
       f:close()
     end
     local paramsToUpdate = {
