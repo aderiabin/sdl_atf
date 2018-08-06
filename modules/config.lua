@@ -12,13 +12,13 @@ config.color = true
 
 --- Remote cofiguration
 config.remoteConnection = {}
-config.remoteConnection.enabled = true
+config.remoteConnection.enabled = false
 config.remoteConnection.url = "192.168.1.26"
 config.remoteConnection.port = 5555
 
 --- HMI configuration
 config.hmiAdapterConfig = {}
-config.hmiAdapterConfig.hmiAdapterType = "Remote"
+config.hmiAdapterConfig.hmiAdapterType = "WebSocket"
 --- Define configuration parameters for HMI connection on WebSocket base
 config.hmiAdapterConfig.WebSocket = {}
 config.hmiAdapterConfig.WebSocket.url = "ws://localhost"
@@ -62,9 +62,9 @@ config.controlMqConfig.flags = 257 -- O_WRONLY | O_CREAT
 config.controlMqConfig.mode = 1638 -- S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
 
 --- Define host for default mobile device connection
-config.mobileHost = "192.168.1.26"
+config.mobileHost = "127.0.0.1"
 --- Define port for default mobile device connection
-config.mobilePort = 12346
+config.mobilePort = 12345
 --- Define timeout for Heartbeat in msec
 config.heartbeatTimeout = 7000
 --- Define timeout to wait for the events that should not occur
