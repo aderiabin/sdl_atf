@@ -180,9 +180,14 @@ int SDLRemoteTestAdapterClient::app_start(const std::string& path,
   std::cout << "Start application " << name << " on remote host"
       << "\nPath to application: "<< path << std::endl;
   if (connected()) {
-    connection_.call(constants::app_start, path, name);
+    int result_codes = connection_.call(
+                            constants::app_start,
+                            path,
+                            name
+                            )
+                            .as<int>();
     std::cout << "SUCCESS\n" << std::endl;
-    return constants::error_codes::SUCCESS;
+    return result_codes;
   }
   return constants::error_codes::NO_CONNECTION;
 } catch (rpc::rpc_error& e) {
@@ -195,9 +200,12 @@ int SDLRemoteTestAdapterClient::app_stop(const std::string& name) try {
   std::cout << "Stop application " << name
             << " on remote host" << std::endl;
   if (connected()) {
-    connection_.call(constants::app_stop, name);
+    int result_codes = connection_.call(
+                            constants::app_stop,
+                            name)
+                            .as<int>();
     std::cout << "SUCCESS\n" << std::endl;
-    return constants::error_codes::SUCCESS;
+    return result_codes;
   }
   return constants::error_codes::NO_CONNECTION;
 } catch (rpc::rpc_error& e) {
@@ -210,11 +218,13 @@ std::pair<int, int> SDLRemoteTestAdapterClient::app_check_status(const std::stri
   std::cout << "Check status of application " << name
             << " on remote host" << std::endl;
   if (connected()) {
-    using result = std::pair<int, int>;
-    const std::pair<int, int> received =
-        connection_.call(constants::app_check_status, name).as<result>();
-    std::cout << "SUCCESS\nReceived data: " << received.first << "\n" << std::endl;
-    return std::make_pair(received.first, received.second);
+    using received = int;
+    const received result_codes = connection_.call(
+                                        constants::app_check_status,
+                                        name)
+                                        .as<received>();
+    std::cout << "SUCCESS\nReceived data: " << result_codes << "\n" << std::endl;
+    return std::make_pair(result_codes, constants::error_codes::SUCCESS);
   }
   return std::make_pair(0, constants::error_codes::NO_CONNECTION);
 } catch (rpc::rpc_error& e) {
@@ -228,11 +238,14 @@ std::pair<bool, int> SDLRemoteTestAdapterClient::file_exists(const std::string& 
   std::cout << "Check existance of file " << name << " on remote host"
       << "\nPath to file: "<< path << std::endl;
   if (connected()) {
-    using result = std::pair<bool, int>;
-    const std::pair<bool, int> received =
-        connection_.call(constants::file_exists, path, name).as<result>();
-    std::cout << "SUCCESS\nReceived data: " << received.first << "\n" << std::endl;
-    return std::make_pair(received.first, received.second);
+    using received = int;
+    const received resilt_code = connection_.call(
+                                              constants::file_exists,
+                                              path,
+                                              name)
+                                              .as<received>();
+    std::cout << "SUCCESS\nReceived data: " << resilt_code << "\n" << std::endl;
+    return std::make_pair(bool(!resilt_code),constants::error_codes::SUCCESS);
   }
   return std::make_pair(false, constants::error_codes::NO_CONNECTION);
 } catch (rpc::rpc_error& e) {
@@ -247,9 +260,15 @@ int SDLRemoteTestAdapterClient::file_update(const std::string& path,
   std::cout << "Update content of file " << name << " on remote host"
       << "\nPath to file: "<< path << std::endl;
   if (connected()) {
-    connection_.call(constants::file_update, path, name, content);
+    int result_codes = connection_.call(
+                                    constants::file_update,
+                                    path,
+                                    name,
+                                    content
+                                    )
+                                    .as<int>();
     std::cout << "SUCCESS\n" << std::endl;
-    return constants::error_codes::SUCCESS;
+    return result_codes;
   }
   return constants::error_codes::NO_CONNECTION;
 } catch (rpc::rpc_error& e) {
@@ -327,9 +346,14 @@ int SDLRemoteTestAdapterClient::file_delete(const std::string& path,
   std::cout << "Delete file " << name << " on remote host"
       << "\nPath to file: "<< path << std::endl;
   if (connected()) {
-    connection_.call(constants::file_delete, path, name);
+    int result_codes = connection_.call(
+                                    constants::file_delete,
+                                    path,
+                                    name
+                                    )
+                                    .as<int>();
     std::cout << "SUCCESS\n" << std::endl;
-    return constants::error_codes::SUCCESS;
+    return result_codes;
   }
   return constants::error_codes::NO_CONNECTION;
 } catch (rpc::rpc_error& e) {
@@ -343,9 +367,14 @@ int SDLRemoteTestAdapterClient::file_backup(const std::string& path,
   std::cout << "Backup file " << name << " on remote host"
       << "\nPath to file: "<< path << std::endl;
   if (connected()) {
-    connection_.call(constants::file_backup, path, name);
+    int result_codes = connection_.call(
+                            constants::file_backup,
+                            path,
+                            name
+                            )
+                            .as<int>();
     std::cout << "SUCCESS\n" << std::endl;
-    return constants::error_codes::SUCCESS;
+    return result_codes;
   }
   return constants::error_codes::NO_CONNECTION;
 } catch (rpc::rpc_error& e) {
@@ -359,9 +388,13 @@ int SDLRemoteTestAdapterClient::file_restore(const std::string& path,
   std::cout << "Restore backuped file " << name << " on remote host"
       << "\nPath to file: "<< path << std::endl;
   if (connected()) {
-    connection_.call(constants::file_restore, path, name);
+    int result_codes = connection_.call(
+                            constants::file_restore,
+                            path,
+                            name
+                            ).as<int>();
     std::cout << "SUCCESS\n" << std::endl;
-    return constants::error_codes::SUCCESS;
+    return result_codes;
   }
   return constants::error_codes::NO_CONNECTION;
 } catch (rpc::rpc_error& e) {
@@ -375,11 +408,14 @@ std::pair<bool, int> SDLRemoteTestAdapterClient::folder_exists(const std::string
   std::cout << "Check existance of folder  " << name << " on remote host"
       << "\nPath to file: "<< path << std::endl;
   if (connected()) {
-    using result = std::pair<bool, int>;
-    const std::pair<bool, int> received =
-        connection_.call(constants::folder_exists, path, name).as<result>();
-    std::cout << "SUCCESS\nReceived data: " << received.first << "\n" << std::endl;
-    return std::make_pair(received.first, received.second);
+    using received = int;
+    const received result_code = connection_.call(
+                                                constants::folder_exists,
+                                                path,
+                                                name)
+                                                .as<received>();
+    std::cout << "SUCCESS\nReceived data: " << result_code << "\n" << std::endl;
+    return std::make_pair(bool(!result_code),constants::error_codes::SUCCESS);
   }
   return std::make_pair(false, constants::error_codes::NO_CONNECTION);
 } catch (rpc::rpc_error& e) {
@@ -393,9 +429,13 @@ int SDLRemoteTestAdapterClient::folder_create(const std::string& path,
   std::cout << "Create folder " << name << " on remote host"
       << "\nPath to file: "<< path << std::endl;
   if (connected()) {
-    connection_.call(constants::folder_create, path, name);
+    int result_code = connection_.call(
+                                    constants::folder_create,
+                                    path,
+                                    name
+                                    ).as<int>();
     std::cout << "SUCCESS\n" << std::endl;
-    return constants::error_codes::SUCCESS;
+    return result_code;
   }
   return constants::error_codes::NO_CONNECTION;
 } catch (rpc::rpc_error& e) {
@@ -409,9 +449,13 @@ int SDLRemoteTestAdapterClient::folder_delete(const std::string& path,
   std::cout << "Delete folder " << name << " on remote host"
       << "\nPath to file: "<< path << std::endl;
   if (connected()) {
-    connection_.call(constants::folder_delete, path, name);
+    int result_code = connection_.call(
+                                    constants::folder_delete,
+                                    path,
+                                    name)
+                                    .as<int>();
     std::cout << "SUCCESS\n" << std::endl;
-    return constants::error_codes::SUCCESS;
+    return result_code;
   }
   return constants::error_codes::NO_CONNECTION;
 } catch (rpc::rpc_error& e) {
