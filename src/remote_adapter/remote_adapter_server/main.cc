@@ -69,11 +69,6 @@ void CheckError(const int res) {
 
 int main(int argc, char* argv[]) {
 
-  UtilsManager::StopApp("AppLinkService");
-  UtilsManager::StopApp("SmartDeviceLink");
-
-  UtilsManager::StartApp("/fs/mp/bin/SmartDeviceLink","SmartDeviceLink");  
-
   uint16_t port = 5555;
   if (2 == argc) {
     const std::string number = argv[1];
@@ -166,49 +161,65 @@ int main(int argc, char* argv[]) {
 
     srv.bind(constants::app_start,
              [](std::string app_path,std::string app_name){
-               const int res = UtilsManager::StartApp(app_path,app_name);
-               //CheckError(res);
+               const int res = UtilsManager::StartApp(
+                                                  app_path,
+                                                  app_name);
                return res;
              });
 
     srv.bind(constants::app_stop,
              [](std::string app_name){
                const int res = UtilsManager::StopApp(app_name);
-               //CheckError(res);
                return res;
              });
 
     srv.bind(constants::app_check_status,
              [](std::string app_name){
                const int res = UtilsManager::CheckStatusApp(app_name);
-               //CheckError(res);
                return res;
              });
 
     srv.bind(constants::file_backup,
              [](std::string file_path,std::string file_name){
-               const int res = UtilsManager::FileBackup(file_path,file_name);
-               CheckError(res);
+               const int res = UtilsManager::FileBackup(
+                                                  file_path,
+                                                  file_name);
+               return res;
              });
 
-    srv.bind(constants::file_restore,
-             [](std::string file_path,std::string file_name,std::string file_content){
-               const int res = UtilsManager::FileUpdate(file_path,file_name,file_content);
-               //CheckError(res);
+     srv.bind(constants::file_restore,
+             [](std::string file_path,std::string file_name){
+               const int res = UtilsManager::FileRestore(
+                                                file_path,
+                                                file_name);
                return res;
+             });
+
+    srv.bind(constants::file_update,
+             [](std::string file_path,
+                std::string file_name,
+                std::string file_content){
+                  
+                  const int res = UtilsManager::FileUpdate(
+                                                    file_path,
+                                                    file_name,
+                                                    file_content);
+                  return res;
              });
 
     srv.bind(constants::file_exists,
              [](std::string file_path,std::string file_name){
-               const int res = UtilsManager::FileExists(file_path,file_name);
-               //CheckError(res);
+               const int res = UtilsManager::FileExists(
+                                                    file_path,
+                                                    file_name);
                return res;
              });
 
-    srv.bind(constants::folder_exists,
-             [](std::string folder_path,std::string folder_name){
-               const int res = UtilsManager::FolderExists(folder_path,folder_name);
-               //CheckError(res);
+    srv.bind(constants::file_delete,
+             [](std::string file_path,std::string file_name){
+               const int res = UtilsManager::FileDelete(
+                                                    file_path,
+                                                    file_name);               
                return res;
              });
 
@@ -232,15 +243,23 @@ int main(int argc, char* argv[]) {
                                   );                       
              });
 
-    srv.bind(constants::file_delete,
-             [](std::string file_path,std::string file_name){
-               const int res = UtilsManager::FileDelete(file_path,file_name);               
+    srv.bind(constants::folder_exists,
+             [](std::string folder_path,std::string folder_name){
+               const int res = UtilsManager::FolderExists(
+                                                    folder_path,
+                                                    folder_name);
                return res;
              });
 
+    
+
+    
+
     srv.bind(constants::folder_delete,
              [](std::string folder_path,std::string folder_name){
-               const int res = UtilsManager::FolderDelete(folder_path,folder_name);               
+               const int res = UtilsManager::FolderDelete(
+                                                    folder_path,
+                                                    folder_name);               
                return res ? 
                 constants::error_codes::FAILED
                 :
@@ -249,7 +268,9 @@ int main(int argc, char* argv[]) {
 
     srv.bind(constants::folder_create,
              [](std::string folder_path,std::string folder_name){
-               const int res = UtilsManager::FolderCreate(folder_path,folder_name);               
+               const int res = UtilsManager::FolderCreate(
+                                                    folder_path,
+                                                    folder_name);               
                return res;
              });
 
@@ -263,8 +284,6 @@ int main(int argc, char* argv[]) {
     std::cout << "Exception occured" << std::endl;
     PrintUsage();
   }
-
-  UtilsManager::StopApp("SmartDeviceLink");
 
   return 0;
 }
