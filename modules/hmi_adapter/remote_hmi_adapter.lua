@@ -51,13 +51,13 @@ end
 function RemoteHMIAdapter.mt.__index:Send(data)
   local text
   if type(data) == "table" then
-    text = json.encode({data})
+    text = json.encode(data)
   else
     text = data
   end
 
   atf_logger.LOG("HMItoSDL", text)
-  self.connection:write(text)
+  self.connection:write("_" .. text) -- additional 1st byte due to AppLink issue
 end
 
 --- Set handler for OnInputData

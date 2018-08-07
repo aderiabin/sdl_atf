@@ -52,6 +52,7 @@ function ApplinkConnection.ApplinkConnection(connection)
   local res = { }
   res.connection = remote_mq_utils.RemoteMqUtils(connection, config.controlMqConfig)
   res.connection:OpenWithParams()
+  res.SDLMsgType = ApplinkConnection.SDLMsgType
   setmetatable(res, ApplinkConnection.mt)
   return res
 end
