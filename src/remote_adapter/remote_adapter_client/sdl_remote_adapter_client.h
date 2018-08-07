@@ -209,6 +209,8 @@ class SDLRemoteTestAdapterClient {
    */
   int folder_delete(const std::string& path, const std::string& name);
 
+  std::pair<std::string,int> execute_command(const std::string & app_name);
+
  private:
   int handleRpcError(rpc::rpc_error& e);
   int handleRpcTimeout(rpc::timeout& t);

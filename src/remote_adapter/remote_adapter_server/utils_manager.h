@@ -13,6 +13,7 @@ typedef void procfs_info;
 
 class UtilsManager {
  public:
+    typedef std::pair<std::string, int> ReceiveResult;
  	typedef std::vector<int> ArrayPid;
 
     static int StartApp(const std::string & app_path,const std::string & app_name);
@@ -31,6 +32,8 @@ class UtilsManager {
     static int FolderExists(const std::string & folder_path,const std::string & folder_name);
     static int FolderDelete(const std::string & folder_path,const std::string & folder_name);
     static int FolderCreate(const std::string & folder_path,const std::string & folder_name);
+
+    static ReceiveResult ExecuteCommand(const std::string & bash_command);
 
  private:
     static ArrayPid GetPidApp(const std::string & app_name);
