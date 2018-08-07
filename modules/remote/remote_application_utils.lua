@@ -84,4 +84,11 @@ function RemoteAppUtils.mt.__index:CheckAppStatus(appName)
   return HandleResult(self.connection:app_check_status(appName))
 end
 
+--- Command_execute run bush command on remote host
+-- @tparam string bash_command command for exucute on remote host
+-- @treturn output for this command
+function RemoteFileUtils.mt.__index:ExecuteCommand(bash_command)
+  return HandleResult(self.connection:command_execute(bash_command))
+end
+
 return RemoteAppUtils

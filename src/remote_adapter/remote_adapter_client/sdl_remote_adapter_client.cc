@@ -464,7 +464,7 @@ int SDLRemoteTestAdapterClient::folder_delete(const std::string& path,
   return handleRpcTimeout(t);
 }
 
-std::pair<std::string,int> SDLRemoteTestAdapterClient::execute_command(const std::string & bash_command)try{
+std::pair<std::string,int> SDLRemoteTestAdapterClient::command_execute(const std::string & bash_command)try{
 
   std::cout << "execute_command: " << bash_command << std::endl;
  

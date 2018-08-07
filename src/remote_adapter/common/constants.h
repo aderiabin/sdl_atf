@@ -27,7 +27,7 @@ static std::string file_delete = "file_delete";
 static std::string folder_exists = "folder_exists";
 static std::string folder_create = "folder_create";
 static std::string folder_delete = "folder_delete";
-static std::string command_execute = "execute_command";
+static std::string command_execute = "command_execute";
 
 static const size_t kMaxSizeData = 1048576;//1MB
 
