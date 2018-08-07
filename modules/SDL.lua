@@ -55,47 +55,47 @@ end
 -- Can be nil in case parameter was not found.
 -- @treturn string Type of read parameter
 local function readParameterFromCMakeCacheFile(paramName)
-  local paramValue, paramType
+  -- local paramValue, paramType
 
-  if config.remoteConnection.enabled then
-    local result, isexist = ATF.remoteUtils.file:IsFileExists(config.pathToSDL,"CMakeCache.txt")
-    if result then
-      if isexist then
-        local content_res, content = ATF.remoteUtils.file:GetFileContent(config.pathToSDL,"CMakeCache.txt")
-        if content_res then
+  -- if config.remoteConnection.enabled then
+  --   local result, isexist = ATF.remoteUtils.file:IsFileExists(config.pathToSDL,"CMakeCache.txt")
+  --   if result then
+  --     if isexist then
+  --       local content_res, content = ATF.remoteUtils.file:GetFileContent(config.pathToSDL,"CMakeCache.txt")
+  --       if content_res then
 
-          local function getLine(s) -- Function needed for Lines parsing at Remote ATF file contents
-            if s:sub(-1) ~= "\n" then
-              s = s .. "\n"
-            end
-            return s:gmatch("(.-)\n")
-          end
+  --         local function getLine(s) -- Function needed for Lines parsing at Remote ATF file contents
+  --           if s:sub(-1) ~= "\n" then
+  --             s = s .. "\n"
+  --           end
+  --           return s:gmatch("(.-)\n")
+  --         end
 
-          for line in getLine(content) do
-            paramType, paramValue = string.match(line, "^%s*" .. paramName .. ":(.+)=(%S*)")
-            if paramValue then
-              return paramValue, paramType
-            end
-          end
+  --         for line in getLine(content) do
+  --           paramType, paramValue = string.match(line, "^%s*" .. paramName .. ":(.+)=(%S*)")
+  --           if paramValue then
+  --             return paramValue, paramType
+  --           end
+  --         end
 
-        else
-          error("remote utils unable to get file content of " .. config.pathToSDL .. "CMakeCache.txt")
-        end
-      end
-    else
-      error("remote utils unable to check for file existens of ".. config.pathToSDL .. "CMakeCache.txt")
-    end
-  else
-    local pathToFile = config.pathToSDL .. "CMakeCache.txt"
-    if is_file_exists(pathToFile) then
-      for line in io.lines(pathToFile) do
-        paramType, paramValue = string.match(line, "^%s*" .. paramName .. ":(.+)=(%S*)")
-        if paramValue then
-          return paramValue, paramType
-        end
-      end
-    end
-  end
+  --       else
+  --         error("remote utils unable to get file content of " .. config.pathToSDL .. "CMakeCache.txt")
+  --       end
+  --     end
+  --   else
+  --     error("remote utils unable to check for file existens of ".. config.pathToSDL .. "CMakeCache.txt")
+  --   end
+  -- else
+  --   local pathToFile = config.pathToSDL .. "CMakeCache.txt"
+  --   if is_file_exists(pathToFile) then
+  --     for line in io.lines(pathToFile) do
+  --       paramType, paramValue = string.match(line, "^%s*" .. paramName .. ":(.+)=(%S*)")
+  --       if paramValue then
+  --         return paramValue, paramType
+  --       end
+  --     end
+  --   end
+  -- end
   return nil
 end
 
@@ -245,44 +245,44 @@ end
 
 --- Update SDL log4cxx.properties in order SDL will be able to write logs through Telnet
 local function updateSDLLogProperties()
-  if config.storeFullSDLLogs then
-    local content = nil
-    local pathToFile = ""
+  -- if config.storeFullSDLLogs then
+  --   local content = nil
+  --   local pathToFile = ""
 
-    if config.remoteConnection.enabled then
-      local content_res
-      content_res, content = ATF.remoteUtils.file:GetFileContent(config.pathToSDL, "log4cxx.properties")
-      if not content_res then
-        error("Remote utils: unable to get content of " .. config.pathToSDL .. "log4cxx.properties")
-      end
-    else
-      pathToFile = config.pathToSDL .. "log4cxx.properties"
-      local f = io.open(pathToFile, "r")
-      content = f:read("*all")
-      f:close()
-    end
-    local paramsToUpdate = {
-      {
-        name = "log4j.rootLogger",
-        value = "ALL, SmartDeviceLinkCoreLogFile, TelnetLogging"
-      },
-      {
-        name = "log4j.appender.TelnetLogging.layout.ConversionPattern",
-        value = "%%-5p [%%d{yyyy-MM-dd HH-mm:ss,SSS}][%%t][%%c] %%F:%%L %%M: %%m"
-      }
-    }
+  --   if config.remoteConnection.enabled then
+  --     local content_res
+  --     content_res, content = ATF.remoteUtils.file:GetFileContent(config.pathToSDL, "log4cxx.properties")
+  --     if not content_res then
+  --       error("Remote utils: unable to get content of " .. config.pathToSDL .. "log4cxx.properties")
+  --     end
+  --   else
+  --     pathToFile = config.pathToSDL .. "log4cxx.properties"
+  --     local f = io.open(pathToFile, "r")
+  --     content = f:read("*all")
+  --     f:close()
+  --   end
+  --   local paramsToUpdate = {
+  --     {
+  --       name = "log4j.rootLogger",
+  --       value = "ALL, SmartDeviceLinkCoreLogFile, TelnetLogging"
+  --     },
+  --     {
+  --       name = "log4j.appender.TelnetLogging.layout.ConversionPattern",
+  --       value = "%%-5p [%%d{yyyy-MM-dd HH-mm:ss,SSS}][%%t][%%c] %%F:%%L %%M: %%m"
+  --     }
+  --   }
 
-    for _, item in pairs(paramsToUpdate) do
-      content = string.gsub(content, item.name .. "=.-\n", item.name .. "=" .. item.value .. "\n")
-    end
-    if config.remoteConnection.enabled then
-      ATF.remoteUtils.file:UpdateFileContent(config.pathToSDL, "log4cxx.properties", content)
-    else
-      local f = io.open(pathToFile, "w")
-      f:write(content)
-      f:close()
-    end
-  end
+  --   for _, item in pairs(paramsToUpdate) do
+  --     content = string.gsub(content, item.name .. "=.-\n", item.name .. "=" .. item.value .. "\n")
+  --   end
+  --   if config.remoteConnection.enabled then
+  --     ATF.remoteUtils.file:UpdateFileContent(config.pathToSDL, "log4cxx.properties", content)
+  --   else
+  --     local f = io.open(pathToFile, "w")
+  --     f:write(content)
+  --     f:close()
+  --   end
+  -- end
 end
 
 setPathToSDL()
