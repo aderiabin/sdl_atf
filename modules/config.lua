@@ -12,13 +12,13 @@ config.color = true
 
 --- Remote cofiguration
 config.remoteConnection = {}
-config.remoteConnection.enabled = false
+config.remoteConnection.enabled = true
 config.remoteConnection.url = "192.168.1.26"
 config.remoteConnection.port = 5555
 
 --- HMI configuration
 config.hmiAdapterConfig = {}
-config.hmiAdapterConfig.hmiAdapterType = "WebSocket"
+config.hmiAdapterConfig.hmiAdapterType = "Remote"
 --- Define configuration parameters for HMI connection on WebSocket base
 config.hmiAdapterConfig.WebSocket = {}
 config.hmiAdapterConfig.WebSocket.url = "ws://localhost"
@@ -62,9 +62,9 @@ config.controlMqConfig.flags = 257 -- O_WRONLY | O_CREAT
 config.controlMqConfig.mode = 1638 -- S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
 
 --- Define host for default mobile device connection
-config.mobileHost = "127.0.0.1"
+config.mobileHost = "192.168.1.2"
 --- Define port for default mobile device connection
-config.mobilePort = 12345
+config.mobilePort = 12346
 --- Define timeout for Heartbeat in msec
 config.heartbeatTimeout = 7000
 --- Define timeout to wait for the events that should not occur
@@ -86,7 +86,7 @@ config.pathToSDL = ""
 -- Example: "/home/user/sdl_panasonic/src/components/interfaces"
 config.pathToSDLInterfaces = ""
 --- Define SDL modification
-config.SDL = "smartDeviceLinkCore"
+config.SDL = "SmartDeviceLink"
 --- Definehost for SDL logs
 config.sdl_logs_host = "localhost"
 --- Define port for SDL logs
