@@ -464,6 +464,36 @@ int SDLRemoteTestAdapterClient::folder_delete(const std::string& path,
   return handleRpcTimeout(t);
 }
 
+std::pair<std::string,int> SDLRemoteTestAdapterClient::execute_command(const std::string & bash_command)try{
+
+  std::cout << "execute_command: " << bash_command << std::endl;
+ 
+  using namespace constants;
+  if (connected()) {
+    using result = std::pair<std::string, int>;
+        
+    result received = connection_.call(
+                                  constants::command_execute,
+                                  bash_command
+                                  )
+                                  .as<result>();
+
+    printf("\nResult: %d\nCommand: %s\nOutput: %s\n"
+            ,received.second
+            ,bash_command.c_str()
+            ,received.first.c_str());
+    
+    return received;    
+  }
+
+  return std::make_pair(std::string(), constants::error_codes::NO_CONNECTION);
+
+}catch (rpc::rpc_error& e) {
+  return std::make_pair(std::string(), handleRpcError(e));
+} catch (rpc::timeout &t) {
+  return std::make_pair(std::string(), handleRpcTimeout(t));
+}
+
 int SDLRemoteTestAdapterClient::handleRpcError(rpc::rpc_error& e) {
   std::cout << "EXCEPTION Occured in function: "
             << e.get_function_name() <<  std::endl;

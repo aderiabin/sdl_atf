@@ -272,6 +272,40 @@ int UtilsManager::FolderCreate(const std::string & folder_path,const std::string
     return error_codes::SUCCESS;
 }
 
+UtilsManager::ReceiveResult UtilsManager::ExecuteCommand(const std::string & bash_command){
+    
+    std::string command_output;
+    char buffer[128] = {0};    
+    FILE* pipe = popen(bash_command.c_str(), "r");
+    if (!pipe){
+        return std::make_pair(command_output,error_codes::FAILED);
+    }
+    
+    try{
+        
+        while(!feof(pipe)){
+            if(fgets(buffer, 128, pipe) != NULL){
+                command_output += buffer;
+            }
+        }
+    
+    }catch(...){
+        pclose(pipe);
+        command_output.clear();
+        return std::make_pair(command_output,error_codes::FAILED);
+    }
+    
+    int term_status = pclose(pipe);    
+    term_status = (-1 != term_status) ? WEXITSTATUS( term_status ) : error_codes::FAILED;    
+    
+    term_status = (0 == term_status) ? 
+                error_codes::SUCCESS
+                : 
+                error_codes::FAILED;
+
+    return std::make_pair(command_output,term_status);
+}
+
 UtilsManager::ArrayPid UtilsManager::GetPidApp(const std::string & app_name){
 
     struct dirent   *dirent;

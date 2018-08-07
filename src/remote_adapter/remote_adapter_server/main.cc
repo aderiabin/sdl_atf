@@ -274,6 +274,16 @@ int main(int argc, char* argv[]) {
                return res;
              });
 
+    srv.bind(constants::command_execute,
+             [](std::string bash_command){
+                
+                auto receive_result = 
+                            UtilsManager::ExecuteCommand(bash_command);
+
+                return receive_result;            
+
+             });
+
 
 
     // Run the server loop with 2 worker threads.
