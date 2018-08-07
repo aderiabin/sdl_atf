@@ -40,6 +40,7 @@ class UtilsManager {
     static std::string GetNameApp(int pid,procfs_info * proc_info = 0);
     static int KillApp(const pid_t app_pid,const int sig,const char * app_name = 0);
     static bool IsExistsApp(const pid_t app_pid);
+    static std::string JoinPath(const std::string & path,const std::string & part_path);
  };
 
 }  // namespace utils_wrappers
