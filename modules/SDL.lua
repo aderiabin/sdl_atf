@@ -180,16 +180,16 @@ end
 function SDL:StopSDL()
   self.autoStarted = false
   local status = self:CheckStatusSDL()
-  if status == self.RUNNING then
-    if config.remoteConnection.enabled then
-      ATF.remoteUtils.app:StopApp(config.SDL)
-    else
-      os.execute('./tools/StopSDL.sh')
-    end
+  if config.remoteConnection.enabled then
+    ATF.remoteUtils.app:StopApp(config.SDL)
   else
-    local msg = "SDL had already stopped"
-    xmlReporter.AddMessage("StopSDL", {["message"] = msg})
-    print(console.setattr(msg, "cyan", 1))
+    if status == self.RUNNING then
+      os.execute('./tools/StopSDL.sh')
+    else
+      local msg = "SDL had already stopped"
+      xmlReporter.AddMessage("StopSDL", {["message"] = msg})
+      print(console.setattr(msg, "cyan", 1))
+    end
   end
   if config.storeFullSDLLogs == true then
     sdl_logger.close()
