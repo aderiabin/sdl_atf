@@ -37,5 +37,7 @@ struct SDLRemoteClientLuaWrapper {
   static int lua_folder_exists(lua_State* L);
   static int lua_folder_create(lua_State* L);
   static int lua_folder_delete(lua_State* L);
+
+  static int lua_command_execute(lua_State* L);
 };
 }

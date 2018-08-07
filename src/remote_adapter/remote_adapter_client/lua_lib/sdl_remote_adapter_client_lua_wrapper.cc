@@ -68,6 +68,7 @@ void SDLRemoteClientLuaWrapper::registerSDLRemoteMqClient(lua_State* L) {
       {"app_start", SDLRemoteClientLuaWrapper::lua_app_start},
       {"app_stop", SDLRemoteClientLuaWrapper::lua_app_stop},
       {"app_check_status", SDLRemoteClientLuaWrapper::lua_app_check_status},
+      {"command_execute",SDLRemoteClientLuaWrapper::lua_command_execute},
       {"file_exists", SDLRemoteClientLuaWrapper::lua_file_exists},
       {"file_update", SDLRemoteClientLuaWrapper::lua_file_update},
       {"file_content", SDLRemoteClientLuaWrapper::lua_file_content},
@@ -375,6 +376,18 @@ int SDLRemoteClientLuaWrapper::lua_folder_delete(lua_State* L) {
   int result = instance->folder_delete(path, name);
   lua_pushinteger(L, result);
   return 1;
+}
+
+int SDLRemoteClientLuaWrapper::lua_command_execute(lua_State* L){
+  // Index -1(top) - bash_command
+  // Index -2 - userdata instance
+
+  auto instance = get_instance(L);
+  auto bash_command = lua_tostring(L, -1);
+  const auto data_and_error = instance->command_execute(bash_command);
+  lua_pushinteger(L, data_and_error.second);
+  lua_pushstring(L, data_and_error.first.c_str());
+  return 2;
 }
 
 }  // namespace lua_lib
