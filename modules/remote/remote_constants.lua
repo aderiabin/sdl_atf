@@ -11,7 +11,7 @@ local RemoteConstants = {}
 
 --- Application status enumeration
 RemoteConstants.APPLICATION_STATUS = {
-  CRASHED = -1,
+  IDLE = -1,
   NOT_RUNNING = 0,
   RUNNING = 1,
 }
