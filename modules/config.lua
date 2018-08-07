@@ -92,7 +92,7 @@ config.sdl_logs_port = 6676
 --- Flag which defines behavior of ATF on SDL crash
 config.ExitOnCrash = true
 --- Flag which defines whether ATF starts SDL on startup
-config.autorunSDL = false
+config.autorunSDL = true
 --- Flag which defines whether ATF displays time of test step run
 config.ShowTimeInConsole = true
 --- Flag which defines whether ATF performs validation of Mobile and HMI messages by API
