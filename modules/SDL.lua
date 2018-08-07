@@ -25,6 +25,8 @@ SDL.STOPPED = 0
 SDL.RUNNING = 1
 --- SDL state constant: SDL crashed
 SDL.CRASH = -1
+--- SDL state constant: SDL in idle mode (for remote only)
+SDL.IDLE = -2
 
 --- Structure of SDL build options what to be set
 local usedBuildOptions = {
@@ -180,16 +182,16 @@ end
 function SDL:StopSDL()
   self.autoStarted = false
   local status = self:CheckStatusSDL()
-  if config.remoteConnection.enabled then
-    ATF.remoteUtils.app:StopApp(config.SDL)
-  else
-    if status == self.RUNNING then
-      os.execute('./tools/StopSDL.sh')
+  if status == self.RUNNING or status == self.IDLE then
+    if config.remoteConnection.enabled then
+      ATF.remoteUtils.app:StopApp(config.SDL)
     else
-      local msg = "SDL had already stopped"
-      xmlReporter.AddMessage("StopSDL", {["message"] = msg})
-      print(console.setattr(msg, "cyan", 1))
+      os.execute('./tools/StopSDL.sh')
     end
+  else
+    local msg = "SDL had already stopped"
+    xmlReporter.AddMessage("StopSDL", {["message"] = msg})
+    print(console.setattr(msg, "cyan", 1))
   end
   if config.storeFullSDLLogs == true then
     sdl_logger.close()
@@ -205,12 +207,14 @@ end
 -- SDL.RUNNING = 1 Running
 --
 -- SDL.CRASH = -1 Crash
+--
+-- SDL.IDLE = -2 Idle (for remote only)
 function SDL:CheckStatusSDL()
   if config.remoteConnection.enabled then
     local result, data = ATF.remoteUtils.app:CheckAppStatus(config.SDL)
     if result then
-      if data ==remote_constants.APPLICATION_STATUS.CRASHED then
-        return self.CRASH
+      if data == remote_constants.APPLICATION_STATUS.IDLE then
+        return self.IDLE
       elseif data == remote_constants.APPLICATION_STATUS.NOT_RUNNING then
         return self.STOPPED
       elseif data == remote_constants.APPLICATION_STATUS.RUNNING then
