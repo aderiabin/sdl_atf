@@ -24,11 +24,13 @@ using namespace constants;
 
 int UtilsManager::StartApp(const std::string & app_path,const std::string & app_name){
 
-    char * const argv[] = {strdup(app_path.c_str()),NULL};
+    std::string app_full_path = JoinPath(app_path,app_name);    
+
+    char * const argv[] = {strdup(app_full_path.c_str()),NULL};
 
     errno = 0;
 #ifdef __QNX__
-    pid_t app_pid = spawnp(app_path.c_str(), 0, NULL,NULL, argv, NULL);
+    pid_t app_pid = spawnp(app_full_path.c_str(), 0, NULL,NULL, argv, NULL);
 #else
     pid_t app_pid = error_codes::FAILED;
 #endif
@@ -104,7 +106,10 @@ int UtilsManager::CheckStatusApp(const std::string & app_name){
 int UtilsManager::FileBackup(const std::string & file_path,const std::string & file_name){
     printf ("\nUtilsManager::FileBackup");
     std::string file_dest_path = 
-        std::string(file_path).append(kPostFixBackup);
+                        JoinPath(
+                            file_path,
+                            file_name)
+                            .append(kPostFixBackup);        
 
     std::ifstream src(file_path.c_str(), std::ios::binary);
     std::ofstream dest(file_dest_path.c_str(), std::ios::binary);
@@ -119,7 +124,10 @@ int UtilsManager::FileBackup(const std::string & file_path,const std::string & f
 int UtilsManager::FileRestore(const std::string & file_path,const std::string & file_name){
     printf ("\nUtilsManager::FileRestore");
     std::string file_src_path = 
-        std::string(file_path).append(kPostFixBackup);
+                        JoinPath(
+                            file_path,
+                            file_name)
+                            .append(kPostFixBackup);
 
     std::ifstream src(file_src_path.c_str(), std::ios::binary);
     std::ofstream dest(file_path.c_str(), std::ios::binary);
@@ -133,7 +141,7 @@ int UtilsManager::FileRestore(const std::string & file_path,const std::string & 
 
 int UtilsManager::FileUpdate(const std::string & file_path,const std::string & file_name,const std::string & file_content){
     printf ("\nUtilsManager::FileUpdate");
-    std::ofstream ofs (file_path.c_str(),std::ofstream::binary);
+    std::ofstream ofs (JoinPath(file_path,file_name).c_str(),std::ofstream::binary);
     ofs << file_content.c_str();
     return ofs ?
         error_codes::SUCCESS
@@ -144,7 +152,7 @@ int UtilsManager::FileUpdate(const std::string & file_path,const std::string & f
 int UtilsManager::FileExists(const std::string & file_path,const std::string & file_name){
     printf ("\nUtilsManager::FileExists");
     struct stat stat_buff;
-    return 0 == (stat(file_path.c_str(), &stat_buff)) ?
+    return 0 == (stat(JoinPath(file_path,file_name).c_str(), &stat_buff)) ?
         error_codes::SUCCESS
         :
 		error_codes::FAILED;
@@ -152,7 +160,7 @@ int UtilsManager::FileExists(const std::string & file_path,const std::string & f
 
 int UtilsManager::FileDelete(const std::string & file_path,const std::string & file_name){
     printf ("\nUtilsManager::FileDelete");
-    if(remove(file_path.c_str()) != 0 ){
+    if(remove(JoinPath(file_path,file_name).c_str()) != 0 ){
         return error_codes::FAILED;
     }
     return error_codes::SUCCESS;
@@ -165,9 +173,9 @@ std::string UtilsManager::GetFileContent(
     const size_t max_size_content)
 {
     printf ("\nUtilsManager::GetFileContent\n");
-	FILE * hfile = fopen(file_path.c_str(), "rb");
+	FILE * hfile = fopen(JoinPath(file_path,file_name).c_str(), "rb");
 	if (!hfile){
-		printf("\nUnable to open file %s\n", file_path.c_str());
+		printf("\nUnable to open file %s\n",JoinPath(file_path,file_name).c_str());
         offset = error_codes::FAILED;
 		return std::string();
 	}
@@ -217,8 +225,9 @@ int UtilsManager::FolderExists(const std::string & folder_path,const std::string
 
 int UtilsManager::FolderDelete(const std::string & folder_path,const std::string & folder_name){
     printf ("\nUtilsManager::FolderDelete");
-    DIR * dir = opendir(folder_path.c_str());
-    size_t path_len = folder_path.length();
+    std::string full_path = JoinPath(folder_path,folder_name);
+    DIR * dir = opendir(full_path.c_str());
+    size_t path_len = full_path.length();
     int res = -1;
     
     if (dir){
@@ -239,11 +248,11 @@ int UtilsManager::FolderDelete(const std::string & folder_path,const std::string
             
             if(buff){
                 struct stat statbuf;
-                snprintf(buff, len, "%s/%s", folder_path.c_str(), ent_dir->d_name);
+                snprintf(buff, len, "%s/%s", full_path.c_str(), ent_dir->d_name);
                 
                 if(!stat(buff, &statbuf)){
                     if(S_ISDIR(statbuf.st_mode)){
-                        res = FolderDelete(buff,std::string(ent_dir->d_name));
+                        res = FolderDelete(full_path,std::string(ent_dir->d_name));
                     }else{
                         res = unlink(buff);
                     }
@@ -256,7 +265,7 @@ int UtilsManager::FolderDelete(const std::string & folder_path,const std::string
     }
     
     if(!res){
-        res = rmdir(folder_path.c_str());
+        res = rmdir(full_path.c_str());
     }
     
     return res;
@@ -264,9 +273,9 @@ int UtilsManager::FolderDelete(const std::string & folder_path,const std::string
 
 int UtilsManager::FolderCreate(const std::string & folder_path,const std::string & folder_name){
     printf ("\nUtilsManager::FolderCreate");
-    const int dir_err = mkdir(folder_path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+    const int dir_err = mkdir(JoinPath(folder_path,folder_name).c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     if (-1 == dir_err){
-        printf("\nError creating directory: %s",folder_path.c_str());   
+        printf("\nError creating directory: %s",JoinPath(folder_path,folder_name).c_str());   
         return error_codes::FAILED;     
     }
     return error_codes::SUCCESS;
@@ -432,6 +441,17 @@ bool UtilsManager::IsExistsApp(const pid_t app_pid){
     sprintf(proc_path,"/proc/%d",app_pid);
 
     return 0 == (stat(proc_path, &stat_buff));
+}
+
+std::string UtilsManager::JoinPath(const std::string & path,const std::string & part_path){
+
+    std::string full_path = path;
+
+    if('/' != full_path[full_path.length() -1]){
+        full_path += '/';
+    }
+
+    return full_path.append(part_path);
 }
 
 }  // namespace utils_wrappers
