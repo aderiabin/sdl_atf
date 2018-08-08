@@ -82,6 +82,8 @@ config.defaultProtocolVersion = 3
 --- Define path to SDL binary
 -- Example: "/home/user/sdl_build/bin"
 config.pathToSDL = ""
+--- Define path to SDL .INI file
+config.pathToSDLIni = "/etc/AppLink"
 --- Define path to SDL interfaces
 -- Example: "/home/user/sdl_panasonic/src/components/interfaces"
 config.pathToSDLInterfaces = ""
