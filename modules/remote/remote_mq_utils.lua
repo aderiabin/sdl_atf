@@ -27,13 +27,13 @@ local function HandleResult(result, data)
   end
 
   if result == constants.ERROR_CODE.SUCCESS then
-    if data ~= nil then
+    if data == nil then
       return true
     else
       return true, data
     end
   end
-  if data ~= nil then
+  if data == nil then
     return false
   else
     return false, nil
