@@ -111,7 +111,7 @@ end
 -- @tparam string fileContent Content of file
 -- @treturn boolean Return true in case of success
 function RemoteFileUtils.mt.__index:UpdateFileContent(remotePathToFile, fileName, fileContent)
-  return HandleResult(self.connection:file_update(remotePathToFile, fileName))
+  return HandleResult(self.connection:file_update(remotePathToFile, fileName, fileContent))
 end
 
 --- Get file content from remote host
