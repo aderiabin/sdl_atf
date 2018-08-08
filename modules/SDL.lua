@@ -39,13 +39,12 @@ local usedBuildOptions = {
     defaultValue = "PROPRIETARY"
   }
 }
---- Function to handle the path parameter from ini file to add an ending / if it missed.
-
-local function setPathToSDL()
-  local pathToSDL = config.pathToSDL
-  if pathToSDL:sub(-1) ~= '/' then
-    pathToSDL = pathToSDL .. "/"
-    config.pathToSDL = pathToSDL
+--- Function to handle the path parameter from config file to add an ending / if it missed.
+local function updatePath(configParam)
+  local path = config[configParam]
+  if path == nil or string.len(path) == 0 then return end
+  if path:sub(-1) ~= '/' then
+    config[configParam] = path .. "/"
   end
 end
 
@@ -285,7 +284,8 @@ local function updateSDLLogProperties()
   -- end
 end
 
-setPathToSDL()
+updatePath("pathToSDL")
+updatePath("pathToSDLConfig")
 
 setAllSdlBuildOptions(SDL)
 
