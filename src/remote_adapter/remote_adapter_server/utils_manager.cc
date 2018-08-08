@@ -111,7 +111,7 @@ int UtilsManager::FileBackup(const std::string & file_path,const std::string & f
                             file_name)
                             .append(kPostFixBackup);        
 
-    std::ifstream src(file_path.c_str(), std::ios::binary);
+    std::ifstream src(JoinPath(file_path,file_name).c_str(), std::ios::binary);
     std::ofstream dest(file_dest_path.c_str(), std::ios::binary);
     dest << src.rdbuf();
 
@@ -130,8 +130,10 @@ int UtilsManager::FileRestore(const std::string & file_path,const std::string & 
                             .append(kPostFixBackup);
 
     std::ifstream src(file_src_path.c_str(), std::ios::binary);
-    std::ofstream dest(file_path.c_str(), std::ios::binary);
+    std::ofstream dest(JoinPath(file_path,file_name).c_str(), std::ios::binary);
     dest << src.rdbuf();
+
+    FileDelete(file_path,std::string(file_name).append(kPostFixBackup));
 
     return src && dest ? 
         error_codes::SUCCESS
