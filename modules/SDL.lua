@@ -29,16 +29,17 @@ SDL.CRASH = -1
 SDL.IDLE = -2
 
 --- Structure of SDL build options what to be set
-local usedBuildOptions = {
-  remoteControl =  {
-    sdlBuildParameter = "REMOTE_CONTROL",
-    defaultValue = "ON"
-  },
-  extendedPolicy =  {
-    sdlBuildParameter = "EXTENDED_POLICY",
-    defaultValue = "PROPRIETARY"
-  }
-}
+local function getDefaultBuildOptions()
+  local options = { }
+  options.remoteControl = { sdlBuildParameter = "REMOTE_CONTROL", defaultValue = "ON" }
+  if config.remoteConnection.enabled then
+    options.extendedPolicy = { sdlBuildParameter = "EXTENDED_POLICY", defaultValue = "EXTERNAL_PROPRIETARY" }
+  else
+    options.extendedPolicy = { sdlBuildParameter = "EXTENDED_POLICY", defaultValue = "PROPRIETARY" }
+  end
+  return options
+end
+
 --- Function to handle the path parameter from config file to add an ending / if it missed.
 local function updatePath(configParam)
   local path = config[configParam]
@@ -54,47 +55,16 @@ end
 -- Can be nil in case parameter was not found.
 -- @treturn string Type of read parameter
 local function readParameterFromCMakeCacheFile(paramName)
-  -- local paramValue, paramType
-
-  -- if config.remoteConnection.enabled then
-  --   local result, isexist = ATF.remoteUtils.file:IsFileExists(config.pathToSDL,"CMakeCache.txt")
-  --   if result then
-  --     if isexist then
-  --       local content_res, content = ATF.remoteUtils.file:GetFileContent(config.pathToSDL,"CMakeCache.txt")
-  --       if content_res then
-
-  --         local function getLine(s) -- Function needed for Lines parsing at Remote ATF file contents
-  --           if s:sub(-1) ~= "\n" then
-  --             s = s .. "\n"
-  --           end
-  --           return s:gmatch("(.-)\n")
-  --         end
-
-  --         for line in getLine(content) do
-  --           paramType, paramValue = string.match(line, "^%s*" .. paramName .. ":(.+)=(%S*)")
-  --           if paramValue then
-  --             return paramValue, paramType
-  --           end
-  --         end
-
-  --       else
-  --         error("remote utils unable to get file content of " .. config.pathToSDL .. "CMakeCache.txt")
-  --       end
-  --     end
-  --   else
-  --     error("remote utils unable to check for file existens of ".. config.pathToSDL .. "CMakeCache.txt")
-  --   end
-  -- else
-  --   local pathToFile = config.pathToSDL .. "CMakeCache.txt"
-  --   if is_file_exists(pathToFile) then
-  --     for line in io.lines(pathToFile) do
-  --       paramType, paramValue = string.match(line, "^%s*" .. paramName .. ":(.+)=(%S*)")
-  --       if paramValue then
-  --         return paramValue, paramType
-  --       end
-  --     end
-  --   end
-  -- end
+  local pathToFile = config.pathToSDL .. "/build_config.txt"
+  if is_file_exists(pathToFile) then
+    local paramValue, paramType
+    for line in io.lines(pathToFile) do
+      paramType, paramValue = string.match(line, "^%s*" .. paramName .. ":(.+)=(%S*)")
+      if paramValue then
+        return paramValue, paramType
+      end
+    end
+  end
   return nil
 end
 
@@ -125,7 +95,7 @@ end
 --- Set all SDL build options for SDL module of ATF
 -- @tparam table self Reference to SDL module
 local function setAllSdlBuildOptions(self)
-  for option, data in pairs(usedBuildOptions) do
+  for option, data in pairs(getDefaultBuildOptions()) do
     setSdlBuildOption(self, option, data.sdlBuildParameter, data.defaultValue)
   end
 end
