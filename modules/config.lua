@@ -90,7 +90,7 @@ config.pathToSDLInterfaces = ""
 --- Define SDL modification
 config.SDL = "SmartDeviceLink"
 --- Definehost for SDL logs
-config.sdl_logs_host = "localhost"
+config.sdl_logs_host = "192.168.1.26"
 --- Define port for SDL logs
 config.sdl_logs_port = 6676
 --- Flag which defines behavior of ATF on SDL crash
