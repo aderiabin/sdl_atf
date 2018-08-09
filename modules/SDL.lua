@@ -12,6 +12,7 @@ local sdl_logger = require('sdl_logger')
 local config = require('config')
 local console = require('console')
 local remote_constants = require('modules/remote/remote_constants')
+local SDLUtils = require('SDLUtils')
 local SDL = { }
 
 require('atf.util')
@@ -40,41 +41,13 @@ local function getDefaultBuildOptions()
   return options
 end
 
---- Function to handle the path parameter from config file to add an ending / if it missed.
-local function updatePath(configParam)
-  local path = config[configParam]
-  if path == nil or string.len(path) == 0 then return end
-  if path:sub(-1) ~= '/' then
-    config[configParam] = path .. "/"
-  end
-end
-
---- Read specified parameter from CMakeCache.txt file
--- @tparam string paramName Parameter to read value
--- @treturn string The main result. Value read of parameter.
--- Can be nil in case parameter was not found.
--- @treturn string Type of read parameter
-local function readParameterFromCMakeCacheFile(paramName)
-  local pathToFile = config.pathToSDL .. "/build_config.txt"
-  if is_file_exists(pathToFile) then
-    local paramValue, paramType
-    for line in io.lines(pathToFile) do
-      paramType, paramValue = string.match(line, "^%s*" .. paramName .. ":(.+)=(%S*)")
-      if paramValue then
-        return paramValue, paramType
-      end
-    end
-  end
-  return nil
-end
-
 --- Set SDL build option as values of SDL module property
 -- @tparam table self Reference to SDL module
 -- @tparam string optionName Build option to set value
 -- @tparam string sdlBuildParam SDL build parameter to read value
 -- @tparam string defaultValue Default value of set option
 local function setSdlBuildOption(self, optionName, sdlBuildParam, defaultValue)
-  local value, paramType = readParameterFromCMakeCacheFile(sdlBuildParam)
+  local value, paramType = SDLUtils.BuildOptions.get(sdlBuildParam)
   if value == nil then
     value = defaultValue
     local msg = "SDL build option " ..
@@ -214,48 +187,25 @@ end
 
 --- Update SDL log4cxx.properties in order SDL will be able to write logs through Telnet
 local function updateSDLLogProperties()
-  -- if config.storeFullSDLLogs then
-  --   local content = nil
-  --   local pathToFile = ""
-
-  --   if config.remoteConnection.enabled then
-  --     local content_res
-  --     content_res, content = ATF.remoteUtils.file:GetFileContent(config.pathToSDL, "log4cxx.properties")
-  --     if not content_res then
-  --       error("Remote utils: unable to get content of " .. config.pathToSDL .. "log4cxx.properties")
-  --     end
-  --   else
-  --     pathToFile = config.pathToSDL .. "log4cxx.properties"
-  --     local f = io.open(pathToFile, "r")
-  --     content = f:read("*all")
-  --     f:close()
-  --   end
-  --   local paramsToUpdate = {
-  --     {
-  --       name = "log4j.rootLogger",
-  --       value = "ALL, SmartDeviceLinkCoreLogFile, TelnetLogging"
-  --     },
-  --     {
-  --       name = "log4j.appender.TelnetLogging.layout.ConversionPattern",
-  --       value = "%%-5p [%%d{yyyy-MM-dd HH-mm:ss,SSS}][%%t][%%c] %%F:%%L %%M: %%m"
-  --     }
-  --   }
-
-  --   for _, item in pairs(paramsToUpdate) do
-  --     content = string.gsub(content, item.name .. "=.-\n", item.name .. "=" .. item.value .. "\n")
-  --   end
-  --   if config.remoteConnection.enabled then
-  --     ATF.remoteUtils.file:UpdateFileContent(config.pathToSDL, "log4cxx.properties", content)
-  --   else
-  --     local f = io.open(pathToFile, "w")
-  --     f:write(content)
-  --     f:close()
-  --   end
-  -- end
+  if config.storeFullSDLLogs then
+    local paramsToUpdate = {
+      {
+        name = "log4j.rootLogger",
+        value = "ALL, SmartDeviceLinkCoreLogFile, TelnetLogging"
+      },
+      {
+        name = "log4j.appender.TelnetLogging.layout.ConversionPattern",
+        value = "%%-5p [%%d{yyyy-MM-dd HH-mm:ss,SSS}][%%t][%%c] %%F:%%L %%M: %%m"
+      }
+    }
+    for _, item in pairs(paramsToUpdate) do
+      SDLUtils.LOG.set(item.name, item.value)
+    end
+  end
 end
 
-updatePath("pathToSDL")
-updatePath("pathToSDLConfig")
+config.pathToSDL = SDLUtils.addSlashToPath(config.pathToSDL)
+config.pathToSDLConfig = SDLUtils.addSlashToPath(config.pathToSDLConfig)
 
 setAllSdlBuildOptions(SDL)
 
