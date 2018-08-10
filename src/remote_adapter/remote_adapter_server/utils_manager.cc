@@ -277,11 +277,11 @@ int UtilsManager::FolderDelete(const std::string & folder_path){
     return res;
 }
 
-int UtilsManager::FolderCreate(const std::string & folder_path,const std::string & folder_name){
+int UtilsManager::FolderCreate(const std::string & folder_path){
     printf ("\nUtilsManager::FolderCreate");
-    const int dir_err = mkdir(JoinPath(folder_path,folder_name).c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+    const int dir_err = mkdir(folder_path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     if (-1 == dir_err){
-        printf("\nError creating directory: %s",JoinPath(folder_path,folder_name).c_str());
+        printf("\nError creating directory: %s",folder_path.c_str());
         return error_codes::FAILED;
     }
     return error_codes::SUCCESS;

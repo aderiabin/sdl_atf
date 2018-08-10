@@ -265,10 +265,9 @@ int main(int argc, char* argv[]) {
              });
 
     srv.bind(constants::folder_create,
-             [](std::string folder_path,std::string folder_name){
-               const int res = UtilsManager::FolderCreate(
-                                                    folder_path,
-                                                    folder_name);
+             [](std::string folder_path){
+               const int res =
+                  UtilsManager::FolderCreate(folder_path);
                return res;
              });
 

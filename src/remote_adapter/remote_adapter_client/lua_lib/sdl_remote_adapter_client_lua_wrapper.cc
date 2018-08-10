@@ -351,14 +351,12 @@ int SDLRemoteClientLuaWrapper::lua_folder_exists(lua_State* L) {
 }
 
 int SDLRemoteClientLuaWrapper::lua_folder_create(lua_State* L) {
-  // Index -1(top) - string folder name
-  // Index -2 - string path to folder
-  // Index -3 - userdata instance
+  // Index -1(top) - string folder path
+  // Index -2 - userdata instance
 
   auto instance = get_instance(L);
-  auto path = lua_tostring(L, -2);
-  auto name = lua_tostring(L, -1);
-  int result = instance->folder_create(path, name);
+  auto path = lua_tostring(L, -1);
+  int result = instance->folder_create(path);
   lua_pushinteger(L, result);
   return 1;
 }

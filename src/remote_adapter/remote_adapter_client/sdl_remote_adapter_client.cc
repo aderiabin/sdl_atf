@@ -421,15 +421,13 @@ std::pair<bool, int> SDLRemoteTestAdapterClient::folder_exists(const std::string
   return std::make_pair(false, handleRpcTimeout(t));
 }
 
-int SDLRemoteTestAdapterClient::folder_create(const std::string& path,
-                                          const std::string& name) try {
-  std::cout << "Create folder " << name << " on remote host"
+int SDLRemoteTestAdapterClient::folder_create(const std::string& path) try {
+  std::cout << "Create folder " << path << " on remote host"
       << "\nPath to file: "<< path << std::endl;
   if (connected()) {
     int result_code = connection_.call(
                                     constants::folder_create,
-                                    path,
-                                    name
+                                    path
                                     ).as<int>();
     std::cout << "SUCCESS\n" << std::endl;
     return result_code;

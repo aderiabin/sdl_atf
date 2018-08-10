@@ -135,8 +135,8 @@ end
 -- @tparam string remotePathToFolder Path to folder on remote host
 -- @tparam string folderName Name of folder
 -- @treturn boolean Return true in case of success
-function RemoteFileUtils.mt.__index:CreateFolder(remotePathToFolder, folderName)
-  return HandleResult(self.connection:folder_create(remotePathToFolder, folderName))
+function RemoteFileUtils.mt.__index:CreateFolder(remotePathToFolder)
+  return HandleResult(self.connection:folder_create(remotePathToFolder))
 end
 
 --- Delete folder on remote host

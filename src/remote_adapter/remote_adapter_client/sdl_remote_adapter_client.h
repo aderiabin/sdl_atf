@@ -197,7 +197,7 @@ class SDLRemoteTestAdapterClient {
    * @return 0 in successful case, 1 - if client is not connected,
    * 2 - in case of exception
    */
-  int folder_create(const std::string& path, const std::string& name);
+  int folder_create(const std::string& path);
 
   /**
    * @brief Sends delete folder request to server
