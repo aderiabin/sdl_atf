@@ -125,11 +125,10 @@ end
 
 --- Check folder existance on remote host
 -- @tparam string remotePathToFolder Path to folder on remote host
--- @tparam string folderName Name of folder
 -- @treturn boolean Return true in case of success
 -- @treturn boolean Return true in case of folder exists
-function RemoteFileUtils.mt.__index:IsFolderExists(remotePathToFolder, folderName)
-  return HandleResult(self.connection:folder_exists(remotePathToFolder, folderName))
+function RemoteFileUtils.mt.__index:IsFolderExists(remotePathToFolder)
+  return HandleResult(self.connection:folder_exists(remotePathToFolder))
 end
 
 --- Create folder on remote host
@@ -142,10 +141,9 @@ end
 
 --- Delete folder on remote host
 -- @tparam string remotePathToFolder Path to folder on remote host
--- @tparam string folderName Name of folder
 -- @treturn boolean Return true in case of success
-function RemoteFileUtils.mt.__index:DeleteFolder(remotePathToFolder, folderName)
-  return HandleResult(self.connection:folder_delete(remotePathToFolder, folderName))
+function RemoteFileUtils.mt.__index:DeleteFolder(remotePathToFolder)
+  return HandleResult(self.connection:folder_delete(remotePathToFolder))
 end
 
 return RemoteFileUtils

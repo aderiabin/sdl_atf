@@ -199,7 +199,7 @@ int main(int argc, char* argv[]) {
              [](std::string file_path,
                 std::string file_name,
                 std::string file_content){
-                  
+
                   const int res = UtilsManager::FileUpdate(
                                                     file_path,
                                                     file_name,
@@ -219,7 +219,7 @@ int main(int argc, char* argv[]) {
              [](std::string file_path,std::string file_name){
                const int res = UtilsManager::FileDelete(
                                                     file_path,
-                                                    file_name);               
+                                                    file_name);
                return res;
              });
 
@@ -228,39 +228,37 @@ int main(int argc, char* argv[]) {
                 std::string file_name,
                 size_t offset,
                 size_t max_size_content){
-                  
-                  std::string file_content = 
+
+                  std::string file_content =
                            UtilsManager::GetFileContent(
                                           file_path,
                                           file_name,
                                           offset,
                                           max_size_content
                                           );
-                                          
+
                   return std::make_pair(
                                   file_content,
                                   offset
-                                  );                       
+                                  );
              });
 
     srv.bind(constants::folder_exists,
-             [](std::string folder_path,std::string folder_name){
+             [](std::string folder_path){
                const int res = UtilsManager::FolderExists(
-                                                    folder_path,
-                                                    folder_name);
+                                                    folder_path);
                return res;
              });
 
-    
 
-    
+
+
 
     srv.bind(constants::folder_delete,
-             [](std::string folder_path,std::string folder_name){
+             [](std::string folder_path){
                const int res = UtilsManager::FolderDelete(
-                                                    folder_path,
-                                                    folder_name);               
-               return res ? 
+                                                    folder_path);
+               return res ?
                 constants::error_codes::FAILED
                 :
                 constants::error_codes::SUCCESS;
@@ -270,17 +268,17 @@ int main(int argc, char* argv[]) {
              [](std::string folder_path,std::string folder_name){
                const int res = UtilsManager::FolderCreate(
                                                     folder_path,
-                                                    folder_name);               
+                                                    folder_name);
                return res;
              });
 
     srv.bind(constants::command_execute,
              [](std::string bash_command){
-                
-                auto receive_result = 
+
+                auto receive_result =
                             UtilsManager::ExecuteCommand(bash_command);
 
-                return receive_result;            
+                return receive_result;
 
              });
 

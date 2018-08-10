@@ -279,14 +279,14 @@ int SDLRemoteTestAdapterClient::file_update(const std::string& path,
 
 std::pair<std::string, int> SDLRemoteTestAdapterClient::file_content(
                                               const std::string& path,
-                                              const std::string& name) try {  
+                                              const std::string& name) try {
   std::cout << "Get content of file " << name << " on remote host"
       << "\nPath to file: "<< path << std::endl;
- 
+
   using namespace constants;
   if (connected()) {
     using result = std::pair<std::string, int>;
-        
+
     result received = connection_.call(
                                   constants::file_content,
                                   path,
@@ -294,7 +294,7 @@ std::pair<std::string, int> SDLRemoteTestAdapterClient::file_content(
                                   0,
                                   constants::kMaxSizeData
                         ).as<result>();
-    
+
     if(error_codes::FAILED == received.second){
       std::cout << "\nFailed: Get file data from HU!!!\n";
       return received;
@@ -302,19 +302,19 @@ std::pair<std::string, int> SDLRemoteTestAdapterClient::file_content(
 
     std::string tmp_path("/tmp/");
     tmp_path.append(name);
-    
+
     remove(tmp_path.c_str());
-    
+
     FILE * hFile = fopen(tmp_path.c_str(),"a");
     if(!hFile){
       std::cout << "\nFailed: Can't created file: " << tmp_path << "\n" << std::endl;
       return std::make_pair(std::string("Can't created file"),error_codes::FAILED);
-    }     
-    
+    }
+
     if(error_codes::SUCCESS != received.second){
-      
+
       do{
-       
+
         fwrite(received.first.c_str(),received.first.length(),1,hFile);
 
         received = connection_.call(
@@ -324,13 +324,13 @@ std::pair<std::string, int> SDLRemoteTestAdapterClient::file_content(
             received.second,
             constants::kMaxSizeData
             ).as<result>();
-      
-      }while(error_codes::SUCCESS != received.second);   
+
+      }while(error_codes::SUCCESS != received.second);
     }
-    
+
     fwrite(received.first.c_str(),received.first.length(),1,hFile);
     fclose(hFile);
-    
+
     std::cout << "SUCCESS\nReceived data: " << received.first << "\n" << std::endl;
     return std::make_pair(tmp_path, received.second);
   }
@@ -403,16 +403,13 @@ int SDLRemoteTestAdapterClient::file_restore(const std::string& path,
   return handleRpcTimeout(t);
 }
 
-std::pair<bool, int> SDLRemoteTestAdapterClient::folder_exists(const std::string& path,
-                                          const std::string& name) try {
-  std::cout << "Check existance of folder  " << name << " on remote host"
-      << "\nPath to file: "<< path << std::endl;
+std::pair<bool, int> SDLRemoteTestAdapterClient::folder_exists(const std::string& path) try {
+  std::cout << "Check existance of folder: " << path << std::endl;
   if (connected()) {
     using received = int;
     const received result_code = connection_.call(
                                                 constants::folder_exists,
-                                                path,
-                                                name)
+                                                path)
                                                 .as<received>();
     std::cout << "SUCCESS\nReceived data: " << result_code << "\n" << std::endl;
     return std::make_pair(bool(!result_code),constants::error_codes::SUCCESS);
@@ -444,15 +441,12 @@ int SDLRemoteTestAdapterClient::folder_create(const std::string& path,
   return handleRpcTimeout(t);
 }
 
-int SDLRemoteTestAdapterClient::folder_delete(const std::string& path,
-                                          const std::string& name) try {
-  std::cout << "Delete folder " << name << " on remote host"
-      << "\nPath to file: "<< path << std::endl;
+int SDLRemoteTestAdapterClient::folder_delete(const std::string& path) try {
+  std::cout << "Delete folder: " << path << " on remote host" << std::endl;
   if (connected()) {
     int result_code = connection_.call(
                                     constants::folder_delete,
-                                    path,
-                                    name)
+                                    path)
                                     .as<int>();
     std::cout << "SUCCESS\n" << std::endl;
     return result_code;
@@ -467,11 +461,11 @@ int SDLRemoteTestAdapterClient::folder_delete(const std::string& path,
 std::pair<std::string,int> SDLRemoteTestAdapterClient::command_execute(const std::string & bash_command)try{
 
   std::cout << "execute_command: " << bash_command << std::endl;
- 
+
   using namespace constants;
   if (connected()) {
     using result = std::pair<std::string, int>;
-        
+
     result received = connection_.call(
                                   constants::command_execute,
                                   bash_command
@@ -482,8 +476,8 @@ std::pair<std::string,int> SDLRemoteTestAdapterClient::command_execute(const std
             ,received.second
             ,bash_command.c_str()
             ,received.first.c_str());
-    
-    return received;    
+
+    return received;
   }
 
   return std::make_pair(std::string(), constants::error_codes::NO_CONNECTION);

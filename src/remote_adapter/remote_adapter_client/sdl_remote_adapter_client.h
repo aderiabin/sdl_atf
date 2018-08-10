@@ -185,11 +185,10 @@ class SDLRemoteTestAdapterClient {
   /**
    * @brief Check existance of folder request to server
    * @param path Path to file
-   * @param name Name of file
    * @return 0 in successful case, 1 - if client is not connected,
    * 2 - in case of exception
    */
-  std::pair<bool, int> folder_exists(const std::string& path, const std::string& name);
+  std::pair<bool, int> folder_exists(const std::string& path);
 
   /**
    * @brief Sends create folder request to server
@@ -203,11 +202,10 @@ class SDLRemoteTestAdapterClient {
   /**
    * @brief Sends delete folder request to server
    * @param path Path to file
-   * @param name Name of file
    * @return 0 in successful case, 1 - if client is not connected,
    * 2 - in case of exception
    */
-  int folder_delete(const std::string& path, const std::string& name);
+  int folder_delete(const std::string& path);
 
   std::pair<std::string,int> command_execute(const std::string & app_name);
 
