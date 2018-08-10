@@ -14,7 +14,10 @@ namespace shmemory_wrappers {
 const char * SharedMemoryManager::shm_name_sdlqueue = "/SHNAME_SDLQUEUE";
 const char * SharedMemoryManager::shm_name_sdlqueue2 = "/SHNAME_SDLQUEUE2";
 const char * SharedMemoryManager::shm_name_sdlqueue3 = "/SHNAME_SDLQUEUE3";
-const char * SharedMemoryManager::shm_json_mem_ident = "[{SHARED_MEMORY}]";
+const char SharedMemoryManager::shm_json_mem_ident[] = {
+  //SHARED_MEMORY
+  18,83,72,65,82,69,68,95,77,69,77,79,82,89,0
+  };
 
 SharedMemoryManager::SharedMemoryManager() {}
 

@@ -98,12 +98,15 @@ int MQueueManager::MqSend(const std::string& path,std::string data) {
       shm_manager.ShmWrite(shm_manager.shm_name_sdlqueue,data);
       data = shm_manager.shm_json_mem_ident;    
   }
+
+  char queue_msg[Defaults::MAX_QUEUE_MSG_SIZE - 1] = {0};
+  memcpy(queue_msg,data.c_str(),data.size());
   
   if (handles_.find(path) != handles_.end()) {
     std::cout << "Handle found : " << handles_[path] << " " << std::endl;
     errno = 0;
     const int res =
-        mq_send(handles_[path], data.c_str(), data.size(), Defaults::prio);
+        mq_send(handles_[path],queue_msg, Defaults::MAX_QUEUE_MSG_SIZE - 1, Defaults::prio);
     if (-1 == res) {
       std::cout << "Error occurred: " << strerror(errno) << std::endl;
       return errno;

@@ -69,7 +69,7 @@ class SharedMemoryManager {
   static const char * shm_name_sdlqueue;
   static const char * shm_name_sdlqueue2;
   static const char * shm_name_sdlqueue3;
-  static const char * shm_json_mem_ident;
+  static const char   shm_json_mem_ident[];
 
 private:
   std::map<std::string, object_descrp> handles_;
