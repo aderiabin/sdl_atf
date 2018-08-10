@@ -1,7 +1,7 @@
 #include "utils_manager.h"
 #ifdef __QNX__
 #include <sys/syspage.h>
-#include <sys/debug.h> 
+#include <sys/debug.h>
 #else
 #include <string.h>
 #endif
@@ -24,7 +24,7 @@ using namespace constants;
 
 int UtilsManager::StartApp(const std::string & app_path,const std::string & app_name){
 
-    std::string app_full_path = JoinPath(app_path,app_name);    
+    std::string app_full_path = JoinPath(app_path,app_name);
 
     char * const argv[] = {strdup(app_full_path.c_str()),NULL};
 
@@ -47,7 +47,7 @@ int UtilsManager::StartApp(const std::string & app_path,const std::string & app_
     return error_codes::FAILED;
 }
 
-int UtilsManager::StopApp(const std::string & app_name,const int sig){ 
+int UtilsManager::StopApp(const std::string & app_name,const int sig){
 
     ArrayPid arr_pid = GetPidApp(app_name);
     bool is_all_killed = true;
@@ -78,7 +78,7 @@ int UtilsManager::StopApp(const std::string & app_name,const int sig){
 }
 
 int UtilsManager::CheckStatusApp(const std::string & app_name){
-    printf ("\nUtilsManager::CheckStatusApp");    
+    printf ("\nUtilsManager::CheckStatusApp");
     ArrayPid arr_pid = GetPidApp(app_name);
     if(0 == arr_pid.size()){
         printf ("\%s is NOT_RUNNING",app_name.c_str());
@@ -98,24 +98,24 @@ int UtilsManager::CheckStatusApp(const std::string & app_name){
     if(num_threads > 1){
         printf ("\n%s is RUNNING",app_name.c_str());
         return stat_app_codes::RUNNING;
-    }    
+    }
     printf ("\n%s is CRASHED",app_name.c_str());
     return stat_app_codes::CRASHED;
 }
 
 int UtilsManager::FileBackup(const std::string & file_path,const std::string & file_name){
     printf ("\nUtilsManager::FileBackup");
-    std::string file_dest_path = 
+    std::string file_dest_path =
                         JoinPath(
                             file_path,
                             file_name)
-                            .append(kPostFixBackup);        
+                            .append(kPostFixBackup);
 
     std::ifstream src(JoinPath(file_path,file_name).c_str(), std::ios::binary);
     std::ofstream dest(file_dest_path.c_str(), std::ios::binary);
     dest << src.rdbuf();
 
-    return src && dest ? 
+    return src && dest ?
         error_codes::SUCCESS
         :
         error_codes::FAILED;
@@ -123,7 +123,7 @@ int UtilsManager::FileBackup(const std::string & file_path,const std::string & f
 
 int UtilsManager::FileRestore(const std::string & file_path,const std::string & file_name){
     printf ("\nUtilsManager::FileRestore");
-    std::string file_src_path = 
+    std::string file_src_path =
                         JoinPath(
                             file_path,
                             file_name)
@@ -135,7 +135,7 @@ int UtilsManager::FileRestore(const std::string & file_path,const std::string & 
 
     FileDelete(file_path,std::string(file_name).append(kPostFixBackup));
 
-    return src && dest ? 
+    return src && dest ?
         error_codes::SUCCESS
         :
         error_codes::FAILED;
@@ -181,7 +181,7 @@ std::string UtilsManager::GetFileContent(
         offset = error_codes::FAILED;
 		return std::string();
 	}
-	
+
     fseek(hfile, 0, SEEK_END);
 	unsigned long fileLen = ftell(hfile) - offset;
 	fseek(hfile, offset, SEEK_SET);
@@ -192,7 +192,7 @@ std::string UtilsManager::GetFileContent(
                             :
                             max_size_content;
     }
-	
+
     char * buffer = (char *)malloc(fileLen);
 	if (!buffer){
 		printf("\nMemory error!\n");
@@ -203,7 +203,7 @@ std::string UtilsManager::GetFileContent(
 
     fread(buffer, fileLen, 1, hfile);
     fseek(hfile, 0, SEEK_END);
-    
+
     size_t read = fileLen;
 	fileLen = ftell(hfile);
 	fclose(hfile);
@@ -220,56 +220,60 @@ std::string UtilsManager::GetFileContent(
     return file_content;
 }
 
-int UtilsManager::FolderExists(const std::string & folder_path,const std::string & folder_name){
+int UtilsManager::FolderExists(const std::string & folder_path){
     printf ("\nUtilsManager::FolderExists");
-    return FileExists(folder_path,folder_name);
+    struct stat stat_buff;
+    return 0 == (stat(folder_path.c_str(), &stat_buff)) ?
+        error_codes::SUCCESS
+        :
+        error_codes::FAILED;
 }
 
-int UtilsManager::FolderDelete(const std::string & folder_path,const std::string & folder_name){
+int UtilsManager::FolderDelete(const std::string & folder_path){
     printf ("\nUtilsManager::FolderDelete");
-    std::string full_path = JoinPath(folder_path,folder_name);
+    std::string full_path = folder_path;
     DIR * dir = opendir(full_path.c_str());
     size_t path_len = full_path.length();
     int res = -1;
-    
+
     if (dir){
         struct dirent * ent_dir;
         res = 0;
-        
+
         while(!res && (ent_dir = readdir(dir))){
             char * buff;
             size_t len;
-            
+
             if(!strcmp(ent_dir->d_name, ".") || !strcmp(ent_dir->d_name, "..")){
                 continue;
             }
-            
+
             res = -1;
             len = path_len + strlen(ent_dir->d_name) + 2;
             buff = static_cast<char *>(malloc(len));
-            
+
             if(buff){
                 struct stat statbuf;
                 snprintf(buff, len, "%s/%s", full_path.c_str(), ent_dir->d_name);
-                
+
                 if(!stat(buff, &statbuf)){
                     if(S_ISDIR(statbuf.st_mode)){
-                        res = FolderDelete(full_path,std::string(ent_dir->d_name));
+                        res = FolderDelete(full_path);
                     }else{
                         res = unlink(buff);
                     }
                 }
-                
+
                 free(buff);
             }
         }
         closedir(dir);
     }
-    
+
     if(!res){
         res = rmdir(full_path.c_str());
     }
-    
+
     return res;
 }
 
@@ -277,41 +281,41 @@ int UtilsManager::FolderCreate(const std::string & folder_path,const std::string
     printf ("\nUtilsManager::FolderCreate");
     const int dir_err = mkdir(JoinPath(folder_path,folder_name).c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     if (-1 == dir_err){
-        printf("\nError creating directory: %s",JoinPath(folder_path,folder_name).c_str());   
-        return error_codes::FAILED;     
+        printf("\nError creating directory: %s",JoinPath(folder_path,folder_name).c_str());
+        return error_codes::FAILED;
     }
     return error_codes::SUCCESS;
 }
 
 UtilsManager::ReceiveResult UtilsManager::ExecuteCommand(const std::string & bash_command){
-    
+
     std::string command_output;
-    char buffer[128] = {0};    
+    char buffer[128] = {0};
     FILE* pipe = popen(bash_command.c_str(), "r");
     if (!pipe){
         return std::make_pair(command_output,error_codes::FAILED);
     }
-    
+
     try{
-        
+
         while(!feof(pipe)){
             if(fgets(buffer, 128, pipe) != NULL){
                 command_output += buffer;
             }
         }
-    
+
     }catch(...){
         pclose(pipe);
         command_output.clear();
         return std::make_pair(command_output,error_codes::FAILED);
     }
-    
-    int term_status = pclose(pipe);    
-    term_status = (-1 != term_status) ? WEXITSTATUS( term_status ) : error_codes::FAILED;    
-    
-    term_status = (0 == term_status) ? 
+
+    int term_status = pclose(pipe);
+    term_status = (-1 != term_status) ? WEXITSTATUS( term_status ) : error_codes::FAILED;
+
+    term_status = (0 == term_status) ?
                 error_codes::SUCCESS
-                : 
+                :
                 error_codes::FAILED;
 
     return std::make_pair(command_output,term_status);
@@ -345,7 +349,7 @@ UtilsManager::ArrayPid UtilsManager::GetPidApp(const std::string & app_name){
     return arr_pid;
 }
 
-std::string UtilsManager::GetNameApp(int app_pid,procfs_info * proc_info){  
+std::string UtilsManager::GetNameApp(int app_pid,procfs_info * proc_info){
 
     char      paths [PATH_MAX];
 #ifdef __QNX__
@@ -410,7 +414,7 @@ int UtilsManager::KillApp(const pid_t app_pid,const int sig,const char * app_nam
         case EAGAIN:
         printf("\nFailed kill pid: %d app: %s "
                 "Insufficient system resources are available to deliver the signal."
-                ,app_pid,app_name ? app_name : ""); 
+                ,app_pid,app_name ? app_name : "");
                 break;
         case EINVAL:
         printf("\nFailed kill pid: %d app: %s "
@@ -420,7 +424,7 @@ int UtilsManager::KillApp(const pid_t app_pid,const int sig,const char * app_nam
         case EPERM:
         printf("\nFailed kill pid: %d app: %s "
                 "The process doesn't have permission to send this signal to any receiving process."
-                ,app_pid,app_name ? app_name : ""); 
+                ,app_pid,app_name ? app_name : "");
         break;
         case ESRCH:
         printf("\nFailed kill pid: %d app: %s "

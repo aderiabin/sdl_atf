@@ -29,8 +29,8 @@ class UtilsManager {
         const std::string & file_name,
         size_t & offset,
         const size_t max_size_content = 0);
-    static int FolderExists(const std::string & folder_path,const std::string & folder_name);
-    static int FolderDelete(const std::string & folder_path,const std::string & folder_name);
+    static int FolderExists(const std::string & folder_path);
+    static int FolderDelete(const std::string & folder_path);
     static int FolderCreate(const std::string & folder_path,const std::string & folder_name);
 
     static ReceiveResult ExecuteCommand(const std::string & bash_command);
