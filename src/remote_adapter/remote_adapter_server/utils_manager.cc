@@ -231,9 +231,8 @@ int UtilsManager::FolderExists(const std::string & folder_path){
 
 int UtilsManager::FolderDelete(const std::string & folder_path){
     printf ("\nUtilsManager::FolderDelete");
-    std::string full_path = folder_path;
-    DIR * dir = opendir(full_path.c_str());
-    size_t path_len = full_path.length();
+    DIR * dir = opendir(folder_path.c_str());
+    size_t path_len = folder_path.length();
     int res = -1;
 
     if (dir){
@@ -254,11 +253,11 @@ int UtilsManager::FolderDelete(const std::string & folder_path){
 
             if(buff){
                 struct stat statbuf;
-                snprintf(buff, len, "%s/%s", full_path.c_str(), ent_dir->d_name);
+                snprintf(buff, len, "%s/%s", folder_path.c_str(), ent_dir->d_name);
 
                 if(!stat(buff, &statbuf)){
                     if(S_ISDIR(statbuf.st_mode)){
-                        res = FolderDelete(full_path);
+                        res = FolderDelete(buff);
                     }else{
                         res = unlink(buff);
                     }
@@ -271,7 +270,7 @@ int UtilsManager::FolderDelete(const std::string & folder_path){
     }
 
     if(!res){
-        res = rmdir(full_path.c_str());
+        res = rmdir(folder_path.c_str());
     }
 
     return res;
