@@ -81,9 +81,11 @@ config.checkAllValidations = false
 config.defaultProtocolVersion = 3
 --- Define path to SDL binary
 -- Example: "/home/user/sdl_build/bin"
-config.pathToSDL = ""
+config.pathToSDL = "/bin"
 --- Define path to SDL .INI file
 config.pathToSDLConfig = "/etc/AppLink"
+--- Define path to SDL Policy database
+config.pathToSDLPolicyDB = "/fs/tmpfs/policy"
 --- Define path to SDL interfaces
 -- Example: "/home/user/sdl_panasonic/src/components/interfaces"
 config.pathToSDLInterfaces = ""
