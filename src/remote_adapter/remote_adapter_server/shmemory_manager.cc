@@ -34,7 +34,8 @@ int SharedMemoryManager::ShmOpen(const std::string& shm_name,const int prot) {
   std::cout << "ShmOpen : " << shm_name << std::endl;  
 
   if(handles_.find(shm_name) != handles_.end()){
-    return constants::error_codes::ALREADY_EXISTS;
+    printf("\nSHM Channel already exists: %s\n",shm_name.c_str());
+    return constants::error_codes::SUCCESS;
   }
 
   object_descrp & mem_obj = handles_[shm_name];

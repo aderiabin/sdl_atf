@@ -34,6 +34,12 @@ int MQueueManager::MqOpenWithParams(const std::string& path,
   // mq_flags is ignored for mq_open
   attributes.mq_flags = 0;
   errno = 0;
+  
+  if(handles_.find(path) != handles_.end()){
+    printf("\nMq channel already exists: %s\n",path.c_str());
+    return constants::error_codes::SUCCESS;
+  }
+  
   const auto mq_descriptor = mq_open(path.c_str(), flags, mode, &attributes);
   if (0 == errno) {
     if(!(O_WRONLY & flags)){

@@ -40,7 +40,9 @@ target_link_libraries(${PROJECT_NAME}
                        Threads::Threads
                        $<$<BOOL:${LINUX}>:rt>
                        $<$<BOOL:${QNXNTO}>:mq>
-                       $<$<BOOL:${QNXNTO}>:socket>)
+                       $<$<BOOL:${QNXNTO}>:socket>
+                       $<$<BOOL:${QNXNTO}>:backtrace>
+                       )
 
 target_include_directories( ${PROJECT_NAME}  PRIVATE
    ${CMAKE_CURRENT_SOURCE_DIR}/..

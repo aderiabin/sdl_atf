@@ -2,6 +2,10 @@
 #include <string>
 #include <exception>
 
+#ifdef __QNX__
+#include <backtrace.h>
+#endif
+
 #include "rpc/server.h"
 #include "rpc/this_handler.h"
 
@@ -67,7 +71,43 @@ void CheckError(const int res) {
   rpc::this_handler().respond_error(err_obj);
 }
 
+#ifdef __QNX__
+void print_stack_trace(int pid){
+
+  char out[1024];
+  bt_addr_t pc[16];
+  bt_accessor_t acc;
+  bt_memmap_t memmap;
+
+  memset(&memmap,0,sizeof(bt_memmap_t));
+  bt_init_accessor(&acc, BT_SELF);
+  bt_load_memmap(&acc, &memmap);
+  bt_sprn_memmap(&memmap, out, sizeof(out));
+
+  int cnt = bt_get_backtrace(&acc, pc, sizeof(pc)/sizeof(bt_addr_t));
+  bt_sprnf_addrs(&memmap, pc, cnt, "%a\n", out, sizeof(out), 0);
+  puts(out);
+  
+  bt_unload_memmap(&memmap);
+  bt_release_accessor(&acc);
+}
+
+void segfault_sigaction(int signal, siginfo_t *si, void *arg){ 
+    print_stack_trace(si->si_pid);
+    exit(0);
+}
+#endif
+
 int main(int argc, char* argv[]) {
+
+#ifdef __QNX__
+  struct sigaction sa;
+  memset(&sa, 0, sizeof(struct sigaction));
+  sigemptyset(&sa.sa_mask);  
+  sa.sa_sigaction = segfault_sigaction;
+  sa.sa_flags   = SA_SIGINFO;
+  sigaction(SIGSEGV, &sa, NULL);
+#endif
 
   uint16_t port = 5555;
   if (2 == argc) {
@@ -280,7 +320,7 @@ int main(int argc, char* argv[]) {
              });
 
 
-
+    srv.suppress_exceptions(true);
     // Run the server loop with 2 worker threads.
     srv.async_run(2);
     std::cin.ignore();
