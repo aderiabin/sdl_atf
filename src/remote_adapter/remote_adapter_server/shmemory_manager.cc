@@ -94,7 +94,7 @@ int SharedMemoryManager::ShmWrite(const std::string& shm_name, const std::string
       printf( "Map  mem_obj.object_data_ is 0x%08x\n", mem_obj.object_data_);
       
       mem_obj.object_data_->size_ = data.length() - 1;
-      memset(mem_obj.object_data_->text_, 0, sizeof(mem_obj.object_data_->text_));
+      memset(mem_obj.object_data_->text_, 0, mem_obj.object_data_->size_);
       memcpy(mem_obj.object_data_->text_, &data[1], mem_obj.object_data_->size_);
       
       return constants::error_codes::SUCCESS;
