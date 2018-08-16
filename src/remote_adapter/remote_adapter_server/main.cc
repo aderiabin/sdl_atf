@@ -135,8 +135,6 @@ int main(int argc, char* argv[]) {
     srv.bind(constants::mq_receive,
              [&mq_manager](std::string path) -> std::pair<std::string, int> {
                const auto receive_result = mq_manager.MqReceive(path);
-               auto res = receive_result.second;
-               CheckError(res);
                return receive_result;
              });
 
