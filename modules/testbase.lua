@@ -59,7 +59,7 @@ local function finishTestCaseRun()
   end
 
   Test.current_case_name = nil
-  print_stopscript()
+  util.runner.print_stopscript()
   xmlReporter:finalize()
   if total_testset_result == false then
     quit(exit_codes.failed)

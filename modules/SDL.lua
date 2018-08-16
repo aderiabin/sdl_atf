@@ -11,6 +11,7 @@ require('os')
 local sdl_logger = require('sdl_logger')
 local config = require('config')
 local console = require('console')
+local util = require ("atf.util")
 local remote_constants = require('modules/remote/remote_constants')
 local SDLUtils = require('SDLUtils')
 local SDL = { }
@@ -108,7 +109,7 @@ function SDL:StartSDL(pathToSDL, smartDeviceLinkCore, ExitOnCrash)
   if result then
     msg = "SDL started"
     if config.storeFullSDLLogs == true then
-      sdl_logger.init_log(get_script_file_name())
+      sdl_logger.init_log(util.runner.get_script_file_name())
     end
   else
     msg = "SDL had already started not from ATF or unexpectedly crashed"
