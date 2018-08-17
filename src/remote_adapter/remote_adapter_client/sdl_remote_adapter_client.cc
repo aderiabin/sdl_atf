@@ -331,7 +331,11 @@ std::pair<std::string, int> SDLRemoteTestAdapterClient::file_content(
     fwrite(received.first.c_str(),received.first.length(),1,hFile);
     fclose(hFile);
 
-    std::cout << "SUCCESS\nReceived data: " << received.first << "\n" << std::endl;
+    std::cout << "SUCCESS\nReceived data from path: "
+              << tmp_path
+              << " Length: "
+              << received.first.length()
+              << std::endl;
     return std::make_pair(tmp_path, received.second);
   }
   return std::make_pair(std::string(), constants::error_codes::NO_CONNECTION);

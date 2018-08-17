@@ -23,7 +23,7 @@ const char * const kPostFixBackup = "_origin";
 using namespace constants;
 
 int UtilsManager::StartApp(const std::string & app_path,const std::string & app_name){
-
+    printf ("\nUtilsManager::StartApp: %s\n",app_name.c_str());
     std::string app_full_path = JoinPath(app_path,app_name);
 
     char * const argv[] = {strdup(app_full_path.c_str()),NULL};
@@ -48,7 +48,7 @@ int UtilsManager::StartApp(const std::string & app_path,const std::string & app_
 }
 
 int UtilsManager::StopApp(const std::string & app_name,const int sig){
-
+    printf ("\nUtilsManager::StopApp: %s\n",app_name.c_str());
     ArrayPid arr_pid = GetPidApp(app_name);
     bool is_all_killed = true;
 
@@ -78,10 +78,10 @@ int UtilsManager::StopApp(const std::string & app_name,const int sig){
 }
 
 int UtilsManager::CheckStatusApp(const std::string & app_name){
-    printf ("\nUtilsManager::CheckStatusApp");
+    printf ("\nUtilsManager::CheckStatusApp\n");
     ArrayPid arr_pid = GetPidApp(app_name);
     if(0 == arr_pid.size()){
-        printf ("\%s is NOT_RUNNING",app_name.c_str());
+        printf ("%s is NOT_RUNNING\n",app_name.c_str());
         return stat_app_codes::NOT_RUNNING;
     }
 
@@ -94,17 +94,17 @@ int UtilsManager::CheckStatusApp(const std::string & app_name){
         num_threads += info.num_threads;
     }
 #endif
-    printf ("\n%s has: %d thread ",app_name.c_str(),num_threads);
+    printf ("%s has: %d thread",app_name.c_str(),num_threads);
     if(num_threads > 1){
-        printf ("\n%s is RUNNING",app_name.c_str());
+        printf ("\n%s is RUNNING\n",app_name.c_str());
         return stat_app_codes::RUNNING;
     }
-    printf ("\n%s is CRASHED",app_name.c_str());
+    printf ("\n%s is CRASHED\n",app_name.c_str());
     return stat_app_codes::CRASHED;
 }
 
 int UtilsManager::FileBackup(const std::string & file_path,const std::string & file_name){
-    printf ("\nUtilsManager::FileBackup");
+    printf ("\nUtilsManager::FileBackup\n");
     std::string file_dest_path =
                         JoinPath(
                             file_path,
@@ -122,7 +122,7 @@ int UtilsManager::FileBackup(const std::string & file_path,const std::string & f
 }
 
 int UtilsManager::FileRestore(const std::string & file_path,const std::string & file_name){
-    printf ("\nUtilsManager::FileRestore");
+    printf ("\nUtilsManager::FileRestore\n");
     std::string file_src_path =
                         JoinPath(
                             file_path,
@@ -142,7 +142,7 @@ int UtilsManager::FileRestore(const std::string & file_path,const std::string & 
 }
 
 int UtilsManager::FileUpdate(const std::string & file_path,const std::string & file_name,const std::string & file_content){
-    printf ("\nUtilsManager::FileUpdate");
+    printf ("\nUtilsManager::FileUpdate\n");
     std::ofstream ofs (JoinPath(file_path,file_name).c_str(),std::ofstream::binary);
     ofs << file_content.c_str();
     return ofs ?
@@ -152,7 +152,7 @@ int UtilsManager::FileUpdate(const std::string & file_path,const std::string & f
 }
 
 int UtilsManager::FileExists(const std::string & file_path,const std::string & file_name){
-    printf ("\nUtilsManager::FileExists");
+    printf ("\nUtilsManager::FileExists\n");
     struct stat stat_buff;
     return 0 == (stat(JoinPath(file_path,file_name).c_str(), &stat_buff)) ?
         error_codes::SUCCESS
@@ -161,7 +161,7 @@ int UtilsManager::FileExists(const std::string & file_path,const std::string & f
 }
 
 int UtilsManager::FileDelete(const std::string & file_path,const std::string & file_name){
-    printf ("\nUtilsManager::FileDelete");
+    printf ("\nUtilsManager::FileDelete\n");
     if(remove(JoinPath(file_path,file_name).c_str()) != 0 ){
         return error_codes::FAILED;
     }
@@ -221,7 +221,7 @@ std::string UtilsManager::GetFileContent(
 }
 
 int UtilsManager::FolderExists(const std::string & folder_path){
-    printf ("\nUtilsManager::FolderExists");
+    printf ("\nUtilsManager::FolderExists\n");
     struct stat stat_buff;
     return 0 == (stat(folder_path.c_str(), &stat_buff)) ?
         error_codes::SUCCESS
@@ -230,7 +230,7 @@ int UtilsManager::FolderExists(const std::string & folder_path){
 }
 
 int UtilsManager::FolderDelete(const std::string & folder_path){
-    printf ("\nUtilsManager::FolderDelete");
+    printf ("\nUtilsManager::FolderDelete\n");
     DIR * dir = opendir(folder_path.c_str());
     size_t path_len = folder_path.length();
     int res = -1;
@@ -277,7 +277,7 @@ int UtilsManager::FolderDelete(const std::string & folder_path){
 }
 
 int UtilsManager::FolderCreate(const std::string & folder_path){
-    printf ("\nUtilsManager::FolderCreate");
+    printf ("\nUtilsManager::FolderCreate\n");
     const int dir_err = mkdir(folder_path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     if (-1 == dir_err){
         printf("\nError creating directory: %s",folder_path.c_str());
@@ -287,7 +287,7 @@ int UtilsManager::FolderCreate(const std::string & folder_path){
 }
 
 UtilsManager::ReceiveResult UtilsManager::ExecuteCommand(const std::string & bash_command){
-
+    printf ("\nUtilsManager::ExecuteCommand: %s\n",bash_command.c_str());
     std::string command_output;
     char buffer[128] = {0};
     FILE* pipe = popen(bash_command.c_str(), "r");
@@ -412,26 +412,26 @@ int UtilsManager::KillApp(const pid_t app_pid,const int sig,const char * app_nam
     switch(errno){
         case EAGAIN:
         printf("\nFailed kill pid: %d app: %s "
-                "Insufficient system resources are available to deliver the signal."
+                "Insufficient system resources are available to deliver the signal.\n"
                 ,app_pid,app_name ? app_name : "");
                 break;
         case EINVAL:
         printf("\nFailed kill pid: %d app: %s "
-                "The sig is invalid."
+                "The sig is invalid.\n"
                 ,app_pid,app_name ? app_name : "");
         break;
         case EPERM:
         printf("\nFailed kill pid: %d app: %s "
-                "The process doesn't have permission to send this signal to any receiving process."
+                "The process doesn't have permission to send this signal to any receiving process.\n"
                 ,app_pid,app_name ? app_name : "");
         break;
         case ESRCH:
         printf("\nFailed kill pid: %d app: %s "
-                "The given pid doesn't exist."
+                "The given pid doesn't exist.\n"
                 ,app_pid,app_name ? app_name : "");
         break;
         default:
-            printf("\nFailed kill pid: %d app: %s Unknown error in errno"
+            printf("\nFailed kill pid: %d app: %s Unknown error in errno\n"
                 ,app_pid,app_name ? app_name : "");
     }
 

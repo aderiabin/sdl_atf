@@ -14,7 +14,7 @@ namespace mq_wrappers {
 MQueueManager::MQueueManager() {}
 
 int MQueueManager::MqOpen(const std::string& path) {
-  std::cout << "MqOpen : " << path << std::endl;
+  std::cout << "\nMqOpen : " << path << std::endl;
   return MqOpenWithParams(path,
                    Defaults::MSGQ_MAX_MESSAGES,
                    Defaults::MAX_QUEUE_MSG_SIZE,
@@ -27,7 +27,7 @@ int MQueueManager::MqOpenWithParams(const std::string& path,
                                     const int max_message_size,
                                     const int flags,
                                     const int mode) {
-  std::cout << "MqOpenWithParams : " << path << std::endl;
+  std::cout << "\nMqOpenWithParams : " << path << std::endl;
   struct mq_attr attributes;
   attributes.mq_maxmsg = max_messages_number;
   attributes.mq_msgsize = max_message_size;
@@ -46,7 +46,7 @@ int MQueueManager::MqOpenWithParams(const std::string& path,
       MqClearMsg(mq_descriptor);
     }
     handles_[path] = mq_descriptor;
-    std::cout << "Returning successful result" << std::endl;
+    std::cout << "\nReturning successful result" << std::endl;
     return constants::error_codes::SUCCESS;
   }
 
@@ -98,7 +98,7 @@ int MQueueManager::MqOpenWithParams(const std::string& path,
 }
 
 int MQueueManager::MqSend(const std::string& path,std::string data) {
-  std::cout << "MqSend to : " << path <<" Size: "<<data.length()<<" : " << data << std::endl;
+  std::cout << "\nMqSend to : " << path <<" Size: "<<data.length()<<" : " << data << std::endl;
 
   if(data.length() >= Defaults::MAX_QUEUE_MSG_SIZE){   
       shm_manager.ShmWrite(shm_manager.shm_name_sdlqueue,data);
@@ -109,38 +109,40 @@ int MQueueManager::MqSend(const std::string& path,std::string data) {
   memcpy(queue_msg,data.c_str(),data.size());
   
   if (handles_.find(path) != handles_.end()) {
-    std::cout << "Handle found : " << handles_[path] << " " << std::endl;
+    std::cout << "\nHandle found : " << handles_[path] << " " << std::endl;
     errno = 0;
     const int res =
         mq_send(handles_[path],queue_msg, Defaults::MAX_QUEUE_MSG_SIZE - 1, Defaults::prio);
     if (-1 == res) {
-      std::cout << "Error occurred: " << strerror(errno) << std::endl;
+      std::cout << "\nError occurred: " << strerror(errno) << std::endl;
       return errno;
     }
-    std::cout << "Returning successful result" << std::endl;
+    std::cout << "\nReturning successful result" << std::endl;
     return constants::error_codes::SUCCESS;
   }
-  std::cerr << "Mqueue path : '" << path << "' NOT found";
+  std::cerr << "\nMqueue path : '" << path << "' NOT found\n";
   return constants::error_codes::PATH_NOT_FOUND;
 }
 
 MQueueManager::ReceiveResult MQueueManager::MqReceive(const std::string& path) {
-  std::cout << "MqReceive from " << path << std::endl;
+  std::cout << "\nMqReceive from " << path << std::endl;
   if (handles_.find(path) != handles_.end()) {
-    std::cout << "Handle found : " << handles_[path] << " " << std::endl;
+    std::cout << "\Handle found : " << handles_[path] << " " << std::endl;
     char buffer[Defaults::MAX_QUEUE_MSG_SIZE];
     errno = 0;
     const ssize_t length =
         mq_receive(handles_[path], buffer, sizeof(buffer), 0);
-    std::cout << "Length of read data = " << length << std::endl;
-    std::cout << "Read data: " << buffer << std::endl;
+    std::cout << "\nLength of read data = " << length << std::endl;
+    if(0 < length){
+      std::cout << "\nRead data: " << buffer << std::endl;
+    }
     if (-1 == length) {
       switch(errno){
         case EAGAIN:
           printf("\nThe O_NONBLOCK flag was set and there are no messages currently on the specified queue.\n");
           break; 
         case EBADF:
-          printf("\nThe mqdes argument doesn't represent a valid queue open for reading.");
+          printf("\nThe mqdes argument doesn't represent a valid queue open for reading.\n");
           break;
         case EINTR:
           printf("\nThe operation was interrupted by a signal.\n");
@@ -168,46 +170,46 @@ MQueueManager::ReceiveResult MQueueManager::MqReceive(const std::string& path) {
       return shm_manager.ShmRead(shm_name);
     }
 
-    std::cout << "Returning successful result" << std::endl;
+    std::cout << "\nReturning successful result" << std::endl;
     return std::make_pair(std::string(buffer, length),
                           constants::error_codes::SUCCESS);
   }
-  std::cerr << "Mqueue path : '" << path << "' NOT found";
+  std::cerr << "\nMqueue path : '" << path << "' NOT found\n";
   return std::make_pair(std::string(), constants::error_codes::PATH_NOT_FOUND);
 }
 
 int MQueueManager::MqClose(const std::string& path) {
-  std::cout << "MqClose " << path << std::endl;
+  std::cout << "\nMqClose " << path << std::endl;
   if (handles_.find(path) != handles_.end()) {
-    std::cout << "Handle found : " << handles_[path] << " " << std::endl;
+    std::cout << "\nHandle found : " << handles_[path] << " " << std::endl;
     errno = 0;
     const int res = mq_close(handles_[path]);
     if (-1 == res) {
-      std::cout << "Error occurred: " << strerror(errno) << std::endl;
+      std::cout << "\nError occurred: " << strerror(errno) << std::endl;
       return errno;
     }
     handles_.erase(path);
-    std::cout << "Returning successful result" << std::endl;
+    std::cout << "\nReturning successful result" << std::endl;
     return constants::error_codes::SUCCESS;
   }
-  std::cerr << "Mqueue path : '" << path << "' NOT found";
+  std::cerr << "\nMqueue path : '" << path << "' NOT found\n";
   return constants::error_codes::PATH_NOT_FOUND;
 }
 
 int MQueueManager::MqUnlink(const std::string& path) {
-  std::cout << "MqUnlink " << path << std::endl;
+  std::cout << "\nMqUnlink " << path << std::endl;
   errno = 0;
   const int res = mq_unlink(path.c_str());
   if (-1 == res) {
-    std::cout << "Error occurred: " << strerror(errno) << std::endl;
+    std::cout << "\nError occurred: " << strerror(errno) << std::endl;
     return errno;
   }
-  std::cout << "Returning successful result" << std::endl;
+  std::cout << "\nReturning successful result" << std::endl;
   return constants::error_codes::SUCCESS;
 }
 
 int MQueueManager::MqClear() {
-  std::cout << "MqClear" << std::endl;
+  std::cout << "\nMqClear" << std::endl;
   bool success = true;
   bool result = true;
   for (const auto& pair : handles_) {
@@ -222,7 +224,7 @@ int MQueueManager::MqClear() {
 }
 
 void MQueueManager::MqClearMsg(const mqd_t mq_descriptor){ 
-
+  printf("\nMQueueManager::MqClearMsg\n");
   if(INVALID_DESCRIPT == mq_descriptor){
     return;
   }
