@@ -73,4 +73,5 @@ install(
 )
 
 add_subdirectory(src/luaxml)
+add_subdirectory(src/luaopenssl)
 add_subdirectory(src/remote_adapter)
