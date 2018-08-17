@@ -80,7 +80,6 @@ function SDLUtils.INI.get(pParam)
   local iniPath = SDLUtils.addSlashToPath(config.pathToSDLConfig)
   local iniFilePath = iniPath .. SDLUtils.INI.fileName
   local content = getFileContent(iniFilePath)
-  print(content)
   local value
   for line in content:gmatch("[^\r\n]+") do
     if string.match(line, "^%s*" .. pParam .. "%s*=%s*") ~= nil then
