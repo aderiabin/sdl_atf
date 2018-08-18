@@ -92,9 +92,12 @@ void print_stack_trace(int pid){
   bt_release_accessor(&acc);
 }
 
-void segfault_sigaction(int signal, siginfo_t *si, void *arg){ 
+void segfault_sigaction(int sign, siginfo_t *si, void *arg){ 
     print_stack_trace(si->si_pid);
-    exit(0);
+    //** for continue generate core dumped *
+    signal(sign, SIG_DFL);
+    kill(si->si_pid, sign);
+    //**************************************
 }
 #endif
 
