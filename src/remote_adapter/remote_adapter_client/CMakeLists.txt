@@ -42,6 +42,14 @@ if (NOT TARGET lua::lua)
       )
 endif()
 
+set(RPCLIB_DEPENDENCIES "${rpclib_SOURCE_DIR}/dependencies")
+file(GLOB_RECURSE DEP_HEADERS
+  ${RPCLIB_DEPENDENCIES}/include/*.h
+  ${RPCLIB_DEP_LIBRARIDEPENDENCIES}/include/*.hpp)
+set(DEP_SOURCES
+  ${RPCLIB_DEPENDENCIES}/src/format.cc
+  ${RPCLIB_DEPENDENCIES}/src/posix.cc)
+
 add_library(${PROJECT_NAME} SHARED
                  sdl_remote_adapter_client.cc
                  qt_impl/sdl_remote_adapter_qt_client.cc
@@ -49,11 +57,13 @@ add_library(${PROJECT_NAME} SHARED
                  lua_lib/sdl_remote_adapter_client_lua_wrapper.cc
                  qt_impl/lua_lib/sdl_remote_adapter_qt_client_lua_wrapper.cc
                  lua_lib/lua_remote_library.cc
+                 ${DEP_SOURCES}
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC
             ${CMAKE_CURRENT_SOURCE_DIR}/..
             ${CMAKE_CURRENT_SOURCE_DIR}
+            PRIVATE ${RPCLIB_DEPENDENCIES}/include
             ${LUA_INCLUDE_DIR})
 
 target_link_libraries(${PROJECT_NAME}
@@ -62,6 +72,19 @@ target_link_libraries(${PROJECT_NAME}
                         rpc::rpclib
                         Threads::Threads
                         $<$<BOOL:${QNXNTO}>:socket>)
+
+target_compile_definitions(${PROJECT_NAME} 
+  PRIVATE    
+    "ASIO_STANDALONE"
+    "RPCLIB_ASIO=clmdep_asio"
+    "RPCLIB_FMT=clmdep_fmt"
+  PUBLIC
+    "RPCLIB_MSGPACK=clmdep_msgpack"
+  )
+
+if(RPCLIB_ENABLE_LOGGING)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE "RPCLIB_ENABLE_LOGGING")
+endif()
 
 install(
   TARGETS ${PROJECT_NAME}

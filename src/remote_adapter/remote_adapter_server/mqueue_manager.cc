@@ -4,17 +4,21 @@
 #include <cstring>
 
 #include <iostream>
-#include "common/constants.h"
 #include <memory>
+
+#include "common/constants.h"
+#include "rpc/detail/log.h"
 
 #define INVALID_DESCRIPT -1
 
 namespace mq_wrappers {
 
+RPCLIB_CREATE_LOG_CHANNEL(MQueueManager)
+
 MQueueManager::MQueueManager() {}
 
 int MQueueManager::MqOpen(const std::string& path) {
-  std::cout << "\nMqOpen : " << path << std::endl;
+  LOG_INFO("{0}: {1}",__func__,path);
   return MqOpenWithParams(path,
                    Defaults::MSGQ_MAX_MESSAGES,
                    Defaults::MAX_QUEUE_MSG_SIZE,
@@ -27,7 +31,7 @@ int MQueueManager::MqOpenWithParams(const std::string& path,
                                     const int max_message_size,
                                     const int flags,
                                     const int mode) {
-  std::cout << "\nMqOpenWithParams : " << path << std::endl;
+  LOG_INFO("{0}: {1}",__func__,path);
   struct mq_attr attributes;
   attributes.mq_maxmsg = max_messages_number;
   attributes.mq_msgsize = max_message_size;
@@ -36,7 +40,7 @@ int MQueueManager::MqOpenWithParams(const std::string& path,
   errno = 0;
   
   if(handles_.find(path) != handles_.end()){
-    printf("\nMq channel already exists: %s\n",path.c_str());
+    LOG_INFO("Mq channel already exists: {}",path);
     MqClose(path);
     MqUnlink(path);
   }
@@ -47,59 +51,65 @@ int MQueueManager::MqOpenWithParams(const std::string& path,
       MqClearMsg(mq_descriptor);
     }
     handles_[path] = mq_descriptor;
-    std::cout << "\nReturning successful result" << std::endl;
+    LOG_INFO("Returning successful result");
     return constants::error_codes::SUCCESS;
   }
 
   switch(errno){
     case EACCES:
-      printf("\nThe message queue exists, and you don't have permission to"
-             "open the queue under the given oflag, or the message queue"
-             "doesn't exist, and you don't have permission to create one\n");
+      LOG_ERROR("The message queue exists, and you don't have permission to"
+                "open the queue under the given oflag, or the message queue"
+                "doesn't exist, and you don't have permission to create one");
       break;
     case EEXIST:
-      printf("\nYou specified the O_CREAT and O_EXCL flags in oflag, and the queue name exists.\n");
+      LOG_ERROR("You specified the O_CREAT" 
+                "and O_EXCL flags in oflag, and the queue name exists");
       break;
     case EINTR:
-      printf("\nThe operation was interrupted by a signal.\n");
+      LOG_ERROR("The operation was interrupted by a signal");
       break;
     case EINVAL:
-      printf("\nYou specified the O_CREAT flag in oflag,"
-             "and mq_attr wasn't NULL, but some values in the mq_attr structure were invalid.\n"
-             );
+      LOG_ERROR("You specified the O_CREAT flag in oflag,"
+                "and mq_attr wasn't NULL, but some values"
+                "in the mq_attr structure were invalid.");
       break;
     case ELOOP:
-      printf("\nToo many levels of symbolic links or prefixes.\n");
+      LOG_ERROR("Too many levels of symbolic links or prefixes.");
       case EMFILE:
-      printf("\nToo many message queue descriptors or file descriptors are in use by the calling process.\n");
+      LOG_ERROR("Too many message queue descriptors or file"
+                "descriptors are in use by the calling process.");
       break;
     case  ENAMETOOLONG:
-      printf("\nThe length of name exceeds PATH_MAX.\n");
+      LOG_ERROR("The length of name exceeds PATH_MAX.");
       break;
     case ENFILE:
-      printf("\nToo many message queues are open in the system.\n");
+      LOG_ERROR("Too many message queues are open in the system.");
       break;
     case ENOENT:
-      printf("\nYou didn't set the O_CREAT flag, and the queue name doesn't exist.\n");
+      LOG_ERROR("You didn't set the O_CREAT flag,"
+                "and the queue name doesn't exist.");
       break;
     case ENOSPC:
-      printf("\nThe message queue server has run out of memory.\n");
+      LOG_ERROR("The message queue server has run out of memory.");
       break;
     case EPERM:
-      printf("\nThe process doesn't have the necessary MAC permissions to connect.\n");
+      LOG_ERROR("The process doesn't have the necessary MAC"
+                "permissions to connect.");
       break;
     case ENOSYS:
-      printf("\nThe mq_open() function isn't implemented for the filesystem specified in name, or the message queue manager (mq or mqueue) isn't running.\n");
+      LOG_ERROR("The mq_open() function isn't implemented"
+                "for the filesystem specified in name, or"
+                "the message queue manager (mq or mqueue) isn't running.");
       break;
     default:
-      printf("\nUnknown error in errno\n");
+      LOG_ERROR("Unknown error in errno");
   }
 
   return errno;
 }
 
 int MQueueManager::MqSend(const std::string& path,std::string data) {
-  std::cout << "\nMqSend to : " << path <<" Size: "<<data.length()<<" : " << data << std::endl;
+  LOG_INFO("{0}: {1} Size: {2} Data: {3}",__func__, path,data.length(),data);
 
   if(data.length() >= Defaults::MAX_QUEUE_MSG_SIZE){   
       shm_manager.ShmWrite(shm_manager.shm_name_sdlqueue,data);
@@ -109,58 +119,61 @@ int MQueueManager::MqSend(const std::string& path,std::string data) {
   char queue_msg[Defaults::MAX_QUEUE_MSG_SIZE - 1] = {0};
   memcpy(queue_msg,data.c_str(),data.size());
   
-  if (handles_.find(path) != handles_.end()) {
-    std::cout << "\nHandle found : " << handles_[path] << " " << std::endl;
+  if(handles_.find(path) != handles_.end()) {
+    LOG_INFO("Handle found: {}",handles_[path]);
     errno = 0;
     const int res =
         mq_send(handles_[path],queue_msg, Defaults::MAX_QUEUE_MSG_SIZE - 1, Defaults::prio);
     if (-1 == res) {
-      std::cout << "\nError occurred: " << strerror(errno) << std::endl;
+      LOG_ERROR("Occurred: {}",strerror(errno));
       return errno;
     }
-    std::cout << "\nReturning successful result" << std::endl;
+    LOG_INFO("Returning successful result");
     return constants::error_codes::SUCCESS;
   }
-  std::cerr << "\nMqueue path : '" << path << "' NOT found\n";
+  LOG_ERROR("Mqueue path: {} Not Found",path);
   return constants::error_codes::PATH_NOT_FOUND;
 }
 
 MQueueManager::ReceiveResult MQueueManager::MqReceive(const std::string& path) {
-  std::cout << "\nMqReceive from " << path << std::endl;
+  LOG_INFO("{0}: from: {1}",__func__,path);
   if (handles_.find(path) != handles_.end()) {
-    std::cout << "\Handle found : " << handles_[path] << " " << std::endl;
+    LOG_INFO("Handle found: {}",handles_[path]);
     char buffer[Defaults::MAX_QUEUE_MSG_SIZE];
     errno = 0;
     const ssize_t length =
         mq_receive(handles_[path], buffer, sizeof(buffer), 0);
-    std::cout << "\nLength of read data = " << length << std::endl;
+    LOG_INFO("Length of read data: {}",length);
     if(0 < length){
-      std::cout << "\nRead data: " << buffer << std::endl;
+      LOG_INFO("Read data: {}",buffer);
     }
     if (-1 == length) {
       switch(errno){
         case EAGAIN:
-          printf("\nThe O_NONBLOCK flag was set and there are no messages currently on the specified queue.\n");
+          LOG_ERROR("The O_NONBLOCK flag was set and there are"
+                    "no messages currently on the specified queue.");
           break; 
         case EBADF:
-          printf("\nThe mqdes argument doesn't represent a valid queue open for reading.\n");
+          LOG_ERROR("The mqdes argument doesn't represent"
+                    "a valid queue open for reading.");
           break;
         case EINTR:
-          printf("\nThe operation was interrupted by a signal.\n");
+          LOG_ERROR("The operation was interrupted by a signal.");
           break;
         case EINVAL:
-          printf("\nThe msg_ptr argument isn't a valid pointer,"
+          LOG_ERROR("The msg_ptr argument isn't a valid pointer,"
                  "\nor msg_len is less than 0, or msg_len is less"
                  "\nthan the message size specified in mq_open()."
                  "\nThe default message size is 4096 bytes for the traditional (mqueue) implementation,"
-                 "\nand 256 bytes for the alternate (mq) implementation.\n"); 
+                 "\nand 256 bytes for the alternate (mq) implementation."); 
           break;
         case EMSGSIZE:
-          printf("\nThe given msg_len is shorter than the mq_msgsize for the given queue or the given msg_len\n"
-                 "is too short for the message that would have been received.\n");
+          LOG_ERROR("The given msg_len is shorter than"
+                    "\nthe mq_msgsize for the given queue or the given msg_len"
+                    "\nis too short for the message that would have been received.");
           break;
         default:
-          printf("\nUnknown error in errno\n");
+          LOG_INFO("Unknown error in errno");
 
       }
       return std::make_pair(std::string(), errno);
@@ -171,46 +184,46 @@ MQueueManager::ReceiveResult MQueueManager::MqReceive(const std::string& path) {
       return shm_manager.ShmRead(shm_name);
     }
 
-    std::cout << "\nReturning successful result" << std::endl;
+    LOG_INFO("Returning successful result");
     return std::make_pair(std::string(buffer, length),
                           constants::error_codes::SUCCESS);
   }
-  std::cerr << "\nMqueue path : '" << path << "' NOT found\n";
+  LOG_ERROR("Mqueue path: {} NOT found",path);
   return std::make_pair(std::string(), constants::error_codes::PATH_NOT_FOUND);
 }
 
 int MQueueManager::MqClose(const std::string& path) {
-  std::cout << "\nMqClose " << path << std::endl;
+  LOG_INFO("{0}: {1}",__func__,path);
   if (handles_.find(path) != handles_.end()) {
-    std::cout << "\nHandle found : " << handles_[path] << " " << std::endl;
+    LOG_INFO("Handle found: {}",handles_[path]);
     errno = 0;
     const int res = mq_close(handles_[path]);
     if (-1 == res) {
-      std::cout << "\nError occurred: " << strerror(errno) << std::endl;
+      LOG_ERROR("Error occurred: {}",strerror(errno));
       return errno;
     }
     handles_.erase(path);
-    std::cout << "\nReturning successful result" << std::endl;
+    LOG_INFO("Returning successful result");
     return constants::error_codes::SUCCESS;
   }
-  std::cerr << "\nMqueue path : '" << path << "' NOT found\n";
+  LOG_ERROR("Mqueue path: {} NOT found",path);
   return constants::error_codes::PATH_NOT_FOUND;
 }
 
 int MQueueManager::MqUnlink(const std::string& path) {
-  std::cout << "\nMqUnlink " << path << std::endl;
+  LOG_INFO("{0}: {}",__func__,path);
   errno = 0;
   const int res = mq_unlink(path.c_str());
   if (-1 == res) {
-    std::cout << "\nError occurred: " << strerror(errno) << std::endl;
+    LOG_ERROR("Error occurred: {}",strerror(errno));
     return errno;
   }
-  std::cout << "\nReturning successful result" << std::endl;
+  LOG_INFO("Returning successful result");
   return constants::error_codes::SUCCESS;
 }
 
 int MQueueManager::MqClear() {
-  std::cout << "\nMqClear" << std::endl;
+  LOG_INFO("{}",__func__);
   bool success = true;
   bool result = true;
   for (const auto& pair : handles_) {
@@ -225,7 +238,7 @@ int MQueueManager::MqClear() {
 }
 
 void MQueueManager::MqClearMsg(const mqd_t mq_descriptor){ 
-  printf("\nMQueueManager::MqClearMsg\n");
+  LOG_INFO("{}",__func__);
   if(INVALID_DESCRIPT == mq_descriptor){
     return;
   }
@@ -235,17 +248,17 @@ void MQueueManager::MqClearMsg(const mqd_t mq_descriptor){
   if(0 != mq_getattr (mq_descriptor, &attr)){
     switch(errno){
       case EBADF:
-        printf("\nThe message queue descriptor specified in mqdes is invalid\n");
+        LOG_ERROR("The message queue descriptor specified in mqdes is invalid");
         break;
       case EINVAL:
-        printf("\nnewattr->mq_flags contained set bits other than O_NONBLOCK\n");
-        default:
-          printf("\nUnknown error in errno\n");
+        LOG_ERROR("nnewattr->mq_flags contained set bits other than O_NONBLOCK");
+      default:
+        LOG_ERROR("Unknown error in errno");
     }
     return;
   }
-  printf("\n%d messages are currently on the queue.\n",(int)attr.mq_curmsgs);
-  printf("\n%d size messages currently\n",(int)attr.mq_msgsize);    
+  LOG_INFO("{} messages are currently on the queue.",(int)attr.mq_curmsgs);
+  LOG_INFO("{} size messages currently",(int)attr.mq_msgsize);    
   if (0 != attr.mq_curmsgs) {
     //There are some messages on this queue....eat them
     // First set the queue to not block any calls
@@ -255,11 +268,11 @@ void MQueueManager::MqClearMsg(const mqd_t mq_descriptor){
     // Now eat all of the messages
     std::unique_ptr<char[]> buf(new char[attr.mq_msgsize]);
     while (mq_receive (mq_descriptor, buf.get(),attr.mq_msgsize, &priority) != -1){
-      printf ("\nReceived a message with priority %d.\n", priority);
+      LOG_INFO("Received a message {0} with priority {1}.\n",buf.get(), priority);
     }
     // The call failed. Make sure errno is EAGAIN
     if(EAGAIN != errno){
-      perror ("\nmq_receive()\n");
+      LOG_ERROR("mq_receive()");
     }
     mq_setattr (mq_descriptor, &old_attr, 0);
   }

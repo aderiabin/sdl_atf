@@ -28,12 +28,21 @@ if(NOT rpclib_POPULATED)
   add_library(rpc::rpclib ALIAS rpc)
 endif()
 
+set(RPCLIB_DEPENDENCIES "${rpclib_SOURCE_DIR}/dependencies")
+file(GLOB_RECURSE DEP_HEADERS
+  ${RPCLIB_DEPENDENCIES}/include/*.h
+  ${RPCLIB_DEP_LIBRARIDEPENDENCIES}/include/*.hpp)
+set(DEP_SOURCES
+  ${RPCLIB_DEPENDENCIES}/src/format.cc
+  ${RPCLIB_DEPENDENCIES}/src/posix.cc)
+
 find_package( Threads REQUIRED )
 add_executable(${PROJECT_NAME}
                 main.cc
                 mqueue_manager.cc
                 shmemory_manager.cc
-                utils_manager.cc)
+                utils_manager.cc
+                ${DEP_SOURCES})
 
 target_link_libraries(${PROJECT_NAME}
                        rpc::rpclib
@@ -46,7 +55,21 @@ target_link_libraries(${PROJECT_NAME}
 
 target_include_directories( ${PROJECT_NAME}  PRIVATE
    ${CMAKE_CURRENT_SOURCE_DIR}/..
+   PRIVATE ${RPCLIB_DEPENDENCIES}/include
 )
+
+target_compile_definitions(${PROJECT_NAME} 
+  PRIVATE    
+    "ASIO_STANDALONE"
+    "RPCLIB_ASIO=clmdep_asio"
+    "RPCLIB_FMT=clmdep_fmt"
+  PUBLIC
+    "RPCLIB_MSGPACK=clmdep_msgpack"
+  )
+
+if(RPCLIB_ENABLE_LOGGING)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE "RPCLIB_ENABLE_LOGGING")
+endif()
 
 install(
   TARGETS ${PROJECT_NAME}

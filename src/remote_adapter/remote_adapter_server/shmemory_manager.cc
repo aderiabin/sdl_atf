@@ -8,6 +8,7 @@
 #include <iostream>
 #include <cstring>
 #include "common/constants.h"
+#include "rpc/detail/log.h"
 
 namespace shmemory_wrappers {
 
@@ -19,10 +20,14 @@ const char SharedMemoryManager::shm_json_mem_ident[] = {
   18,83,72,65,82,69,68,95,77,69,77,79,82,89,0
   };
 
+RPCLIB_CREATE_LOG_CHANNEL(SharedMemoryManager)
+
 SharedMemoryManager::SharedMemoryManager() {}
 
 SharedMemoryManager::~SharedMemoryManager(){
-    
+  
+  LOG_INFO("{0}",__func__);
+  
   for(const auto & mem_obj : handles_){
        ftruncate(mem_obj.second.object_handle_, 0);
        munmap(mem_obj.second.object_data_, sizeof(shmem_t));
@@ -30,11 +35,12 @@ SharedMemoryManager::~SharedMemoryManager(){
   }
 }
 
-int SharedMemoryManager::ShmOpen(const std::string& shm_name,const int prot) {
-  std::cout << "\nShmOpen : " << shm_name << std::endl;  
-
+int SharedMemoryManager::ShmOpen(const std::string& shm_name,const int prot) {  
+  
+  LOG_INFO("{0}: {1}",__func__,shm_name); 
+  
   if(handles_.find(shm_name) != handles_.end()){
-    printf("\nSHM Channel already exists: %s\n",shm_name.c_str());
+    LOG_WARN("SHM Channel already exists: {}",shm_name);
     ShmClose(shm_name);
     ShmUnlink(shm_name);
   }
@@ -44,7 +50,7 @@ int SharedMemoryManager::ShmOpen(const std::string& shm_name,const int prot) {
   
   if(-1 == mem_obj.object_handle_) {
       handles_.erase(shm_name);
-      std::cout << "\nOpen failed: " << strerror( errno ) << std::endl;
+      LOG_ERROR("Open failed: {}",strerror( errno ));
       return constants::error_codes::OPEN_FAILURE;
   }
   
@@ -53,22 +59,24 @@ int SharedMemoryManager::ShmOpen(const std::string& shm_name,const int prot) {
   mem_obj.object_data_ = (shmem_t*)mmap(0, sizeof(shmem_t), prot, MAP_SHARED,mem_obj.object_handle_, 0);
 
   if(MAP_FAILED == mem_obj.object_data_){
-      std::cout <<"\nmmap failed: " << strerror( errno ) << std::endl;
+      LOG_ERROR("mmap failed: {}",strerror( errno ));
       ShmClose(shm_name);
       return constants::error_codes::OPEN_FAILURE;     
   }
 
-  printf( "\nMap  mem_obj.object_data_ is 0x%08x\n", mem_obj.object_data_);
+  LOG_INFO("Map  mem_obj.object_data_ is: 0x%08x {}",(long)mem_obj.object_data_);
   
   return constants::error_codes::SUCCESS;
 }
 
 int SharedMemoryManager::ShmClose(const std::string& shm_name) {
-  std::cout << "\nShmClose " << shm_name << std::endl;
+  
+  LOG_INFO("{0}: {1}",__func__,shm_name);
+  
   if (handles_.find(shm_name) != handles_.end()) {
     object_descrp & mem_obj = handles_[shm_name];
 
-    std::cout << "\nHandle found : " << mem_obj.object_handle_ << " " << std::endl;
+    LOG_INFO("Handle found:{}",(long)mem_obj.object_handle_);
 
     ftruncate(mem_obj.object_handle_, 0);
     munmap(mem_obj.object_data_, sizeof(shmem_t));
@@ -76,24 +84,30 @@ int SharedMemoryManager::ShmClose(const std::string& shm_name) {
     errno = 0;
     const int res = close(mem_obj.object_handle_);
     if (-1 == res) {
-      std::cout << "\nError occurred: " << strerror(errno) << std::endl;
+      LOG_ERROR("Error occurred: {}",strerror(errno));
       return errno;
     }
+    
     handles_.erase(shm_name);
-    std::cout << "\nReturning successful result" << std::endl;
+    
+    LOG_INFO("Returning successful result");
+    
     return constants::error_codes::SUCCESS;
   }
-  std::cerr << "\nShared memory name : '" << shm_name << "' NOT found\n";
+  
+  LOG_ERROR("Shared memory name: {} Not found",shm_name);
+  
   return constants::error_codes::PATH_NOT_FOUND;
 }
 
 int SharedMemoryManager::ShmWrite(const std::string& shm_name, const std::string& data) {
-  std::cout << "\nShmWrite to : " << shm_name << " : " << data << std::endl;
+  
+  LOG_INFO("{0}: {1}",__func__,shm_name);
   
   if(handles_.find(shm_name) != handles_.end()){
       object_descrp & mem_obj = handles_[shm_name];
-      std::cout << "\nHandle found : " << mem_obj.object_handle_ << " " << std::endl;
-      printf( "\nMap  mem_obj.object_data_ is 0x%08x\n", mem_obj.object_data_);
+      LOG_INFO("Handle found:{}",mem_obj.object_handle_);
+      LOG_INFO("Map  mem_obj.object_data_ is 0x%08x {}",(long)mem_obj.object_data_);
       
       mem_obj.object_data_->size_ = data.length() - 1;
       memset(mem_obj.object_data_->text_, 0, mem_obj.object_data_->size_);
@@ -101,32 +115,38 @@ int SharedMemoryManager::ShmWrite(const std::string& shm_name, const std::string
       
       return constants::error_codes::SUCCESS;
   }
-  std::cerr << "\nShared memory name : '" << shm_name << "' NOT found\n";
+  
+  LOG_ERROR("Shared memory name: {} Not found",shm_name);
+  
   return constants::error_codes::PATH_NOT_FOUND;
 }
 
 SharedMemoryManager::ReceiveResult SharedMemoryManager::ShmRead(const std::string& shm_name) {
-  std::cout << "\nShmRead from " << shm_name << std::endl;
+
+  LOG_INFO("{0}: {1}",__func__,shm_name);
+  
   if(handles_.find(shm_name) != handles_.end()) {
       object_descrp & mem_obj = handles_[shm_name];
-      std::cout << "\nHandle found : " << mem_obj.object_handle_ << " " << std::endl;
-      printf( "\nMap  mem_obj.object_data_ is 0x%08x\n", mem_obj.object_data_);      
-      std::cout << "\nReturning successful result" << std::endl;
+      LOG_INFO("Handle found: {}",mem_obj.object_handle_);
+      LOG_INFO("Map  mem_obj.object_data_ is 0x%08x {}",(long)mem_obj.object_data_);      
+      LOG_INFO("Returning successful result");
       return std::make_pair(std::string(mem_obj.object_data_->text_,mem_obj.object_data_->size_),constants::error_codes::SUCCESS);
-  }
-  std::cerr << "\nShared memory name : '" << shm_name << "' NOT found\n";
+  }  
+  
+  LOG_ERROR("Shared memory name : {} Not found",shm_name);  
+  
   return std::make_pair(std::string(), constants::error_codes::PATH_NOT_FOUND);
 }
 
 int SharedMemoryManager::ShmUnlink(const std::string& shm_name) {
-  std::cout << "\nShmUnlink " << shm_name << std::endl;
+  LOG_INFO("{0}: {1}",__func__,shm_name);
   errno = 0;
   const int res = shm_unlink(shm_name.c_str());
   if (-1 == res) {
-    std::cout << "\nError occurred: " << strerror(errno) << std::endl;
+    LOG_ERROR("Error occurred: {}",strerror(errno));
     return errno;
   }
-  std::cout << "\nReturning successful result" << std::endl;
+  LOG_INFO("Returning successful result");
   return constants::error_codes::SUCCESS;
 }
 
