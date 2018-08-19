@@ -48,7 +48,7 @@ int MQueueManager::MqOpenWithParams(const std::string& path,
   }
   
   const auto mq_descriptor = mq_open(path.c_str(), flags, mode, &attributes);
-  if (0 == errno) {
+  if (INVALID_DESCRIPT != mq_descriptor) {
     if(!(O_WRONLY & flags)){
       MqClearMsg(mq_descriptor);
     }
@@ -104,7 +104,7 @@ int MQueueManager::MqOpenWithParams(const std::string& path,
                 "the message queue manager (mq or mqueue) isn't running.");
       break;
     default:
-      LOG_TRACE("Unknown error in errno");
+      LOG_TRACE("Unknown error in errno {}",strerror(errno));
   }
 
   return errno;
