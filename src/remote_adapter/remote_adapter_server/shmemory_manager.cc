@@ -10,6 +10,8 @@
 #include "common/constants.h"
 #include "rpc/detail/log.h"
 
+#define INVALID_DESCRIPT -1
+
 namespace shmemory_wrappers {
 
 const char * SharedMemoryManager::shm_name_sdlqueue = "/SHNAME_SDLQUEUE";
@@ -48,7 +50,7 @@ int SharedMemoryManager::ShmOpen(const std::string& shm_name,const int prot) {
   object_descrp & mem_obj = handles_[shm_name];
   mem_obj.object_handle_ = shm_open(shm_name.c_str(), O_RDWR | O_CREAT, 0777);
   
-  if(-1 == mem_obj.object_handle_) {
+  if(INVALID_DESCRIPT == mem_obj.object_handle_) {
       handles_.erase(shm_name);
       LOG_TRACE("Open failed: {}",strerror( errno ));
       return constants::error_codes::OPEN_FAILURE;
@@ -83,7 +85,7 @@ int SharedMemoryManager::ShmClose(const std::string& shm_name) {
 
     errno = 0;
     const int res = close(mem_obj.object_handle_);
-    if (-1 == res) {
+    if (INVALID_DESCRIPT == res) {
       LOG_TRACE("Error occurred: {}",strerror(errno));
       return errno;
     }
@@ -109,7 +111,7 @@ int SharedMemoryManager::ShmWrite(const std::string& shm_name, const std::string
       LOG_INFO("Handle found:{}",mem_obj.object_handle_);
       LOG_INFO("Map  mem_obj.object_data_ is 0x%08x {}",(long)mem_obj.object_data_);
       
-      mem_obj.object_data_->size_ = data.length() - 1;
+      mem_obj.object_data_->size_ = data.size() - 1;
       memset(mem_obj.object_data_->text_, 0, mem_obj.object_data_->size_);
       memcpy(mem_obj.object_data_->text_, &data[1], mem_obj.object_data_->size_);
       
@@ -142,7 +144,7 @@ int SharedMemoryManager::ShmUnlink(const std::string& shm_name) {
   LOG_INFO("{0}: {1}",__func__,shm_name);
   errno = 0;
   const int res = shm_unlink(shm_name.c_str());
-  if (-1 == res) {
+  if (INVALID_DESCRIPT == res) {
     LOG_TRACE("Error occurred: {}",strerror(errno));
     return errno;
   }
