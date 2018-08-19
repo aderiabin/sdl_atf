@@ -50,7 +50,7 @@ int SharedMemoryManager::ShmOpen(const std::string& shm_name,const int prot) {
   
   if(-1 == mem_obj.object_handle_) {
       handles_.erase(shm_name);
-      LOG_ERROR("Open failed: {}",strerror( errno ));
+      LOG_TRACE("Open failed: {}",strerror( errno ));
       return constants::error_codes::OPEN_FAILURE;
   }
   
@@ -59,7 +59,7 @@ int SharedMemoryManager::ShmOpen(const std::string& shm_name,const int prot) {
   mem_obj.object_data_ = (shmem_t*)mmap(0, sizeof(shmem_t), prot, MAP_SHARED,mem_obj.object_handle_, 0);
 
   if(MAP_FAILED == mem_obj.object_data_){
-      LOG_ERROR("mmap failed: {}",strerror( errno ));
+      LOG_TRACE("mmap failed: {}",strerror( errno ));
       ShmClose(shm_name);
       return constants::error_codes::OPEN_FAILURE;     
   }
@@ -84,7 +84,7 @@ int SharedMemoryManager::ShmClose(const std::string& shm_name) {
     errno = 0;
     const int res = close(mem_obj.object_handle_);
     if (-1 == res) {
-      LOG_ERROR("Error occurred: {}",strerror(errno));
+      LOG_TRACE("Error occurred: {}",strerror(errno));
       return errno;
     }
     
@@ -95,7 +95,7 @@ int SharedMemoryManager::ShmClose(const std::string& shm_name) {
     return constants::error_codes::SUCCESS;
   }
   
-  LOG_ERROR("Shared memory name: {} Not found",shm_name);
+  LOG_TRACE("Shared memory name: {} Not found",shm_name);
   
   return constants::error_codes::PATH_NOT_FOUND;
 }
@@ -116,7 +116,7 @@ int SharedMemoryManager::ShmWrite(const std::string& shm_name, const std::string
       return constants::error_codes::SUCCESS;
   }
   
-  LOG_ERROR("Shared memory name: {} Not found",shm_name);
+  LOG_TRACE("Shared memory name: {} Not found",shm_name);
   
   return constants::error_codes::PATH_NOT_FOUND;
 }
@@ -133,7 +133,7 @@ SharedMemoryManager::ReceiveResult SharedMemoryManager::ShmRead(const std::strin
       return std::make_pair(std::string(mem_obj.object_data_->text_,mem_obj.object_data_->size_),constants::error_codes::SUCCESS);
   }  
   
-  LOG_ERROR("Shared memory name : {} Not found",shm_name);  
+  LOG_TRACE("Shared memory name : {} Not found",shm_name);  
   
   return std::make_pair(std::string(), constants::error_codes::PATH_NOT_FOUND);
 }
@@ -143,7 +143,7 @@ int SharedMemoryManager::ShmUnlink(const std::string& shm_name) {
   errno = 0;
   const int res = shm_unlink(shm_name.c_str());
   if (-1 == res) {
-    LOG_ERROR("Error occurred: {}",strerror(errno));
+    LOG_TRACE("Error occurred: {}",strerror(errno));
     return errno;
   }
   LOG_INFO("Returning successful result");

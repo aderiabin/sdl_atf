@@ -53,7 +53,7 @@ int UtilsManager::StartApp(const std::string & app_path,const std::string & app_
 }
 
 int UtilsManager::StopApp(const std::string & app_name,const int sig){    
-    LOG_INFO("{0}: {}",__func__,app_name);    
+    LOG_INFO("{0}: {1}",__func__,app_name);    
     
     ArrayPid arr_pid = GetPidApp(app_name);
     bool is_all_killed = true;
@@ -191,7 +191,7 @@ std::string UtilsManager::GetFileContent(
     fseek(hfile, 0, SEEK_END);
 	unsigned long fileLen = ftell(hfile) - offset;
 	fseek(hfile, offset, SEEK_SET);
-    LOG_INFO("File offset: {0} rest size of the file: {}",offset,fileLen);
+    LOG_INFO("File offset: {0} rest size of the file: {1}",offset,fileLen);
     if(max_size_content){
         fileLen = max_size_content > fileLen ?
                             fileLen
@@ -293,7 +293,7 @@ int UtilsManager::FolderCreate(const std::string & folder_path){
 }
 
 UtilsManager::ReceiveResult UtilsManager::ExecuteCommand(const std::string & bash_command){
-    LOG_INFO("ExecuteCommand: {}",bash_command);
+    LOG_INFO("{0}: ExecuteCommand: {1}",__func__,bash_command);
     std::string command_output;
     char buffer[128] = {0};
     FILE* pipe = popen(bash_command.c_str(), "r");
