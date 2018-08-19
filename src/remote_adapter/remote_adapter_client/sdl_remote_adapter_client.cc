@@ -85,7 +85,7 @@ int SDLRemoteTestAdapterClient::open_with_params(const std::string& name,
 }
 
 int SDLRemoteTestAdapterClient::close(const std::string& name) try {
-  std::cout << "Close Mq " << name << " on remote host:" << std::endl;
+  LOG_INFO("{0}: {1}",__func__,name);
   if (connected()) {
     connection_.call(constants::mq_close, name);
     LOG_INFO("{0}: Exit with SUCCESS",__func__);
