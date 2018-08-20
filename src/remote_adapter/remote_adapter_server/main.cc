@@ -103,6 +103,9 @@ void segfault_sigaction(int sign, siginfo_t *si, void *arg){
 
 int main(int argc, char* argv[]) {
 
+  UtilsManager::StopApp("AppLinkService");
+  UtilsManager::StopApp("SmartDeviceLink");
+
 #ifdef __QNX__
   struct sigaction sa;
   memset(&sa, 0, sizeof(struct sigaction));
