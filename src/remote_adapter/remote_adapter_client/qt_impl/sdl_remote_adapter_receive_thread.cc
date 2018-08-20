@@ -18,7 +18,7 @@ SDLRemoteTestAdapterReceiveThread::~SDLRemoteTestAdapterReceiveThread() {
 }
 
 void SDLRemoteTestAdapterReceiveThread::run() {
-  while(constants::error_codes::NO_CONNECTION != client_->receive().second){ }
+  while(constants::error_codes::PATH_NOT_FOUND != client_->receive().second){ }
 }
 
 } // namespace lua_lib
