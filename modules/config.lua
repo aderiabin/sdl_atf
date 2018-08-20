@@ -85,7 +85,7 @@ config.pathToSDL = "/bin"
 --- Define path to SDL .INI file
 config.pathToSDLConfig = "/etc/AppLink"
 --- Define path to SDL Policy database
-config.pathToSDLPolicyDB = "/fs/tmpfs/policy"
+config.pathToSDLPolicyDB = "/pps/qnx/qdb/config/policy.db"
 --- Define path to SDL interfaces
 -- Example: "/home/user/sdl_panasonic/src/components/interfaces"
 config.pathToSDLInterfaces = ""
