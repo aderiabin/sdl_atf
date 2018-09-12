@@ -13,7 +13,7 @@ config.color = true
 --- Remote cofiguration
 config.remoteConnection = {}
 config.remoteConnection.enabled = true
-config.remoteConnection.url = "192.168.1.26"
+config.remoteConnection.url = "172.31.239.150"
 config.remoteConnection.port = 5555
 
 --- HMI configuration
@@ -62,7 +62,7 @@ config.controlMqConfig.flags = 257 -- O_WRONLY | O_CREAT
 config.controlMqConfig.mode = 1638 -- S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
 
 --- Define host for default mobile device connection
-config.mobileHost = "192.168.1.2"
+config.mobileHost = "172.31.239.131"
 --- Define port for default mobile device connection
 config.mobilePort = 12346
 --- Define timeout for Heartbeat in msec
@@ -92,7 +92,7 @@ config.pathToSDLInterfaces = ""
 --- Define SDL modification
 config.SDL = "SmartDeviceLink"
 --- Definehost for SDL logs
-config.sdl_logs_host = "192.168.1.26"
+config.sdl_logs_host = "172.31.239.150"
 --- Define port for SDL logs
 config.sdl_logs_port = 6676
 --- Flag which defines behavior of ATF on SDL crash

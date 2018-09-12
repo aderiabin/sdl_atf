@@ -51,6 +51,13 @@ function SDLUtils.addSlashToPath(pPath)
   return pPath
 end
 
+function SDLUtils.getPath(pPath)
+   if pPath:sub(1,1) ~= "/" then
+     pPath = config.pathToSDL .. pPath
+  end
+  return SDLUtils.addSlashToPath(pPath)
+end
+
 SDLUtils.BuildOptions = {}
 SDLUtils.BuildOptions.fileName = "build_config.txt"
 
@@ -72,6 +79,8 @@ end
 function SDLUtils.BuildOptions.set()
   -- Useless for now
 end
+
+
 
 SDLUtils.INI = {}
 SDLUtils.INI.fileName = "smartDeviceLink.ini"
@@ -100,13 +109,20 @@ end
 function SDLUtils.INI.set(pParam, pValue)
 end
 
+
+
 SDLUtils.LOG = {}
 
 function SDLUtils.LOG.get(pParam)
 end
 
 function SDLUtils.LOG.set(pParam, pValue)
-  local logFilePath = SDLUtils.INI.get("LoggerConfigFile")
+  local logFilePath
+  if isRemote then
+    logFilePath = SDLUtils.INI.get("LoggerConfigFile")
+  else
+    logFilePath = config.pathToSDLConfig .. "log4cxx.properties"
+  end
   local content = getFileContent(logFilePath)
   content = string.gsub(content, pParam .. "=.-\n", pParam .. "=" .. pValue .. "\n")
   saveFileContent(logFilePath, content)

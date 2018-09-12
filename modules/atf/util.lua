@@ -67,8 +67,8 @@ end
 -- Stop ATF execution in case any error
 local function check_required_fields()
   if not config.remoteConnection.enabled then
-    if (not is_file_exists(config.pathToSDL.."smartDeviceLinkCore")) and
-       (not is_file_exists(config.pathToSDL.."/smartDeviceLinkCore")) then
+    if (not is_file_exists(config.pathToSDL..config.SDL)) and
+       (not is_file_exists(config.pathToSDL.."/" .. config.SDL)) then
       print("ERROR: SDL is not accessible at the specified path: "..config.pathToSDL)
       os.exit(1)
     end
