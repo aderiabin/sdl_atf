@@ -358,10 +358,44 @@ end
 
 SDL.PTS = {}
 
+function SDL.PTS.file()
+  return SDL.addSlashToPath(SDL.INI.get("SystemFilesPath")) .. SDL.INI.get("PathToSnapshot")
+end
+
 function SDL.PTS.get()
-  local filePath = SDL.addSlashToPath(SDL.INI.get("SystemFilesPath")) .. SDL.INI.get("PathToSnapshot")
-  local content = getFileContent(filePath)
+  local content = getFileContent(SDL.PTS.file())
+  if content ~= nil then
+    return json.decode(content)
+  end
+  return nil
+end
+
+function SDL.PTS.clean()
+  deleteFile(SDL.PTS.file())
+end
+
+SDL.HMICap = {}
+
+function SDL.HMICap.file()
+  return config.pathToSDLConfig .. SDL.INI.get("HMICapabilities")
+end
+
+function SDL.HMICap.get()
+  local content = getFileContent(SDL.HMICap.file())
   return json.decode(content)
+end
+
+function SDL.HMICap.set(pHMICap)
+  local content = json.encode(pHMICap)
+  saveFileContent(SDL.HMICap.file(), content)
+end
+
+function SDL.HMICap.backup()
+  backup(SDL.HMICap.file())
+end
+
+function SDL.HMICap.restore()
+  restore(SDL.HMICap.file())
 end
 
 --- A global function for organizing execution delays (using the OS)
