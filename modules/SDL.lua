@@ -292,6 +292,78 @@ function SDL.PreloadedPT.restore()
   restore(SDL.PreloadedPT.file())
 end
 
+SDL.CRT = {}
+
+function SDL.CRT.get()
+end
+
+function SDL.CRT.set(pCrtsFileName, pIsModuleCrtDefined)
+  local ext = ".crt"
+  local function getAllCrtsFromPEM(pPemFileName)
+    local function readFile(pPath)
+      local open = io.open
+      local file = open(pPath, "rb")
+      if not file then return nil end
+      local content = file:read "*a"
+      file:close()
+      return content
+    end
+    local crts = readFile(pPemFileName)
+    local o = {}
+    local i = 1
+    local s = crts:find("-----BEGIN RSA PRIVATE KEY-----", i, true)
+    local _, e = crts:find("-----END RSA PRIVATE KEY-----", i, true)
+    o.key = crts:sub(s, e) .. "\n"
+    for _, v in pairs({ "crt", "rootCA", "issuingCA" }) do
+      i = e
+      s = crts:find("-----BEGIN CERTIFICATE-----", i, true)
+      _, e = crts:find("-----END CERTIFICATE-----", i, true)
+      o[v] = crts:sub(s, e) .. "\n"
+    end
+    return o
+  end
+  local function createCrtHash(pCrtFilePath)
+    local p, n = getPathAndName(pCrtFilePath)
+    ATF.remoteUtils.app:ExecuteCommand("cd " .. p
+      .. " && openssl x509 -in " .. n
+      .. " -hash -noout | awk '{print $0\".0\"}' | xargs ln -sf " .. n)
+  end
+  if pIsModuleCrtDefined == nil then pIsModuleCrtDefined = true end
+  local allCrts = getAllCrtsFromPEM(pCrtsFileName)
+  local crtPath = SDL.addSlashToPath(SDL.INI.get("CACertificatePath"))
+  for _, v in pairs({ "rootCA", "issuingCA" }) do
+    saveFileContent(crtPath .. v .. ext, allCrts[v])
+    createCrtHash(crtPath .. v .. ext)
+  end
+  if pIsModuleCrtDefined then
+    saveFileContent(crtPath .. "module_key" .. ext, allCrts.key)
+    saveFileContent(crtPath .. "module_crt" .. ext, allCrts.crt)
+  end
+  SDL.INI.set("KeyPath", crtPath .. "module_key" .. ext)
+  SDL.INI.set("CertificatePath", crtPath .. "module_crt" .. ext)
+end
+
+function SDL.CRT.clean()
+  local ext = ".crt"
+  local func
+  if config.remoteConnection.enabled then
+    func = function(...) ATF.remoteUtils.app:ExecuteCommand(...) end
+  else
+    func = os.execute
+  end
+  local crtPath = SDL.addSlashToPath(SDL.INI.get("CACertificatePath"))
+  func("cd " .. crtPath .. " && find . -type l -not -name 'lib*' -exec rm -f {} \\;")
+  func("cd " .. crtPath .. " && rm -rf *" .. ext)
+end
+
+SDL.PTS = {}
+
+function SDL.PTS.get()
+  local filePath = SDL.addSlashToPath(SDL.INI.get("SystemFilesPath")) .. SDL.INI.get("PathToSnapshot")
+  local content = getFileContent(filePath)
+  return json.decode(content)
+end
+
 --- A global function for organizing execution delays (using the OS)
 -- @tparam number n The delay in ms
 function sleep(n)
