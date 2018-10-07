@@ -15,7 +15,6 @@ local util = require ("atf.util")
 local remote_constants = require('modules/remote/remote_constants')
 local ATF = require("ATF")
 local json = require("modules/json")
-require('atf.util')
 
 --[[ Module ]]
 local SDL = { }
@@ -124,7 +123,7 @@ local function setParamValue(pContent, pParam, pValue)
     end
     out = out .. line .. "\n"
   end
-  return out:sub(1, -2)
+  return out
 end
 
 local function backup(pFilePath)
@@ -398,6 +397,70 @@ function SDL.HMICap.restore()
   restore(SDL.HMICap.file())
 end
 
+SDL.PolicyDB = {}
+
+function SDL.PolicyDB.clean()
+  deleteFile(config.pathToSDLPolicyDB)
+  if config.remoteConnection.enabled then
+    ATF.remoteUtils.app:ExecuteCommand("rm -rf /fs/tmpfs/*")
+    ATF.remoteUtils.app:ExecuteCommand("rm -rf /fs/rwdata/storage/sdl/.policy.db.")
+  end
+  deleteFile(SDL.addSlashToPath(SDL.INI.get("AppStorageFolder")) .. SDL.INI.get("AppInfoStorage"))
+end
+
+SDL.Log = {}
+
+function SDL.Log.clean()
+  if config.remoteConnection.enabled then
+    local filePath = SDL.addSlashToPath(SDL.INI.get("TargetLogFileHomeDir"))
+    local filePtrn = SDL.INI.get("TargetLogFileNamePattern")
+    ATF.remoteUtils.app:ExecuteCommand("rm -rf " ..  filePath .. "*" .. filePtrn)
+  else
+    os.execute("rm -rf " .. config.pathToSDL .. "*.log")
+  end
+end
+
+SDL.AppStorage = {}
+
+function SDL.AppStorage.path()
+  local filePath = SDL.INI.get("AppStorageFolder")
+  if string.len(filePath) > 0 then
+    if string.sub(filePath, 1, 1) == "/" then
+      return SDL.addSlashToPath(filePath)
+    else
+      return SDL.addSlashToPath(config.pathToSDL .. filePath)
+    end
+  end
+  return config.pathToSDL
+end
+
+function SDL.AppStorage.isFileExist(pFile)
+  pFile = SDL.AppStorage.path() .. pFile
+  if config.remoteConnection.enabled then
+    local p, n = getPathAndName(pFile)
+    local _, isExist = ATF.remoteUtils.file:IsFileExists(p, n)
+    return isExist
+  else
+    local file = io.open(pFile, "r")
+    if file == nil then
+      return false
+    else
+      file:close()
+      return true
+    end
+  end
+end
+
+function SDL.AppStorage.clean()
+  local func
+  if config.remoteConnection.enabled then
+    func = function(...) ATF.remoteUtils.app:ExecuteCommand(...) end
+  else
+    func = os.execute
+  end
+  func(" rm -rf " .. SDL.AppStorage.path() .. "*")
+end
+
 --- A global function for organizing execution delays (using the OS)
 -- @tparam number n The delay in ms
 function sleep(n)
@@ -464,6 +527,47 @@ function SDL:StopSDL()
     sdl_logger.close()
   end
   sleep(1)
+end
+
+function SDL.ForceStopSDL()
+  if config.remoteConnection.enabled then
+    ATF.remoteUtils.app:StopApp(config.SDL)
+  else
+    os.execute("ps aux | grep ./" .. config.SDL .. " | awk '{print $2}' | xargs kill -9")
+  end
+  sleep(1)
+end
+
+function SDL.WaitForSDLStart(test)
+  local expectations = require('expectations')
+  local events = require('events')
+  local step = 100
+  local event = events.Event()
+  event.matches = function(e1, e2) return e1 == e2 end
+  local function raise_event()
+    local output
+    if config.remoteConnection.enabled then
+      local res, state = ATF.remoteUtils.app:CheckAppStatus(config.SDL)
+      if not res then
+        error("RemoteUtils.app unable to get status of application: " .. config.SDL)
+      end
+      output = state == 1 and true or false
+    else
+      local hmiPort = config.hmiAdapterConfig.WebSocket.port
+      output = os.execute ("netstat -vatn  | grep " .. hmiPort .. " | grep LISTEN")
+    end
+    if output then
+      RAISE_EVENT(event, event)
+    else
+      RUN_AFTER(raise_event, step)
+    end
+  end
+  RUN_AFTER(raise_event, step)
+  local ret = expectations.Expectation("Wait for SDL start", test.mobileConnection)
+  ret.event = event
+  event_dispatcher:AddEvent(test.mobileConnection, ret.event, ret)
+  test:AddExpectation(ret)
+  return ret
 end
 
 --- SDL status check
