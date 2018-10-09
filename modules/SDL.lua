@@ -131,10 +131,28 @@ local function backup(pFilePath)
   saveFileContent(pFilePath .. "_origin", content)
 end
 
+local function isFileExist(pFile)
+   if config.remoteConnection.enabled then
+    local p, n = getPathAndName(pFile)
+    local _, isExist = ATF.remoteUtils.file:IsFileExists(p, n)
+    return isExist
+  else
+    local file = io.open(pFile, "r")
+    if file == nil then
+      return false
+    else
+      file:close()
+      return true
+    end
+  end
+end
+
 local function restore(pFilePath)
-  local content = getFileContent(pFilePath .. "_origin")
-  saveFileContent(pFilePath, content)
-  deleteFile(pFilePath .. "_origin")
+  if isFileExist(pFilePath .. "_origin") then
+    local content = getFileContent(pFilePath .. "_origin")
+    saveFileContent(pFilePath, content)
+    deleteFile(pFilePath .. "_origin")
+  end
 end
 
 --- Structure of SDL build options what to be set
