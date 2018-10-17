@@ -60,6 +60,7 @@ install(
   DIRECTORY
   "${CMAKE_SOURCE_DIR}/modules"
   "${CMAKE_SOURCE_DIR}/data"
+  "${CMAKE_SOURCE_DIR}/tools"
   DESTINATION "${CMAKE_INSTALL_PREFIX}"
   COMPONENT sdl_atf
 )
