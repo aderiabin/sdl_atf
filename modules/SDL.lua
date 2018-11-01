@@ -116,10 +116,19 @@ end
 
 local function setParamValue(pContent, pParam, pValue)
   local out = ""
+  local find = false
   for line in pContent:gmatch("[^\r\n]+") do
+    if string.match(line, "[; ]*".. pParam ..".*=.*") ~= nil then
+        line = pParam .." = \n"
+    end
     local ptrn = "^%s*".. pParam .. "%s*=.*"
     if string.find(line, ptrn) then
-      line = string.gsub(line, ptrn, pParam .. "=" .. tostring(pValue))
+      if not find then
+        line = string.gsub(line, ptrn, pParam .. "=" .. tostring(pValue))
+        find = true
+      else
+        line  = ";" .. line
+      end
     end
     out = out .. line .. "\n"
   end
@@ -469,14 +478,20 @@ function SDL.AppStorage.isFileExist(pFile)
   end
 end
 
-function SDL.AppStorage.clean()
+function SDL.AppStorage.clean(ppath)
   local func
+  local path
+  if ppath == nil then
+    path = "*"
+  else
+    path = ppath
+  end
   if config.remoteConnection.enabled then
     func = function(...) ATF.remoteUtils.app:ExecuteCommand(...) end
   else
     func = os.execute
   end
-  func(" rm -rf " .. SDL.AppStorage.path() .. "*")
+  func(" rm -rf " .. SDL.AppStorage.path() .. path)
 end
 
 --- A global function for organizing execution delays (using the OS)
