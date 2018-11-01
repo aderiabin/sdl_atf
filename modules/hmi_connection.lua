@@ -47,7 +47,8 @@ function HmiConnection.mt.__index:SendRequest(methodName, params)
   data.id = self.requestId
   data.method = methodName
   data.params = params
-  self:Send(data)
+  local text = json.encode(data)
+  self:Send(text)
   xmlReporter.AddMessage("hmi_connection",{["RequestId"] = tostring(self.requestId),["Type"] = "SendRequest"},{ ["methodName"] = methodName,["params"]=params } )
   return self.requestId
 end
@@ -61,7 +62,8 @@ function HmiConnection.mt.__index:SendNotification(methodName, params)
   data.method = methodName
   data.jsonrpc = "2.0"
   data.params = params
-  self:Send(data)
+  local text = json.encode(data)
+  self:Send(text)
 end
 
 --- Send normal response message from HMI to SDL
@@ -84,7 +86,8 @@ function HmiConnection.mt.__index:SendResponse(id, methodName, code, params)
       data.result[k] = v
     end
   end
-  self:Send(data)
+  local text = json.encode(data)
+  self:Send(text)
 end
 
 --- Send error response message from HMI to SDL
@@ -102,7 +105,8 @@ function HmiConnection.mt.__index:SendError(id, methodName, code, errorMessage)
   data.error.data.method = methodName
   data.error.code = resultCodes[code]
   data.error.message = errorMessage
-  self:Send(data)
+  local text = json.encode(data)
+  self:Send(text)
 end
 
 --- Set handler for OnInputData
@@ -136,7 +140,7 @@ end
 function HmiConnection.Connection(connection)
   local res = { }
   res.connection = connection
-  res.requestId = 10000
+  res.requestId = 1000
   setmetatable(res, HmiConnection.mt)
   return res
 end
