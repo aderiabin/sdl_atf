@@ -9,7 +9,6 @@
 #include "rpc/server.h"
 #include "rpc/this_handler.h"
 
-#include "mqueue_manager.h"
 #include "utils_manager.h"
 #include "common/constants.h"
 
@@ -49,16 +48,16 @@ void CheckError(const int res) {
   std::string stringified_error;
   switch (res) {
     case constants::error_codes::PATH_NOT_FOUND:
-      stringified_error = "Mqueue not found";
+      stringified_error = "Connection not found";
       break;
     case constants::error_codes::READ_FAILURE:
-      stringified_error = "Mqueue reading failure";
+      stringified_error = "Reading failure";
       break;
     case constants::error_codes::WRITE_FAILURE:
-      stringified_error = "Mqueue writing failure";
+      stringified_error = "Writing failure";
       break;
     case constants::error_codes::CLOSE_FAILURE:
-      stringified_error = "Mqueue closing failure";
+      stringified_error = "Closing failure";
       break;
     case constants::error_codes::ALREADY_EXISTS:
       stringified_error = "Channel already exists";
@@ -133,76 +132,9 @@ int main(int argc, char* argv[]) {
   }
   std::cout << "Listen on " << port << std::endl;
   try {
-    rpc::server srv(port);
-
-    mq_wrappers::MQueueManager mq_manager;
-
-    srv.bind(constants::client_connected,
-             []() {
-               std::cout << "Hello" << std::endl;
-               std::cout << "Client connected" << std::endl;
-             });
-
-    srv.bind(constants::mq_open,
-             [&mq_manager](std::string path) {
-               const int res = mq_manager.MqOpen(path);
-               CheckError(res);
-             });
-
-    srv.bind(constants::mq_open_with_params,
-             [&mq_manager](std::string path,
-                           const int max_messages_number,
-                           const int max_message_size,
-                           const int flags,
-                           const int mode) {
-               const int res = mq_manager.MqOpenWithParams(
-                   path, max_messages_number, max_message_size, flags, mode);
-               CheckError(res);
-             });
-
-    srv.bind(constants::mq_close,
-             [&mq_manager](std::string path) {
-               const int res = mq_manager.MqClose(path);
-               CheckError(res);
-             });
-
-    srv.bind(constants::mq_unlink,
-             [&mq_manager](std::string path) {
-               const int res = mq_manager.MqUnlink(path);
-               CheckError(res);
-             });
-
-    srv.bind(constants::mq_send,
-             [&mq_manager](std::string path, std::string data) {
-               const int res = mq_manager.MqSend(path, data);
-               CheckError(res);
-             });
-
-    srv.bind(constants::mq_receive,
-             [&mq_manager](std::string path) -> std::pair<std::string, int> {
-               const auto receive_result = mq_manager.MqReceive(path);
-               return receive_result;
-             });
-
-    srv.bind(constants::mq_clear,
-             [&mq_manager]() {
-               const auto res = mq_manager.MqClear();
-               CheckError(res);
-             });
-
-    srv.bind(constants::shm_open,
-             [&mq_manager](std::string shm_name,
-                           const int prot){
-               const int res = mq_manager.ShmOpen(shm_name,prot);
-               CheckError(res);
-             });
-
-    srv.bind(constants::shm_close,
-             [&mq_manager](std::string shm_name){
-               const int res = mq_manager.ShmClose(shm_name);
-               CheckError(res);
-             });
-
+    
+    rpc::server srv(port);    
+    
     srv.bind(constants::app_start,
              [](std::string app_path,std::string app_name){
                const int res = UtilsManager::StartApp(
