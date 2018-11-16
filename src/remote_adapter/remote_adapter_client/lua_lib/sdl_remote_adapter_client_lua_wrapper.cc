@@ -57,14 +57,7 @@ int SDLRemoteClientLuaWrapper::destroy_SDLRemoteMqClient(lua_State* L) {
 
 void SDLRemoteClientLuaWrapper::registerSDLRemoteMqClient(lua_State* L) {
   static const luaL_Reg SDLRemoteMqClientFunctions[] = {
-      {"connected", SDLRemoteClientLuaWrapper::lua_connected},
-      {"open", SDLRemoteClientLuaWrapper::lua_open},
-      {"open_with_params", SDLRemoteClientLuaWrapper::lua_open_with_params},
-      {"send", SDLRemoteClientLuaWrapper::lua_send},
-      {"receive", SDLRemoteClientLuaWrapper::lua_receive},
-      {"close", SDLRemoteClientLuaWrapper::lua_close},
-      {"unlink", SDLRemoteClientLuaWrapper::lua_unlink},
-      {"clear", SDLRemoteClientLuaWrapper::lua_clear},
+      {"connected", SDLRemoteClientLuaWrapper::lua_connected},  
       {"app_start", SDLRemoteClientLuaWrapper::lua_app_start},
       {"app_stop", SDLRemoteClientLuaWrapper::lua_app_stop},
       {"app_check_status", SDLRemoteClientLuaWrapper::lua_app_check_status},
@@ -78,6 +71,10 @@ void SDLRemoteClientLuaWrapper::registerSDLRemoteMqClient(lua_State* L) {
       {"folder_exists", SDLRemoteClientLuaWrapper::lua_folder_exists},
       {"folder_create", SDLRemoteClientLuaWrapper::lua_folder_create},
       {"folder_delete", SDLRemoteClientLuaWrapper::lua_folder_delete},
+      {"tcp_open", SDLRemoteClientLuaWrapper::lua_tcp_open},
+      {"tcp_close", SDLRemoteClientLuaWrapper::lua_tcp_close},
+      {"tcp_send", SDLRemoteClientLuaWrapper::lua_tcp_send},
+      {"tcp_receive", SDLRemoteClientLuaWrapper::lua_tcp_receive},
       {NULL, NULL}
     };
 
@@ -133,91 +130,63 @@ int SDLRemoteClientLuaWrapper::lua_connected(lua_State* L) {
   return 1;
 }
 
-int SDLRemoteClientLuaWrapper::lua_open(lua_State* L){
-  // Index -1(top) - string mq name
-  // Index -2 - userdata instance
+int SDLRemoteClientLuaWrapper::lua_tcp_open(lua_State* L){
+  // Index -1 - port
+  // Index -2 - address
 
   auto instance = get_instance(L);
-  auto name = lua_tostring(L, -1);
-  int result = instance->open(name);
+  auto address = lua_tostring(L, -2);
+  auto port = lua_tointeger(L, -1);
+  
+  int result = instance->tcp_open(
+      address,port);
   lua_pushinteger(L, result);
-  return 1;
+  return 1;  
 }
 
-int SDLRemoteClientLuaWrapper::lua_open_with_params(lua_State* L) {
-  // Index -1(top) - number mode
-  // Index -2 - number flags
-  // Index -3 - number max_message_size
-  // Index -4 - number max_messages_number
-  // Index -5 - string name
-  // Index -6 - userdata instance
+int SDLRemoteClientLuaWrapper::lua_tcp_close(lua_State* L){  
+  // Index -1 - port
+  // Index -2 - address  
 
   auto instance = get_instance(L);
-  auto name = lua_tostring(L, -5);
-  auto max_messages_number = lua_tointeger(L, -4);
-  auto max_message_size = lua_tointeger(L, -3);
-  auto flags = lua_tointeger(L, -2);
-  auto mode = lua_tointeger(L, -1);
-  int result = instance->open_with_params(
-      name, max_messages_number, max_message_size, flags, mode);
+  auto address = lua_tostring(L, -2);
+  auto port = lua_tointeger(L, -1); 
+  
+  int result = instance->tcp_close(
+      address,port);
   lua_pushinteger(L, result);
-  return 1;
+  return 1;  
 }
 
-int SDLRemoteClientLuaWrapper::lua_send(lua_State* L) {
-  // Index -1(top) - string data
-  // Index -2 - string mq name
-  // Index -3 - userdata instance
+int SDLRemoteClientLuaWrapper::lua_tcp_send(lua_State* L){
+  // Index -1(top) - data
+  // Index -2 - port
+  // Index -3 - address  
 
   auto instance = get_instance(L);
-  auto name = lua_tostring(L, -2);
-  auto data = lua_tostring(L, -1);
-  int result = instance->send(name, data);
+  auto address = lua_tostring(L, -3);
+  auto port = lua_tointeger(L, -2);
+  auto data = lua_tostring(L, -1);  
+  
+  int result = instance->tcp_send(
+      address,port,data);
   lua_pushinteger(L, result);
-  return 1;
+  return 1;  
 }
 
-int SDLRemoteClientLuaWrapper::lua_receive(lua_State* L) {
-  // Index -1(top) - string mq name
-  // Index -2 - userdata instance
+int SDLRemoteClientLuaWrapper::lua_tcp_receive(lua_State* L){
+   // Index -1 - port
+  // Index -2 - address  
 
   auto instance = get_instance(L);
-  auto name = lua_tostring(L, -1);
-  const auto data_and_error = instance->receive(name);
+  auto address = lua_tostring(L, -2);
+  auto port = lua_tointeger(L, -1); 
+  
+  const auto data_and_error = instance->tcp_receive(
+             address,port);
   lua_pushinteger(L, data_and_error.second);
   lua_pushstring(L, data_and_error.first.c_str());
   return 2;
-}
-
-int SDLRemoteClientLuaWrapper::lua_close(lua_State* L) {
-  // Index -1(top) - string mq name
-  // Index -2 - userdata instance
-
-  auto instance = get_instance(L);
-  auto name = lua_tostring(L, -1);
-  int result = instance->close(name);
-  lua_pushinteger(L, result);
-  return 1;
-}
-
-int SDLRemoteClientLuaWrapper::lua_unlink(lua_State* L) {
-  // Index -1(top) - string mq name
-  // Index -2 - userdata instance
-
-  auto instance = get_instance(L);
-  auto name = lua_tostring(L, -1);
-  int result = instance->unlink(name);
-  lua_pushinteger(L, result);
-  return 1;
-}
-
-int SDLRemoteClientLuaWrapper::lua_clear(lua_State* L) {
-  // Index -1(top) - userdata instance
-
-  auto instance = get_instance(L);
-  int result = instance->clear();
-  lua_pushinteger(L, result);
-  return 1;
 }
 
 int SDLRemoteClientLuaWrapper::lua_app_start(lua_State* L) {

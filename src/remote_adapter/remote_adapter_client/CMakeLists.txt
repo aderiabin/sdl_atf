@@ -53,7 +53,6 @@ set(DEP_SOURCES
 add_library(${PROJECT_NAME} SHARED
                  sdl_remote_adapter_client.cc
                  qt_impl/sdl_remote_adapter_qt_client.cc
-                 qt_impl/sdl_remote_adapter_receive_thread.cc
                  lua_lib/sdl_remote_adapter_client_lua_wrapper.cc
                  qt_impl/lua_lib/sdl_remote_adapter_qt_client_lua_wrapper.cc
                  lua_lib/lua_remote_library.cc

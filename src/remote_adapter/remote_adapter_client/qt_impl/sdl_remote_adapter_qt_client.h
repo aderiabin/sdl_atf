@@ -6,22 +6,15 @@
 #include <utility>
 #include <memory>
 #include <vector>
+#include <thread>
+#include <future>
 
 #include "sdl_remote_adapter_client.h"
 
 namespace lua_lib {
-
-struct MqParams {
-  const std::string name;
-  const int max_messages_number;
-  const int max_message_size;
-  const int flags;
-  const int mode;
-};
-
-struct ShmParams {
-  const std::string name;
-  const int prot;
+struct TCPParams{
+  const std::string host;
+  const int port;
 };
 
 class SDLRemoteTestAdapterReceiveThread;
@@ -30,18 +23,16 @@ class SDLRemoteTestAdapterQtClient : public QObject {
 Q_OBJECT
 
 public:
-  SDLRemoteTestAdapterQtClient(SDLRemoteTestAdapterClient* client_ptr,
-                               MqParams& in_params,
-                               MqParams& out_params,
-                               std::vector<ShmParams>& shm_params_vector,
-                               QObject* parent = Q_NULLPTR);
+  SDLRemoteTestAdapterQtClient(SDLRemoteTestAdapterClient* client_ptr
+                               ,TCPParams& tcp_params
+                               ,QObject* parent = Q_NULLPTR);
 
   ~SDLRemoteTestAdapterQtClient();
 
   /**
   * @brief Connect client to server and open queue with custom parameters
   */
-  void connectMq();
+  void connect();
 
   /**
   * @brief Sends data to mqueue opened by server
@@ -66,24 +57,16 @@ signals:
 
 private:
   /**
-  * @brief Sends open mqueue parametrized request to server
-  * @param params mqueue parameters for mqueue which should be opened by server
-  * @return 0 in successful case, 1 - if client is not connected,
-  * 2 - in case of exception
-  */
-  int openWithParams(MqParams& params);
-
-  /**
   * @brief Perform actions in case underlying client is disconnected
   */
   void connectionLost();
 
   bool isconnected_ = false;
-  MqParams in_mq_params_;
-  MqParams out_mq_params_;
-  std::vector<ShmParams> shm_params_vector_;
+  TCPParams tcp_params_;
   SDLRemoteTestAdapterClient* remote_adapter_client_ptr_;
-  std::unique_ptr<SDLRemoteTestAdapterReceiveThread> listener_ptr_;
+  std::unique_ptr<std::thread> listener_ptr_;
+  std::promise<void> exitSignal_;
+  std::future<void> future_;
 };
 
 } // namespace lua_lib

@@ -1,130 +1,89 @@
 #include <iostream>
 
 #include "qt_impl/sdl_remote_adapter_qt_client.h"
-#include "qt_impl/sdl_remote_adapter_receive_thread.h"
 #include "common/constants.h"
+#include "rpc/detail/log.h"
 
 namespace lua_lib {
 
+namespace error_codes = constants::error_codes;
+
 SDLRemoteTestAdapterQtClient::SDLRemoteTestAdapterQtClient(
-            SDLRemoteTestAdapterClient* client_ptr,
-            MqParams& in_params,
-            MqParams& out_params,
-            std::vector<ShmParams>& shm_params_vector,
-            QObject* parent)
-        : QObject(parent),
-          in_mq_params_(in_params),
-          out_mq_params_(out_params),
-          shm_params_vector_(shm_params_vector) {
+            SDLRemoteTestAdapterClient* client_ptr
+            ,TCPParams& in_params
+            ,QObject* parent)
+        : QObject(parent)
+         ,tcp_params_(in_params)
+{
+    LOG_INFO("{0}",__func__);
     remote_adapter_client_ptr_ = client_ptr;
+    future_ = exitSignal_.get_future();
 }
 
 SDLRemoteTestAdapterQtClient::~SDLRemoteTestAdapterQtClient() {
-  if (isconnected_) {
-    for (int i = 0; i < shm_params_vector_.size(); ++i) {
-      remote_adapter_client_ptr_->shm_close(shm_params_vector_[i].name);
-    }
-
-    remote_adapter_client_ptr_->close(in_mq_params_.name);
-    remote_adapter_client_ptr_->unlink(in_mq_params_.name);
-    remote_adapter_client_ptr_->close(out_mq_params_.name);
-    remote_adapter_client_ptr_->unlink(out_mq_params_.name);
+  LOG_INFO("{0}",__func__);
+  if (isconnected_) {    
+    exitSignal_.set_value();
+    remote_adapter_client_ptr_->tcp_close(tcp_params_.host,tcp_params_.port);    
   }
 }
 
-void SDLRemoteTestAdapterQtClient::connectMq() {
+void SDLRemoteTestAdapterQtClient::connect() {
+  LOG_INFO("{0}",__func__);
   if (isconnected_) {
-    std::cout << "Mq is already connected" << std::endl;
+    LOG_INFO("{0} Is already connected",__func__);
     return;
   }
 
+  int result = remote_adapter_client_ptr_->tcp_open(tcp_params_.host,tcp_params_.port);    
 
-
-  int in_open_result = openWithParams(in_mq_params_);
-  int out_open_result = openWithParams(out_mq_params_);
-
-  bool is_open_success = constants::error_codes::SUCCESS == in_open_result
-        && constants::error_codes::SUCCESS == out_open_result;
-
-  int shm_opened_count = 0;
-  if (is_open_success) {
-    for (int i = 0; i < shm_params_vector_.size(); ++i) {
-      int shm_open_result =
-          remote_adapter_client_ptr_->shm_open(shm_params_vector_[i].name,
-                                               shm_params_vector_[i].prot);
-      if (constants::error_codes::SUCCESS == shm_open_result) {
-        shm_opened_count++;
-      } else {
-        is_open_success = false;
-        break;
-      }
-    }
-  }
-
-  if (is_open_success) {
+  if (error_codes::SUCCESS == result) {
     try {
-      listener_ptr_.reset(new SDLRemoteTestAdapterReceiveThread(this));
       isconnected_ = true;
-      emit connected();
-      listener_ptr_->start();
+      emit connected();   
+      auto & future = future_;
+      listener_ptr_.reset(new std::thread(
+           [this,&future]
+            {               	
+                while (future.wait_for(std::chrono::milliseconds(1)) == std::future_status::timeout){                    
+                    this->receive();
+                }
+            }
+          ));         
     } catch (std::exception& e) {
-      std::cout << "Exception occurred: " << e.what() << std::endl;
-    }
-  } else {
-    if (constants::error_codes::SUCCESS == in_open_result) {
-      remote_adapter_client_ptr_->close(in_mq_params_.name);
-      remote_adapter_client_ptr_->unlink(in_mq_params_.name);
-    }
-
-    if (constants::error_codes::SUCCESS == out_open_result) {
-      remote_adapter_client_ptr_->close(out_mq_params_.name);
-      remote_adapter_client_ptr_->unlink(out_mq_params_.name);
-    }
-
-    for (int i = 0; i < shm_opened_count; ++i) {
-      remote_adapter_client_ptr_->shm_close(shm_params_vector_[i].name);
+      LOG_ERROR("{0}: Exception occurred: {1} ",__func__,e.what());
     }
   }
 }
 
 int SDLRemoteTestAdapterQtClient::send(const std::string& data) {
   if (isconnected_) {
-    int result = remote_adapter_client_ptr_->send(out_mq_params_.name, data);
-    if (constants::error_codes::SUCCESS == result) {
+    int result = remote_adapter_client_ptr_->tcp_send(tcp_params_.host,tcp_params_.port,data);
+    if(error_codes::SUCCESS == result) {
       emit bytesWritten(data.length());
-    }
-    else if (constants::error_codes::NO_CONNECTION == result) {
+    }else if(error_codes::NO_CONNECTION == result) {
         connectionLost();
     }
     return result;
-  }
-  std::cout << "Mq was not connected" << std::endl;
-  return constants::error_codes::NO_CONNECTION;
+  }  
+  LOG_ERROR("{0}: Websocket was not connected",__func__);
+  return error_codes::NO_CONNECTION;
 }
 
 std::pair<std::string, int> SDLRemoteTestAdapterQtClient::receive() {
   if (isconnected_) {
     std::pair<std::string, int> result =
-          remote_adapter_client_ptr_->receive(in_mq_params_.name);
-    if (constants::error_codes::SUCCESS == result.second) {
+          remote_adapter_client_ptr_->tcp_receive(tcp_params_.host,tcp_params_.port);
+    if(error_codes::SUCCESS == result.second) {
       QString receivedData(result.first.c_str());
       emit textMessageReceived(receivedData);
-    }
-    else if (constants::error_codes::NO_CONNECTION == result.second) {
+    }else if(error_codes::NO_CONNECTION == result.second) {
         connectionLost();
     }
     return result;
   }
-  std::cout << "Mq was not connected" << std::endl;
-  return std::make_pair(std::string(), constants::error_codes::NO_CONNECTION);
-}
-
-int SDLRemoteTestAdapterQtClient::openWithParams(MqParams& params) {
-  return remote_adapter_client_ptr_->open_with_params(params.name,
-                                                      params.max_messages_number,
-                                                      params.max_message_size,
-                                                      params.flags,
-                                                      params.mode);
+  LOG_ERROR("{0}: Websocket was not connected",__func__);
+  return std::make_pair(std::string(),error_codes::NO_CONNECTION);
 }
 
 void SDLRemoteTestAdapterQtClient::connectionLost() {

@@ -35,10 +35,10 @@ bool SDLRemoteTestAdapterClient::connected() const {
   return false;
 }
 
-int SDLRemoteTestAdapterClient::open(const std::string& name) try {
-  LOG_INFO("{0} Mq: {1} on remote host",__func__,name);
+int SDLRemoteTestAdapterClient::tcp_open(const std::string& address,uint32_t port) try {
+  LOG_INFO("{0} adress: {1} port: {2} on remote host",__func__,address,port);
   if (connected()) {
-    connection_.call(constants::mq_open, name);
+    connection_.call(constants::tcp_open,address,port);
     LOG_INFO("{0}: Exit with SUCCESS",__func__); 
     return constants::error_codes::SUCCESS;
   }
@@ -50,29 +50,10 @@ int SDLRemoteTestAdapterClient::open(const std::string& name) try {
   return handleRpcTimeout(t);
 }
 
-int SDLRemoteTestAdapterClient::open_with_params(const std::string& name,
-                                                 const int max_messages_number,
-                                                 const int max_message_size,
-                                                 const int flags,
-                                                 const int mode) try {
-  LOG_INFO("{0}: Mq: {1} on remote host with next parameters:"
-           "\nmax_messages_number: {2}"
-           "\nmax_message_size: {3}"
-           "\nflags: {4}"
-           "\nmode: {5}"
-           ,__func__
-           ,name
-           ,max_messages_number
-           ,max_message_size
-           ,flags
-           ,mode);
+int SDLRemoteTestAdapterClient::tcp_close(const std::string& address,uint32_t port) try {
+  LOG_INFO("{0} adress: {1} port: {2} on remote host",__func__,address,port);
   if (connected()) {
-    connection_.call(constants::mq_open_with_params,
-                     name,
-                     max_messages_number,
-                     max_message_size,
-                     flags,
-                     mode);
+    connection_.call(constants::tcp_close,address,port);
     LOG_INFO("{0}: Exit with SUCCESS",__func__); 
     return constants::error_codes::SUCCESS;
   }
@@ -84,25 +65,15 @@ int SDLRemoteTestAdapterClient::open_with_params(const std::string& name,
   return handleRpcTimeout(t);
 }
 
-int SDLRemoteTestAdapterClient::close(const std::string& name) try {
-  LOG_INFO("{0}: {1}",__func__,name);
+int SDLRemoteTestAdapterClient::tcp_send(
+  const std::string& address,uint32_t port,const std::string& data) try {
+  LOG_INFO("{0}: data to websocket address: {1} port: {2} \ndata: {3}"
+          ,__func__
+          ,address
+          ,port
+          ,data);
   if (connected()) {
-    connection_.call(constants::mq_close, name);
-    LOG_INFO("{0}: Exit with SUCCESS",__func__);
-    return constants::error_codes::SUCCESS;
-  }
-  LOG_ERROR("No connection");
-  return constants::error_codes::NO_CONNECTION;
-} catch (rpc::rpc_error& e) {
-  return handleRpcError(e);
-} catch (rpc::timeout &t) {
-  return handleRpcTimeout(t);
-}
-
-int SDLRemoteTestAdapterClient::unlink(const std::string& name) try {
-  LOG_INFO("{0}: Mq: {1}  on remote host",__func__,name);
-  if (connected()) {
-    connection_.call(constants::mq_unlink, name);
+    connection_.call(constants::tcp_send,address,port,data); 
     LOG_INFO("{0}: Exit with SUCCESS",__func__);    
     return constants::error_codes::SUCCESS;
   }
@@ -114,29 +85,18 @@ int SDLRemoteTestAdapterClient::unlink(const std::string& name) try {
   return handleRpcTimeout(t);
 }
 
-int SDLRemoteTestAdapterClient::clear() try {
-  LOG_INFO("{0}: Close all Mq handled by server on remote host");
-  if (connected()) {
-    connection_.call(constants::mq_clear); 
-    LOG_INFO("{0}: Exit with SUCCESS",__func__);   
-    return constants::error_codes::SUCCESS;
-  }
-  LOG_ERROR("No connection");
-  return constants::error_codes::NO_CONNECTION;
-} catch (rpc::rpc_error& e) {
-  return handleRpcError(e);
-} catch (rpc::timeout &t) {
-  return handleRpcTimeout(t);
-}
-
-std::pair<std::string, int> SDLRemoteTestAdapterClient::receive(
-    const std::string& name) try {
-  LOG_INFO("{0}: data from Mq: {1}",__func__,name);
+std::pair<std::string, int> SDLRemoteTestAdapterClient::tcp_receive(
+  const std::string& address,uint32_t port) try {
+  LOG_INFO("{0}: data from websocket address: {1} port: {2}"
+          ,__func__
+          ,address
+          ,port);
   if (connected()) {
     using result = std::pair<std::string, int>;
     result received = connection_.call(
-                                  constants::mq_receive,
-                                  name).as<result>();    
+                                  constants::tcp_receive
+                                  ,address
+                                  ,port).as<result>();    
     LOG_INFO("{0}: Exit with {1}",__func__,received.second); 
     return std::make_pair(received.first, received.second);
   }
@@ -146,55 +106,6 @@ std::pair<std::string, int> SDLRemoteTestAdapterClient::receive(
   return std::make_pair(std::string(), handleRpcError(e));
 } catch (rpc::timeout &t) {
   return std::make_pair(std::string(), handleRpcTimeout(t));
-}
-
-int SDLRemoteTestAdapterClient::send(const std::string& name,
-                                     const std::string& data) try {
-  LOG_INFO("{0}: data to Mq: {1} \nData to send: {2}"
-          ,__func__
-          ,name
-          ,data);
-  if (connected()) {
-    connection_.call(constants::mq_send, name, data); 
-    LOG_INFO("{0}: Exit with SUCCESS",__func__);    
-    return constants::error_codes::SUCCESS;
-  }
-  LOG_ERROR("No connection");
-  return constants::error_codes::NO_CONNECTION;
-} catch (rpc::rpc_error& e) {
-  return handleRpcError(e);
-} catch (rpc::timeout &t) {
-  return handleRpcTimeout(t);
-}
-
-int SDLRemoteTestAdapterClient::shm_open(const std::string& name, const int prot) try {
-  LOG_INFO("{0}: {1} on remote host",__func__,name);
-  if (connected()) {
-    connection_.call(constants::shm_open, name, prot);
-    LOG_INFO("{0}: Exit with SUCCESS",__func__);     
-    return constants::error_codes::SUCCESS;
-  }
-  LOG_ERROR("No connection");
-  return constants::error_codes::NO_CONNECTION;
-} catch (rpc::rpc_error& e) {
-  return handleRpcError(e);
-} catch (rpc::timeout &t) {
-  return handleRpcTimeout(t);
-}
-
-int SDLRemoteTestAdapterClient::shm_close(const std::string& name) try {
-  LOG_INFO("{0}: {1} on remote host",__func__,name);
-  if (connected()) {
-    connection_.call(constants::shm_close, name);
-    LOG_INFO("{0}: Exit with SUCCESS",__func__);     
-    return constants::error_codes::SUCCESS;
-  }
-  LOG_ERROR("No connection");
-  return constants::error_codes::NO_CONNECTION;
-} catch (rpc::rpc_error& e) {
-  return handleRpcError(e);
-} catch (rpc::timeout &t) {
-  return handleRpcTimeout(t);
 }
 
 int SDLRemoteTestAdapterClient::app_start(const std::string& path,

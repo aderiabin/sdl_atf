@@ -19,85 +19,41 @@ class SDLRemoteTestAdapterClient {
   bool connected() const;
 
   /**
-   * @brief Sends open mqueue request to server
-   * @param name mqueue name which should be opened by server
+   * @brief Sends open websocket request to server
+   * @param address - host name which should be opened by server
+   * @param port - number port which should be opened by server
    * @return 0 in successful case, 1 - if client is not connected,
    * 2 - in case of exception
    */
-  int open(const std::string& name);
+  int tcp_open(const std::string& address,uint32_t port);
 
   /**
-   * @brief Sends open mqueue parametrized request to server
-   * @param name mqueue name which should be opened by server
-   * @param max_messages_number -max messages number in mqueue
-   * @param max_message_size - max message size in mqueue
-   * @param flags - specifies flags that control the operation of the call
-   * @param mode - specifies the permissions to be placed on the new queue
+   * @brief Sends close websocket request to server
+   * @param address - host name which should be closed by server
+   * @param port - number port which should be closed by server   
    * @return 0 in successful case, 1 - if client is not connected,
    * 2 - in case of exception
    */
-  int open_with_params(const std::string& name,
-                       const int max_messages_number,
-                       const int max_message_size,
-                       const int flags,
-                       const int mode);
+  int tcp_close(const std::string& address,uint32_t port);
 
   /**
-   * @brief Sends data to mqueue opened by server
-   * @param name mqueue name for data reading
-   * @param data - data to be send to mqueue
+   * @brief Sends data to websocket opened by server
+   * @param address - host name which was open by server
+   * @param port - number port which was open by server
+   * @param data - data to be send to websocket
    * @return 0 in successful case, 1 - if client is not connected,
    * 2 - in case of exception
    */
-  int send(const std::string& name, const std::string& data);
+  int tcp_send(const std::string& address,uint32_t port,const std::string& data);
 
-  /**
-   * @brief Reads data from mqueue opened by server
-   * @param name mqueue name from which data should be received
+   /**
+   * @brief Reads data from websocket opened by server
+   * @param address - host name which was open by server
+   * @param port - number port which was open by server
    * @return received data in successful case,
    * otherwise empty string
    */
-  std::pair<std::string, int> receive(const std::string& name);
-
-   /**
-    * @brief Close mqueue opened by server
-    * @param name mqueue name to be closed
-    * @return 0 in successful case, 1 - if client is not connected,
-    * 2 - in case of exception
-    */
-  int close(const std::string& name);
-
-    /**
-    * @brief Unlink mqueue opened by server
-    * @param name mqueue name to be unlinked
-    * @return 0 in successful case, 1 - if client is not connected,
-    * 2 - in case of exception
-    */
-  int unlink(const std::string& name);
-
-  /**
-   * @brief Clears the system from mqueues opened by server
-   * @return 0 in successful case,  - if client is not connected,
-   * 2 - in case of exception
-   */
-  int clear();
-
-  /**
-   * @brief Sends open shared memory request to server
-   * @param name shared memory name which should be opened by server
-   * @param prot shared memory prot which should be opened by server
-   * @return 0 in successful case, 1 - if client is not connected,
-   * 2 - in case of exception
-   */
-  int shm_open(const std::string& name, const int prot);
-
-  /**
-   * @brief Sends close shared memory request to server
-   * @param name shared memory name which should be closed by server
-     * @return 0 in successful case, 1 - if client is not connected,
-   * 2 - in case of exception
-   */
-  int shm_close(const std::string& name);
+  std::pair<std::string, int> tcp_receive(const std::string& address,uint32_t port);  
 
   /**
    * @brief Sends start application request to server

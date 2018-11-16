@@ -14,23 +14,11 @@ int SDLRemoteTestAdapterLuaWrapper::create_SDLRemoteTestAdapter(lua_State* L) {
   // Index -4 - SDLRemoteTestAdapterClient instance
   // index -5 - Library table
 
-  std::vector<ShmParams> shm_params_vector = build_ShmParamsVector(L);
-  lua_pop(L, 1);  // Remove value from the top of the stack
-  // Index -1(top) - table out_params
-  // Index -2 - table in_params
-  // Index -3 - SDLRemoteTestAdapterClient instance
-  // index -4 - Library table
-
-  auto out_mq_params = build_MqParams(L);
+  auto tcp_params = build_TCPParams(L);
   lua_pop(L, 1);  // Remove value from the top of the stack
   // Index -1(top) - table in_params
   // Index -2 - SDLRemoteTestAdapterClient instance
   // Index -3 - Library table
-
-  auto in_mq_params = build_MqParams(L);
-  lua_pop(L, 1);  // Remove value from the top of the stack
-  // Index -1(top) - SDLRemoteTestAdapterClient instance
-  // Index -2 - Library table
 
   SDLRemoteTestAdapterClient** user_data =
     reinterpret_cast<SDLRemoteTestAdapterClient**>(
@@ -48,9 +36,7 @@ int SDLRemoteTestAdapterLuaWrapper::create_SDLRemoteTestAdapter(lua_State* L) {
   try {
     SDLRemoteTestAdapterQtClient*  qt_client =
         new SDLRemoteTestAdapterQtClient(client,
-                                         in_mq_params,
-                                         out_mq_params,
-                                         shm_params_vector);
+                                        tcp_params);
 
     // Allocate memory for a pointer to client object
     SDLRemoteTestAdapterQtClient** s =
@@ -137,117 +123,34 @@ SDLRemoteTestAdapterQtClient* SDLRemoteTestAdapterLuaWrapper::get_instance(
   return *user_data;  //*((SDLRemoteTestAdapterQtClient**)ud);
 }
 
-MqParams SDLRemoteTestAdapterLuaWrapper::build_MqParams(lua_State* L) {
+TCPParams SDLRemoteTestAdapterLuaWrapper::build_TCPParams(lua_State* L) {
   // Index -1(top) - table params
 
   lua_getfield(
-      L, -1, "name");  //Pushes onto the stack the value params[name]
-  // Index -1(top) - string name
+      L, -1, "host");  //Pushes onto the stack the value params[host]
+  // Index -1(top) - string host
   // Index -2 - table params
 
-  const char* name = lua_tostring(L, -1);
+  const char* host = lua_tostring(L, -1);
   lua_pop(L, 1);  // remove value from the top of the stack
   // Index -1(top) - table params
 
   lua_getfield(
-      L, -1, "max_messages_number");
-      //Pushes onto the stack the value params[max_messages_number]
-  // Index -1(top) - number max_messages_number
+      L, -1, "port");
+      //Pushes onto the stack the value params[port]
+  // Index -1(top) - number port
   // Index -2 - table params
 
-  const int max_messages_number = lua_tointeger(L, -1);
+  const int port = lua_tointeger(L, -1);
   lua_pop(L, 1);  // Remove value from the top of the stack
   // Index -1(top) - table params
 
-  lua_getfield(
-      L, -1, "max_message_size");
-      //Pushes onto the stack the value params[max_message_size]
-  // Index -1(top) - number max_message_size
-  // Index -2 - table params
-
-  const int max_message_size = lua_tointeger(L, -1);
-  lua_pop(L, 1);  // Remove value from the top of the stack
-  // Index -1(top) - table params
-
-  lua_getfield(
-      L, -1, "flags");  //Pushes onto the stack the value params[flags]
-  // Index -1(top) - number flags
-  // Index -2 - table params
-
-  const int flags = lua_tointeger(L, -1);
-  lua_pop(L, 1);  // Remove value from the top of the stack
-  // Index -1(top) - table params
-
-  lua_getfield(
-      L, -1, "mode");  //Pushes onto the stack the value params[mode]
-  // Index -1(top) - number mode
-  // Index -2 - table params
-
-  const int mode = lua_tointeger(L, -1);
-  lua_pop(L, 1);  // Remove value from the top of the stack
-  // Index -1(top) - table params
-
-  MqParams mq_params = {
-      std::string(name),
-      max_messages_number,
-      max_message_size,
-      flags,
-      mode
+  TCPParams tcp_params = {
+      std::string(host),
+      port
   };
 
-  return mq_params;
-}
-
-std::vector<ShmParams> SDLRemoteTestAdapterLuaWrapper::build_ShmParamsVector(lua_State* L) {
-  // Index -1(top) - table shm_params_array
-
-  std::vector<ShmParams> shm_params_vector;
-  int lua_array_size = luaL_len(L, -1);
-  for (int i = 1; i <= lua_array_size; ++i) {
-    lua_pushinteger(L, i); // Pushes onto the stack the value i
-    // Index -1(top) - number i
-    // Index -2 - table shm_params array
-    lua_gettable(L, -2); //Pushes onto the stack the value shm_params_array[i]
-    // Index -1(top) - table shm_params
-    // Index -2 - table shm_params array
-
-    ShmParams value = build_ShmParams(L);
-    lua_pop(L, 1);  // Remove value from the top of the stack
-    // Index -1(top) - table shm_params_array
-
-    shm_params_vector.push_back(value);
-  }
-
-  return shm_params_vector;
-}
-
-ShmParams SDLRemoteTestAdapterLuaWrapper::build_ShmParams(lua_State* L) {
-  // Index -1(top) - table shm_params
-
-  lua_getfield(
-      L, -1, "name"); //Pushes onto the stack the value shm_params[name]
-  // Index -1(top) - string name
-  // Index -2 - table shm_params
-
-  const char* name = lua_tostring(L, -1);
-  lua_pop(L, 1);  // remove value from the top of the stack
-  // Index -1(top) - table shm_params
-
-  lua_getfield(
-      L, -1, "prot"); //Pushes onto the stack the value shm_params[prot]
-  // Index -1(top) - number prot
-  // Index -2 - table shm_params
-
-  const int prot = lua_tointeger(L, -1);
-  lua_pop(L, 1);  // Remove value from the top of the stack
-  // Index -1(top) - table shm_params
-
-  ShmParams shm_params = {
-    std::string(name),
-    prot
-  };
-
-  return shm_params;
+  return tcp_params;
 }
 
 int SDLRemoteTestAdapterLuaWrapper::lua_connect(lua_State* L) {
@@ -256,7 +159,7 @@ int SDLRemoteTestAdapterLuaWrapper::lua_connect(lua_State* L) {
   auto instance = get_instance(L);
   // Index -1(top) - table instance
 
-  instance->connectMq();
+  instance->connect();
   return 0;
 }
 
