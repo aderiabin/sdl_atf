@@ -2,9 +2,8 @@
 #ifdef __QNX__
 #include <sys/syspage.h>
 #include <sys/debug.h>
-#else
-#include <string.h>
 #endif
+#include <string.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/types.h>

@@ -14,6 +14,10 @@ if (UNIX)
   endif(QNXNTO)
 endif()
 
+if(QNXNTO)
+  add_compile_options(-std=gnu++11 -stdlib=libstdc++)
+endif()
+
 FetchContent_Declare(
   rpclib
   GIT_REPOSITORY https://github.com/rpclib/rpclib.git
@@ -38,11 +42,82 @@ set(DEP_SOURCES
 
 find_package( Threads REQUIRED )
 add_executable(${PROJECT_NAME}
-                main.cc
-                mqueue_manager.cc
-                shmemory_manager.cc
+                main.cc                
                 utils_manager.cc
+		            tcp_message_broker.cpp
                 ${DEP_SOURCES})
+
+
+include(ExternalProject) 
+
+set(Boost_NO_SYSTEM_PATHS TRUE)
+set(BOOST_ROOT ${CMAKE_CURRENT_BINARY_DIR}/third_party/boost)
+set(BOOST_INSTALL ${BOOST_ROOT})
+set(BOOST_INCLUDE_DIRS ${BOOST_INSTALL}/include)
+set(BOOST_LIBRARY_DIRS ${BOOST_INSTALL}/lib)
+
+if(QNXNTO)
+  set(CMAKE_FIND_ROOT_PATH "${CMAKE_FIND_ROOT_PATH}" "${BOOST_ROOT}")
+endif()
+
+find_package(Boost 1.68.0 COMPONENTS system) 
+
+if (NOT ${Boost_FOUND})
+  message(STATUS "Did not find boost. Downloading and installing boost 1.68")
+  if(${LINUX})
+  
+    set(BOOST_QNX_PROJECT_CONFIG_JAM "")
+    set(BOOST_GCC_JAM "")
+    set(BOOST_FILESYSTEM_OPERATION "")
+    set(BOOTSTRAP
+      ./bootstrap.sh --with-libraries=system --prefix=${BOOST_INSTALL})
+    set(BOOST_BUILD_COMMAND ./b2 --prefix=${BOOST_INSTALL})
+  
+  else()
+    
+    if(${CMAKE_SYSTEM_PROCESSOR} MATCHES ".*aarch64")
+      set(ADDRESS_MODEL "64")
+    else()  
+      set(ADDRESS_MODEL "32")
+    endif ()
+    
+    set(
+      BOOST_QNX_PROJECT_CONFIG_JAM
+      "using gcc : nto${CMAKE_SYSTEM_PROCESSOR} : ${QNX_HOST}/usr/bin/nto${CMAKE_SYSTEM_PROCESSOR}-g++${HOST_EXECUTABLE_SUFFIX} : -L${QNX_HOST}/usr/lib -I${QNX_HOST}/usr/include" $<SEMICOLON>)
+    set(
+      BOOST_GCC_JAM
+      #sed -Ei "s/case darwin/case *qnx*/g" ./tools/build/src/tools/gcc.jam) # boost 1.66
+      sed -Ei "s/ : rt/ /g" ./tools/build/src/tools/gcc.jam)
+    set(
+      BOOST_FILESYSTEM_OPERATION
+      sed -Ei "s/__SUNPRO_CC/__QNX__/g" ./libs/filesystem/src/operations.cpp)
+    set(
+      BOOTSTRAP
+      ./bootstrap.sh --with-toolset=gcc --with-libraries=system --prefix=${BOOST_INSTALL})    
+    set(BOOST_BUILD_COMMAND ./b2 address-model=${ADDRESS_MODEL} cxxflags=-std=gnu++11 target-os=qnxnto toolset=gcc-nto${CMAKE_SYSTEM_PROCESSOR} --prefix=${BOOST_INSTALL})
+  
+  endif()
+  
+  set(BOOST_INSTALL_COMMAND ${BOOST_BUILD_COMMAND} install)  
+  
+  ExternalProject_Add(
+    Boost
+    URL https://dl.bintray.com/boostorg/release/1.68.0/source/boost_1_68_0.tar.gz
+    DOWNLOAD_DIR ${BOOST_LIB_SOURCE_DIRECTORY}
+    SOURCE_DIR ${BOOST_LIB_SOURCE_DIRECTORY}  
+    CONFIGURE_COMMAND  ${BOOST_GCC_JAM} COMMAND ${BOOST_FILESYSTEM_OPERATION} COMMAND ${BOOTSTRAP}
+    BUILD_COMMAND echo ${BOOST_QNX_PROJECT_CONFIG_JAM} >> ./project-config.jam COMMAND ${BOOST_BUILD_COMMAND}
+    INSTALL_COMMAND ${BOOST_INSTALL_COMMAND}
+    INSTALL_DIR ${BOOST_INSTALL}
+    BUILD_IN_SOURCE true
+  )
+endif()
+
+set(BOOST_LIBRARIES
+    "${BOOST_LIBRARY_DIRS}/libboost_system.a")
+
+include_directories("${BOOST_INCLUDE_DIRS}" )
+add_dependencies(${PROJECT_NAME} Boost)
 
 target_link_libraries(${PROJECT_NAME}
                        rpc::rpclib
@@ -51,7 +126,9 @@ target_link_libraries(${PROJECT_NAME}
                        $<$<BOOL:${QNXNTO}>:mq>
                        $<$<BOOL:${QNXNTO}>:socket>
                        $<$<BOOL:${QNXNTO}>:backtrace>
-                       )
+                       $<$<BOOL:${QNXNTO}>:stdc++>
+                       ${BOOST_LIBRARIES}
+                      )
 
 target_include_directories( ${PROJECT_NAME}  PRIVATE
    ${CMAKE_CURRENT_SOURCE_DIR}/..

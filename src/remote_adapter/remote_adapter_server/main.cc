@@ -9,6 +9,7 @@
 #include "rpc/server.h"
 #include "rpc/this_handler.h"
 
+#include "tcp_message_broker.h"
 #include "utils_manager.h"
 #include "common/constants.h"
 
@@ -134,7 +135,48 @@ int main(int argc, char* argv[]) {
   try {
     
     rpc::server srv(port);    
-    
+
+    tcp_msg_wrappers::TCPMessageBroker<> message_broker;      
+
+    srv.bind(constants::client_connected,
+             []() {
+               std::cout << "Hello" << std::endl;
+               std::cout << "Client connected" << std::endl;
+             });
+
+     srv.bind(constants::tcp_open,
+             [&message_broker](std::string address,
+                               const int port) {
+               const int res = message_broker.OpenConnection(
+                   address,port);
+               CheckError(res);
+             });
+
+    srv.bind(constants::tcp_close,
+             [&message_broker](std::string address,
+                               const int port) {
+               const int res = message_broker.CloseConnection(
+                   address,port);
+               CheckError(res);
+             });
+
+    srv.bind(constants::tcp_send,
+             [&message_broker](std::string address,
+                               const int port,
+                               std::string data) {
+               const int res = message_broker.Send(
+                   address,port,data);
+               CheckError(res);
+             });
+
+    srv.bind(constants::tcp_receive,
+             [&message_broker](std::string address,
+                               const int port) {
+                const auto receive_result = message_broker.Receive(
+                    address,port);                
+               return receive_result;
+             });    
+
     srv.bind(constants::app_start,
              [](std::string app_path,std::string app_name){
                const int res = UtilsManager::StartApp(
