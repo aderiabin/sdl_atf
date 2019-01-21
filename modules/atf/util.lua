@@ -12,7 +12,7 @@
   @license <https://github.com/smartdevicelink/sdl_core/blob/master/LICENSE>
 ]]
 local utils = require("atf.stdlib.argument_parser")
-config = require('config')
+config = require('config_loader')
 xmlReporter = require("reporter")
 atf_logger = require("atf_logger")
 
