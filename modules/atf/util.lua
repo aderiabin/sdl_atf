@@ -12,7 +12,6 @@
   @license <https://github.com/smartdevicelink/sdl_core/blob/master/LICENSE>
 ]]
 local utils = require("atf.stdlib.argument_parser")
-config = require('config_loader')
 xmlReporter = require("reporter")
 atf_logger = require("atf_logger")
 
@@ -206,6 +205,12 @@ function Util.commandLine.config_file(config_file)
   end
 end
 
+--- Load environment specific configuration of ATF
+-- @tparam string str Value
+function Util.commandLine.sdl_environment(str)
+  sdl_environment = str
+end
+
 --- Overwrite property mobileHost in configuration of ATF
 -- @tparam string str Value
 function Util.commandLine.mobile_connection(str)
@@ -278,7 +283,7 @@ function Util.commandLine.sdl_interfaces(str)
   config.pathToSDLInterfaces = str
 end
 
---- Overwrite property pathToSDL in configuration of ATF
+--- Overwrite property SecurityProtocol in configuration of ATF
 -- @tparam string str Value
 function Util.commandLine.security_protocol(str)
   config.SecurityProtocol = str
@@ -290,10 +295,18 @@ function Util.commandLine.parse_cmdl()
   local scriptFiles = {}
   local arguments = utils.getopt(argv, opts)
   if (arguments) then
-    if (arguments['config-file']) then Util.commandLine.config_file(arguments['config-file']) end
+    if (arguments['config-file']) then
+      Util.commandLine.config_file(arguments['config-file'])
+    else
+      if arguments['sdl-environment'] then
+        Util.commandLine.sdl_environment(arguments['sdl-environment'])
+      end
+      config = require('config_loader')
+    end
     for argument, value in pairs(arguments) do
       if (type(argument) ~= 'number') then
-        if ( argument ~= 'config-file') then
+        if argument ~= 'config-file'
+            and argument ~= 'sdl-environment' then
           argument = (argument):gsub ("%W", "_")
           Util.commandLine[argument](value)
         end

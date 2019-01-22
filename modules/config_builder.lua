@@ -10,9 +10,10 @@ local CB = {
     mt = { __index = {} }
 }
 
-function CB.ConfigurationBuilder(baseConfigTable)
+function CB.ConfigurationBuilder(baseConfigTable, environment)
     local res =  {
         config = baseConfigTable,
+        environment = environment,
         configurationsList = {}
     }
     setmetatable(res, CB.mt)
@@ -21,16 +22,16 @@ end
 
 local function addConfigurationFields(baseConfigTable, configTable)
     for k, v in pairs(configTable) do
-        if baseConfigTable[k] then
-            print("Configuration option " .. k .. "was overwritten")
-        end
         baseConfigTable[k] = v
     end
 end
 
-local function loadConfiguration(baseConfigTable, configName)
-    local configLoaderFolderPath = "configuration/loader/"
-    local configFolderPath = "configuration/"
+local function loadConfiguration(self, configName)
+    local envFolderName = self.environment
+    if not envFolderName then envFolderName = "" end
+
+    local configFolderPath = "configuration/" .. envFolderName .. "/"
+    local configLoaderFolderPath = configFolderPath .."_loader/"
     local configLoaderSuffix = "_loader"
 
     local path = configLoaderFolderPath .. configName .. configLoaderSuffix
@@ -40,12 +41,12 @@ local function loadConfiguration(baseConfigTable, configName)
         path = configFolderPath .. configName
         isSuccess, newConfig = pcall(require, path)
         if not isSuccess then
-            error("ConfigLoader: Configuration " .. configName .. " was not found in "
+            error("ConfigurationBuilder: Configuration " .. configName .. " was not found in "
                 .. configFolderPath .. " and " .. configLoaderFolderPath)
         end
     end
 
-    addConfigurationFields(baseConfigTable, newConfig)
+    addConfigurationFields(self.config, newConfig)
 end
 
 function CB.mt.__index:addConfiguration(configurationName)
@@ -54,9 +55,8 @@ end
 
 function CB.mt.__index:buildConfiguration()
     for _, configuration in ipairs(self.configurationsList) do
-        loadConfiguration(self.config, configuration)
+        loadConfiguration(self, configuration)
     end
-    return self.config
 end
 
 return CB

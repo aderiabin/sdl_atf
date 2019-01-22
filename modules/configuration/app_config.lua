@@ -7,7 +7,7 @@
 -- @license <https://github.com/smartdevicelink/sdl_core/blob/master/LICENSE>
 
 --- Predefined mobile application data (application1)
-config = {}
+local config = {}
 
 config.application1 =
 {

@@ -26,6 +26,7 @@ util.commandLine.declare_long_opt("--sdl-core", util.commandLine.consts.Required
 util.commandLine.declare_long_opt("--report-mark", util.commandLine.consts.RequiredArgument, "Marker of testing report")
 util.commandLine.declare_long_opt("--security-protocol", util.commandLine.consts.RequiredArgument, "Security protocol type")
 util.commandLine.declare_long_opt("--sdl-interfaces", util.commandLine.consts.RequiredArgument, "Path to folder with APIs")
+util.commandLine.declare_long_opt("--sdl-environment", util.commandLine.consts.RequiredArgument, "Environment where SDL runs in")
 
 local script_files = util.commandLine.parse_cmdl()
 if (#script_files > 0) then

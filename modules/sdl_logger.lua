@@ -2,12 +2,11 @@
 --
 -- *Dependencies:* `config`, `atf.stdlib.std.io`
 --
--- *Globals:* `network`, `qt`
+-- *Globals:* `network`, `qt`, `config`
 -- @module sdl_logger
 -- @copyright [Ford Motor Company](https://smartdevicelink.com/partners/ford/) and [SmartDeviceLink Consortium](https://smartdevicelink.com/consortium/)
 -- @license <https://github.com/smartdevicelink/sdl_core/blob/master/LICENSE>
 
-local config = require('config')
 local io = require('atf.stdlib.std.io')
 
 --- Singleton table which is used for perform all logging activities for SDL log.

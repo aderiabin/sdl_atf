@@ -1,4 +1,4 @@
---- Module which provides ATF configuration and predefined mobile application data
+--- Module which provides ATF base configuration
 --
 -- *Dependencies:* none
 --
@@ -10,17 +10,6 @@ local config = { }
 --- Flag which defines usage of color for reporting
 config.color = true
 
---- Remote cofiguration
-config.remoteConnection = {}
-config.remoteConnection.enabled = true
---- Define host for default remote connection
-config.remoteConnection.url = "127.0.0.1"
-config.remoteConnection.port = 5555
-
---- Define host for default mobile device connection
-config.mobileHost = "127.0.0.1"
---- Define port for default mobile device connection
-config.mobilePort = 12345
 --- Define timeout for Heartbeat in msec
 config.heartbeatTimeout = 7000
 --- Define timeout to wait for the events that should not occur
@@ -47,28 +36,11 @@ config.pathToSDLPolicyDB = ""
 config.pathToSDLInterfaces = ""
 --- Define SDL modification
 config.SDL = "smartDeviceLinkCore"
---- Define host for SDL logs
-config.sdl_logs_host = "localhost"
---- Define port for SDL logs
-config.sdl_logs_port = 6676
 --- Flag which defines behavior of ATF on SDL crash
 config.ExitOnCrash = true
 --- Flag which defines whether ATF starts SDL on startup
 config.autorunSDL = true
---- Security
---
---- Define security protocol
-config.SecurityProtocol = "DTLS"
---- Define ciphers
-config.cipherListString = "ALL:!ADH:!LOW:!EXP:!MD5:@STRENGTH"
---- Define path to server certificate with public key
-config.serverCertificatePath = "./data/cert/spt_credential.pem"
---- Define path to server private key
-config.serverPrivateKeyPath = "./data/cert/spt_credential.pem"
---- Define path to server CA certificates chain for client certificate validation
-config.serverCAChainCertPath = "./data/cert/spt_credential.pem"
---- Define whether client certificate validation needed
-config.isCheckClientCertificate = true
+
 --- Logs and Reports
 --
 --- Flag which defines whether ATF displays time of test step run

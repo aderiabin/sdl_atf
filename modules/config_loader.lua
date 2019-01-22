@@ -1,32 +1,59 @@
 --- Module which build ATF configuration from configuration pieces
 --
--- *Dependencies:* `config`, `config_builder`
+-- *Dependencies:* `config_builder`
 --
 -- *Globals:* none
 -- @copyright [Ford Motor Company](https://smartdevicelink.com/partners/ford/) and [SmartDeviceLink Consortium](https://smartdevicelink.com/consortium/)
 -- @license <https://github.com/smartdevicelink/sdl_core/blob/master/LICENSE>
 
-local config = require('config')
 local config_builder = require('config_builder')
 
--- ToDo: Add all necessary checks for ATF configuration
-local function validateAll()
-
+local function getConfigurationFolderPath()
+	local atfPath = io.popen("pwd", 'r'):lines()()
+	return atfPath .. "/modules/configuration"
 end
 
--- ToDo: Add all calculated fields for ATF configuration
+local function getConfigFilesList(folderPath)
+	local command = "ls " .. folderPath
+	local fileSuffix = "_config"
+	local fileExt =  ".lua"
+	local mask = "%" .. fileSuffix .. fileExt .. "$"
+	local suffixLength = (-1) * #fileExt - 1
 
-local configurationBuilder = config_builder.ConfigurationBuilder(config)
-configurationBuilder:addConfiguration("default_applications_config")
-
-if config.remoteConnection.enabled then
-    configurationBuilder:addConfiguration("websocket_remote_config")
-else
-    configurationBuilder:addConfiguration("websocket_local_config")
+	local resultList = {}
+	for fileName in io.popen(command):lines() do
+		if string.find(fileName, mask) then
+			table.insert(resultList, string.sub(fileName, 1, suffixLength))
+		end
+	end
+	if not next(resultList) then
+		error("ConfigLoader: Configuration folder " .. folderPath .. " is not found")
+	end
+	return resultList
 end
 
-validateAll()
+local function buildConfiguration(base, environment)
+	local configurationFolderPath = getConfigurationFolderPath()
+	if environment then
+		configurationFolderPath = configurationFolderPath .. "/" .. environment
+	end
 
--- ToDo: Prevent changes of ATF configuration
+	local configurationBuilder = config_builder.ConfigurationBuilder(base, environment)
 
-return configurationBuilder:buildConfiguration()
+	for _, configurationFileName in ipairs(getConfigFilesList(configurationFolderPath)) do
+		configurationBuilder:addConfiguration(configurationFileName)
+	end
+
+	configurationBuilder:buildConfiguration()
+end
+
+local config = {}
+
+buildConfiguration(config)
+
+if sdl_environment then
+	buildConfiguration(config, sdl_environment)
+	sdl_environment = nil
+end
+
+return config
