@@ -22,7 +22,11 @@ end
 
 local function addConfigurationFields(baseConfigTable, configTable)
     for k, v in pairs(configTable) do
-        baseConfigTable[k] = v
+        if type(v) == "table" and type(baseConfigTable[k]) == "table" then
+            addConfigurationFields(baseConfigTable[k], v)
+        else
+            baseConfigTable[k] = v
+        end
     end
 end
 
@@ -31,19 +35,11 @@ local function loadConfiguration(self, configName)
     if not envFolderName then envFolderName = "" end
 
     local configFolderPath = "configuration/" .. envFolderName .. "/"
-    local configLoaderFolderPath = configFolderPath .."_loader/"
-    local configLoaderSuffix = "_loader"
-
-    local path = configLoaderFolderPath .. configName .. configLoaderSuffix
+    path = configFolderPath .. configName
     local isSuccess, newConfig = pcall(require, path)
-
     if not isSuccess then
-        path = configFolderPath .. configName
-        isSuccess, newConfig = pcall(require, path)
-        if not isSuccess then
-            error("ConfigurationBuilder: Configuration " .. configName .. " was not found in "
-                .. configFolderPath .. " and " .. configLoaderFolderPath)
-        end
+        error("ConfigurationBuilder: Configuration " .. configName .. " was not found in "
+            .. configFolderPath)
     end
 
     addConfigurationFields(self.config, newConfig)

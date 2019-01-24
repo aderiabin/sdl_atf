@@ -190,25 +190,10 @@ end
 -- ------------------------------------------------
 -- parsing command line part
 
---- Set config file for ATF
--- @tparam string config_file Path to config file
-function Util.commandLine.config_file(config_file)
-  if (is_file_exists(config_file)) then
-    config_file = config_file:gsub('%.', " ")
-    config_file = config_file:gsub("/", ".")
-    config_file = config_file:gsub("[%s]lua$", "")
-    config = require(tostring(config_file))
-  else
-    print("Incorrect config file type")
-    print("Uses default config")
-    print("==========================")
-  end
-end
-
 --- Load environment specific configuration of ATF
--- @tparam string str Value
-function Util.commandLine.sdl_environment(str)
-  sdl_environment = str
+-- @tparam string str Path to config folder
+function Util.commandLine.config(str)
+  specific_environment = str
 end
 
 --- Overwrite property mobileHost in configuration of ATF
@@ -294,22 +279,19 @@ end
 function Util.commandLine.parse_cmdl()
   local scriptFiles = {}
   local arguments = utils.getopt(argv, opts)
+
+  if arguments and arguments['config'] then
+    Util.commandLine.config(arguments['config'])
+    arguments['config'] = nil
+  end
+
+  config = require('config_loader')
+
   if (arguments) then
-    if (arguments['config-file']) then
-      Util.commandLine.config_file(arguments['config-file'])
-    else
-      if arguments['sdl-environment'] then
-        Util.commandLine.sdl_environment(arguments['sdl-environment'])
-      end
-      config = require('config_loader')
-    end
     for argument, value in pairs(arguments) do
       if (type(argument) ~= 'number') then
-        if argument ~= 'config-file'
-            and argument ~= 'sdl-environment' then
-          argument = (argument):gsub ("%W", "_")
-          Util.commandLine[argument](value)
-        end
+        argument = (argument):gsub ("%W", "_")
+        Util.commandLine[argument](value)
       else
         if argument >= 2 and value ~= "modules/launch.lua" then
           table.insert(scriptFiles, value)
@@ -317,6 +299,7 @@ function Util.commandLine.parse_cmdl()
       end
     end
   end
+
   return scriptFiles
 end
 

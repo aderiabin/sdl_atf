@@ -8,11 +8,6 @@
 
 local config_builder = require('config_builder')
 
-local function getConfigurationFolderPath()
-	local atfPath = io.popen("pwd", 'r'):lines()()
-	return atfPath .. "/modules/configuration"
-end
-
 local function getConfigFilesList(folderPath)
 	local command = "ls " .. folderPath
 	local fileSuffix = "_config"
@@ -33,7 +28,7 @@ local function getConfigFilesList(folderPath)
 end
 
 local function buildConfiguration(base, environment)
-	local configurationFolderPath = getConfigurationFolderPath()
+	local configurationFolderPath = "./modules/configuration"
 	if environment then
 		configurationFolderPath = configurationFolderPath .. "/" .. environment
 	end
@@ -51,9 +46,9 @@ local config = {}
 
 buildConfiguration(config)
 
-if sdl_environment then
-	buildConfiguration(config, sdl_environment)
-	sdl_environment = nil
+if specific_environment then
+	buildConfiguration(config, specific_environment)
+	specific_environment = nil
 end
 
 return config
