@@ -1,0 +1,62 @@
+@startuml
+
+node "SDL host" as SDL_host {
+  node "SDL"
+  node "Remote server" as Remote_server {
+	[Server] -up-( IBroker
+	[Server] -up-( IUtils
+	[Server] -up- [RpcServer] : uses
+	
+	[MessageBrocker] -- IBroker
+	[UtilsManager] -- IUtils
+  }
+}
+
+node "ATF host" as ATF_host {
+  node "ATF" {
+	package "Remote client" {
+		[Client] -up- [RpcClient] : uses
+		[Client] -up- IRemoteUtils
+		[Client] -left- IRemoteHMIConnection
+	}
+	
+	package "ATF core" {
+		frame "Remote utils" {
+			[RemoteFileUtils] -( IRemoteUtils
+			[RemoteFileUtils] -left- IFileManager
+			[RemoteAppUtils] -( IRemoteUtils
+			[RemoteAppUtils] -left- IAppManager
+			
+		}
+		
+		frame "HMI emulation" {
+			[RemoteHmiAdapter] -( IRemoteHMIConnection
+			[RemoteHmiAdapter] - IHmiConnection
+			[WebSocketHmiAdapter] - IHmiConnection
+		}
+		
+		[SDL] as SdlManager
+		[SdlManager] -( IAppManager
+		[SdlManager] -( IFileManager
+		[SdlManager] -up- ISdlManager
+		
+		[AtfFacade] --( IFileManager
+		[AtfFacade] --( ISdlManager
+		[AtfFacade] --( IHmiConnection
+	}
+  }
+}
+
+RemoteFileUtils -[hidden]down- RemoteAppUtils
+RemoteAppUtils -[hidden]down- RemoteHmiAdapter
+AtfFacade -[hidden]up- SdlManager
+WebSocketHmiAdapter -[hidden]down- RemoteHmiAdapter
+RemoteHmiAdapter -[hidden]right- Client
+RpcClient -[hidden]right- IRemoteUtils
+
+MessageBrocker .down. SDL : WebSocket/MQ
+
+SDL_host -[hidden]left- ATF_host
+Client . Server : TCP
+
+@enduml

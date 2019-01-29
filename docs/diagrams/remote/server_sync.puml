@@ -1,0 +1,101 @@
+@startuml
+
+title Remote server - Class Diagram
+
+interface RemoteServerAPI {
+    +client_connected()
+    +mq_open()
+    +mq_open_with_params()
+    +mq_close()
+    +mq_unlink()
+    +mq_send()
+    +mq_receive()
+    +mq_clear()
+    +shm_open()
+    +shm_close()
+    +app_start()
+    +app_stop()
+    +app_check_status()
+    +file_backup()
+    +file_restore()
+    +file_update()
+    +file_exists()
+    +file_delete()
+    +file_content()
+    +folder_exists()
+    +folder_delete()
+    +folder_create()
+    +command_execute()
+}
+
+class RpcServer {
+    +bind()
+    +suppress_exceptions()
+    +async_run()
+}
+
+class Main {
+    +main()
+    -PrintUsage()
+    -IsUnsignedNumber()
+    -CheckError()
+    -print_stack_trace()
+    -segfault_sigaction()
+}
+
+class MQueueManager {
+    +MQueueManager()
+    +MqOpen(string)
+    +MqOpenWithParams(string, int, int, int int)
+    +MqSend(string, string)
+    +MqReceive(string)
+    +MqClose(string)
+    +MqUnlink(string)
+    +MqClear()
+    +MqClearMsg(mqd_t)
+    +ShmOpen(string, int)
+    +ShmClose(string)
+}
+
+class SharedMemoryManager {
+    +SharedMemoryManager();
+    +~SharedMemoryManager();
+    +ShmOpen(string, int)
+    +ShmClose(string)
+    +ShmWrite(string, string)
+    +ShmRead(string)
+    +ShmUnlink(string)
+    +IsShmName(string, string)
+}
+
+class UtilsManager {
+    +StartApp(string, string)
+    +StopApp(string,int)
+    +CheckStatusApp(string)
+    +FileBackup(string, string)
+    +FileRestore(string, string)
+    +FileUpdate(string, string, string)
+    +FileExists(string, string)
+    +FileDelete(string, string)
+    +GetFileContent(string, string, size_t, size_t)
+    +FolderExists(string)
+    +FolderDelete(string)
+    +FolderCreate(string)
+    +ExecuteCommand(string)
+    -GetPidApp(string)
+    -GetNameApp(pid, procfs_info)
+    -KillApp(pid_t, int, char)
+    -IsExistsApp(pid_t)
+    -JoinPath(string, string)
+ }
+
+RemoteServerAPI <|-- Main
+Main o-- RpcServer
+Main o-- MQueueManager
+Main o-- UtilsManager
+MQueueManager *-- SharedMemoryManager
+
+note "All methods are executing synchronous (blocking)" as N
+MQueueManager .. N
+
+@enduml

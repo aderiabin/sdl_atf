@@ -1,0 +1,108 @@
+@startuml
+
+title Remote client - Class Diagram
+
+interface IRemoteServerAPI {
+    +client_connected()
+    +open()
+    +close()
+    +send()
+    +receive()
+    +app_start()
+    +app_stop()
+    +app_check_status()
+    +file_backup()
+    +file_restore()
+    +file_update()
+    +file_exists()
+    +file_delete()
+    +file_content()
+    +folder_exists()
+    +folder_delete()
+    +folder_create()
+    +command_execute()
+}
+
+class RpcClient
+
+class SDLRemoteTestAdapterClient {
+    +connected()
+    +open(string, uint32_t)
+    +close(string, uint32_t)
+    +send(string, uint32_t, string)
+    +receive(string, uint32_t)
+    +app_start(string, string)
+    +app_stop(string)
+    +app_check_status(string)
+    +file_exists(string, string)
+    +file_update(string, string, string)
+    +file_content(string, string)
+    +file_delete(string, string)
+    +file_backup(string, string)
+    +file_restore(string, string)
+    +folder_exists(string)
+    +folder_create(string)
+    +folder_delete(string)
+    +command_execute(string)
+}
+
+class SDLRemoteTestAdapterQtClient {
+    +SDLRemoteTestAdapterQtClient(SDLRemoteTestAdapterClient, TCPParams, QObject)
+    +~SDLRemoteTestAdapterQtClient()
+    +connect()
+    +send(string)
+    +receive()
+    --signals--
+    +textMessageReceived(string)
+    +bytesWritten(int)
+    +connected()
+    +disconnected()
+    --
+    -connectionLost()
+}
+
+interface ISDLRemoteTestAdapter {
+    +connect(SDLRemoteTestAdapterQtClient)
+    +write(SDLRemoteTestAdapterQtClient, string)
+}
+
+class SDLRemoteTestAdapterLuaWrapper {
+    +SDLRemoteTestAdapterLuaWrapper(SDLRemoteTestAdapterClient, TCPParams)
+}
+
+interface ISDLRemoteClient {
+    +connected(SDLRemoteTestAdapterClient)
+    +app_start(SDLRemoteTestAdapterClient, string, string)
+    +app_stop(SDLRemoteTestAdapterClient, string)
+    +app_check_status(SDLRemoteTestAdapterClient, string)
+    +command_execute(SDLRemoteTestAdapterClient, string)
+    +file_exists(SDLRemoteTestAdapterClient, string, string)
+    +file_update(SDLRemoteTestAdapterClient, string, string, string)
+    +file_content(SDLRemoteTestAdapterClient, string, string)
+    +file_delete(SDLRemoteTestAdapterClient, string, string)
+    +file_backup(SDLRemoteTestAdapterClient, string, string)
+    +file_restore(SDLRemoteTestAdapterClient, string, string)
+    +folder_exists(SDLRemoteTestAdapterClient, string)
+    +folder_create(SDLRemoteTestAdapterClient, string)
+    +folder_delete(SDLRemoteTestAdapterClient, string)
+}
+
+class SDLRemoteClientLuaWrapper {
+    +SDLRemoteClientLuaWrapper(string, int)
+}
+
+SDLRemoteTestAdapterClient *-- RpcClient
+SDLRemoteTestAdapterClient -- IRemoteServerAPI
+
+SDLRemoteTestAdapterQtClient o-- SDLRemoteTestAdapterClient
+
+ISDLRemoteTestAdapter <|-- SDLRemoteTestAdapterLuaWrapper
+SDLRemoteTestAdapterLuaWrapper o-- SDLRemoteTestAdapterQtClient
+
+ISDLRemoteClient <|-- SDLRemoteClientLuaWrapper
+SDLRemoteClientLuaWrapper o-- SDLRemoteTestAdapterClient
+
+note "All methods are executing asynchronous (non-blocking)" as N
+SDLRemoteTestAdapterQtClient .. N
+
+@enduml

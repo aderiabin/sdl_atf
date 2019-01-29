@@ -1,0 +1,106 @@
+@startuml
+
+title Remote server - Class Diagram
+
+interface RemoteServerAPI {
+    +client_connected()
+    +open()
+    +close()
+    +send()
+    +receive()
+    +app_start()
+    +app_stop()
+    +app_check_status()
+    +file_backup()
+    +file_restore()
+    +file_update()
+    +file_exists()
+    +file_delete()
+    +file_content()
+    +folder_exists()
+    +folder_delete()
+    +folder_create()
+    +command_execute()
+}
+
+class RpcServer {
+    +bind()
+    +suppress_exceptions()
+    +async_run()
+}
+
+class Main {
+    +main()
+    -PrintUsage()
+    -IsUnsignedNumber()
+    -CheckError()
+    -print_stack_trace()
+    -segfault_sigaction()
+}
+
+class MessageBroker {
+    +MessageBroker()
+    +~MessageBroker()
+    +OpenConnection(string, int, int)
+    +CloseConnection(string, int)
+    +Send(string, int, string)
+    +Receive(string, int)
+    -SendUnprocessedMsg(Context, ConnectionIdent)
+    -MakeContext(string, int, int)
+    -GetContext(string, int)
+    -MakeConnectIdent(string, int)
+}
+
+class WebsocketSession {
+    +WebsocketSession(socket)
+    +Run(string)
+    +Write(string)
+    +GetMessage()
+    +Close()
+    +IsOpen()
+    -AsyncRead()
+    -OnRead(error_code, size_t)
+    -OnClose(error_code)
+}
+
+class WebsocketListener {
+    +WebsocketListener(io_context, endpoint)
+    +Run()
+    +Stop()
+    +DoResolve()
+    +OnResolve(error_code, results_type)
+    +GetSession()
+}
+
+class UtilsManager {
+    +StartApp(string, string)
+    +StopApp(string,int)
+    +CheckStatusApp(string)
+    +FileBackup(string, string)
+    +FileRestore(string, string)
+    +FileUpdate(string, string, string)
+    +FileExists(string, string)
+    +FileDelete(string, string)
+    +GetFileContent(string, string, size_t, size_t)
+    +FolderExists(string)
+    +FolderDelete(string)
+    +FolderCreate(string)
+    +ExecuteCommand(string)
+    -GetPidApp(string)
+    -GetNameApp(pid, procfs_info)
+    -KillApp(pid_t, int, char)
+    -IsExistsApp(pid_t)
+    -JoinPath(string, string)
+ }
+
+RemoteServerAPI <|-- Main
+Main o-- RpcServer
+Main o-- MessageBroker
+Main o-- UtilsManager
+MessageBroker *-- WebsocketListener
+WebsocketListener *-- WebsocketSession
+
+note "All methods are executing asynchronous (non-blocking)" as N
+MessageBroker .. N
+
+@enduml
