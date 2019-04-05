@@ -5,6 +5,7 @@
 #include <QTcpSocket>
 #include <QTcpServer>
 #include <QWebSocket>
+#include <QWebSocketServer>
 #include <QEventLoop>
 #include <QString>
 #include <unistd.h>
@@ -27,10 +28,13 @@ int tcp_socket_connect(lua_State *L) {/*{{{*/
 QTcpSocket *tcpSocket =
   *static_cast<QTcpSocket**>(luaL_checkudata(L, 1, "network.TcpSocket"));
 #line 33 "network.nw"
-  const char* ip   = luaL_checkstring(L, 2);
-  int         port = luaL_checkinteger(L, 3);
-
-
+  const char* ip = luaL_checkstring(L, 2);
+  int port = luaL_checkinteger(L, 3);
+  // Bind source address if it's defined
+  const char* source = luaL_optstring(L, 4, NULL);
+  if (source != NULL) {
+    tcpSocket->bind(QHostAddress(source));
+  }
   tcpSocket->connectToHost(ip, port);
 
   QTime timer;
@@ -38,7 +42,7 @@ QTcpSocket *tcpSocket =
   while (!tcpSocket->waitForConnected()) {
     tcpSocket->connectToHost(ip, port);
     // Check elapsed time
-    const int time_waiting_ms = 1000;
+    const int time_waiting_ms = 3000;
     if (timer.elapsed() > time_waiting_ms){
       fprintf(stderr, "%s\n%s\n", "Error: Connection not established", strerror(errno));
       return 1;
@@ -142,7 +146,7 @@ QTcpServer *tcpServer =
 #line 91 "network.nw"
   QTcpSocket *tcpSocket = tcpServer->nextPendingConnection();
   if (tcpSocket) {
-    QTcpSocket **p = static_cast<QTcpSocket**>(lua_newuserdata(L, sizeof(QTcpServer*)));
+    QTcpSocket **p = static_cast<QTcpSocket**>(lua_newuserdata(L, sizeof(QTcpSocket*)));
     *p = tcpSocket;
     luaL_getmetatable(L, "network.TcpSocket");
     lua_setmetatable(L, -2);
@@ -232,6 +236,61 @@ QWebSocket *webSocket =
   return 0;
 }/*}}}*/
 /*}}}*/
+
+// WebSocketServer functions/*{{{*/
+int network_web_socket_server(lua_State *L) {
+  QWebSocketServer *webSocketServer = new QWebSocketServer(QStringLiteral("Cloud App"),
+                                                           QWebSocketServer::NonSecureMode);
+  QWebSocketServer **p = static_cast<QWebSocketServer**>(lua_newuserdata(L, sizeof(QWebSocketServer*)));
+  *p = webSocketServer;
+  luaL_getmetatable(L, "network.WebSocketServer");
+  lua_setmetatable(L, -2);
+  return 1;
+}
+
+int web_socket_server_listen(lua_State *L) {
+  QWebSocketServer *webSocketServer =
+  *static_cast<QWebSocketServer**>(luaL_checkudata(L, 1, "network.WebSocketServer"));
+  int port = luaL_checkinteger(L, 2);
+  QHostAddress addr = QHostAddress::Any;
+  const char* ip = luaL_optstring(L, 3, NULL);
+  if (ip != NULL) {
+    addr = QHostAddress(ip);
+  }
+  lua_pushboolean(L, webSocketServer->listen(addr, port));
+  return 1;
+}
+
+int web_socket_server_get_connection(lua_State *L) {
+  QWebSocketServer *webSocketServer =
+    *static_cast<QWebSocketServer**>(luaL_checkudata(L, 1, "network.WebSocketServer"));
+  QWebSocket *webSocket = webSocketServer->nextPendingConnection();
+  if (webSocket) {
+    QWebSocket **p = static_cast<QWebSocket**>(lua_newuserdata(L, sizeof(QWebSocket*)));
+    *p = webSocket;
+    luaL_getmetatable(L, "network.WebSocket");
+    lua_setmetatable(L, -2);
+  } else {
+    lua_pushnil(L);
+  }
+  return 1;
+}
+
+int web_socket_server_close(lua_State *L) {
+  QWebSocketServer *webSocketServer =
+    *static_cast<QWebSocketServer**>(luaL_checkudata(L, 1, "network.WebSocketServer"));
+  webSocketServer->close();
+  return 0;
+}
+
+int web_socket_server_delete(lua_State *L) {
+  QWebSocketServer *webSocketServer =
+    *static_cast<QWebSocketServer**>(luaL_checkudata(L, 1, "network.WebSocketServer"));
+  delete webSocketServer;
+  return 0;
+}
+/*}}}*/
+
 #line 158 "network.nw"
 int luaopen_network(lua_State *L) {
   lua_newtable(L);
@@ -279,11 +338,25 @@ int luaopen_network(lua_State *L) {
   lua_setfield(L, -2, "__index");
   lua_pushcfunction(L, web_socket_delete);
   lua_setfield(L, -2, "__gc");/*}}}*/
+  // WebSocketServer metatable/*{{{*/
+  luaL_newmetatable(L, "network.WebSocketServer");
+  lua_newtable(L);
+  luaL_Reg web_socket_server_functions[] = {
+    { "listen", &web_socket_server_listen },
+    { "get_connection", &web_socket_server_get_connection },
+    { "close", &web_socket_server_close },
+    { NULL, NULL }
+  };
+  luaL_setfuncs(L, web_socket_server_functions, 0);
+  lua_setfield(L, -2, "__index");
+  lua_pushcfunction(L, web_socket_server_delete);
+  lua_setfield(L, -2, "__gc");/*}}}*/
 
   luaL_Reg network_functions[] = {
     { "TcpClient", &network_tcp_client },
     { "TcpServer", &network_tcp_server },
     { "WebSocket", &network_web_socket },
+    { "WebSocketServer", &network_web_socket_server },
     { NULL, NULL }
   };
   luaL_newlib(L, network_functions);
