@@ -23,24 +23,6 @@ function Cloud.Connection(port)
   res.server_socket = network.WebSocketServer()
   setmetatable(res, Cloud.mt)
   res.qtproxy = qt.dynamic()
-
-  function res:inputData() end
-
-  function res.qtproxy.readyRead()
-    while true do
-      local data = res.socket:read(81920)
-      if data == '' then break end
-      res.qtproxy:inputData(data)
-    end
-  end
-
-  function res.qtproxy.newConnection()
-    res.socket = res.server_socket:get_connection()
-    qt.connect(res.socket, "readyRead()", res.qtproxy, "readyRead()")
-  end
-
-  qt.connect(res.server_socket, "newConnection()", res.qtproxy, "newConnection()")
-
   return res
 end
 
@@ -62,12 +44,19 @@ local function checkConnection(connection)
   end
 
 --- Start to listen of connections from SDL through QT transport interface
-function Cloud.mt.__index:Open()
+function Cloud.mt.__index:Listen()
   xmlReporter.AddMessage("cloud_connection","Open")
   checkSelfArg(self)
   if self.server_socket:listen(self.port) then
-    self.qtproxy.connected();
+    return true
   end
+  print("Cloud server does not started successfully")
+  return false
+end
+
+--- Connect function handler for Cloud server
+function Cloud.mt.__index:Connect()
+  error("Cloud connection: Cloud is server. It can not initiate connection. Use Listen() instead to start to listen specified port")
 end
 
 -- - Send pack of messages from mobile to SDL
@@ -77,7 +66,7 @@ function Cloud.mt.__index:Send(data)
   checkSelfArg(self)
   if checkConnection(self) then
     for _, c in ipairs(data) do
-      self.socket:write(c)
+      self.socket:binary_write(c)
     end
   end
 end
@@ -85,25 +74,21 @@ end
 --- Set handler for OnInputData
 -- @tparam function func Handler function
 function Cloud.mt.__index:OnInputData(func)
-  checkSelfArg(self)
-  local d = qt.dynamic()
   local this = self
-  function d:inputData(data)
+
+  function self.qtproxy:binaryMessageReceived(data)
     func(this, data)
   end
-  qt.connect(self.qtproxy, "inputData(QByteArray)", d, "inputData(QByteArray)")
 end
 
 --- Set handler for OnDataSent
 -- @tparam function func Handler function
 function Cloud.mt.__index:OnDataSent(func)
-  local d = qt.dynamic()
   local this = self
 
-  function d:bytesWritten(num)
+  function self.qtproxy:bytesWritten(num)
     func(this, num)
   end
-  qt.connect(self.socket, "bytesWritten(qint64)", d, "bytesWritten(qint64)")
 end
 
 --- Set handler for OnConnected
@@ -114,8 +99,17 @@ function Cloud.mt.__index:OnConnected(func)
     error("Cloud connection: connected signal is handled already")
   end
   local this = self
-  self.qtproxy.connected = function() func(this) end
-  -- qt.connect(res.server_socket, "newConnection()", self.qtproxy, "connected()")
+  self.qtproxy.connected = function()
+    if self.socket then
+      error("Cloud connection: ATF restriction - cloud server allows only one active connection.")
+    end
+    self.socket = self.server_socket:get_connection()
+    qt.connect(self.socket, "bytesWritten(qint64)", self.qtproxy, "bytesWritten(qint64)")
+    qt.connect(self.socket, "binaryMessageReceived(QByteArray)", self.qtproxy, "binaryMessageReceived(QByteArray)")
+    qt.connect(self.socket, "disconnected()", self.qtproxy, "disconnected()")
+    func(this)
+  end
+  qt.connect(self.server_socket, "newConnection()", self.qtproxy, "connected()")
 end
 
 --- Set handler for OnDisconnected
@@ -130,26 +124,21 @@ function Cloud.mt.__index:OnDisconnected(func)
     this.socket = nil
     func(this)
   end
-  qt.connect(self.socket, "disconnected()", self.qtproxy, "disconnected()")
 end
 
---- Set handler for OnConnectionAccepted
--- @tparam function func Handler function
-function Cloud.mt.__index:OnConnectionAccepted(func)
-  checkSelfArg(self)
-  if self.qtproxy.connectionAccepted then
-    error("Cloud connection: connected accepted signal is handled already")
-  end
-  local this = self
-  self.qtproxy.connectionAccepted = function() func(this) end
-  qt.connect(res.server_socket, "newConnection()", self.qtproxy, "connectionAccepted()")
-end
-
---- Close connection
+--- Close connection on server
 function Cloud.mt.__index:Close()
   xmlReporter.AddMessage("cloud_connection","Close")
   checkSelfArg(self)
   self.socket:close()
+  self.socket = nil
+end
+
+--- Stop listening of specified port
+function Cloud.mt.__index:Stop()
+  xmlReporter.AddMessage("cloud_connection","Stop")
+  checkSelfArg(self)
+  self:CloseConnection()
   self.server_socket:close()
 end
 
