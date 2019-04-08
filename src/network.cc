@@ -226,6 +226,17 @@ QWebSocket *webSocket =
   return 1;
 }/*}}}*/
 
+int web_socket_binarywrite(lua_State *L) {/*{{{*/
+  QWebSocket *webSocket =
+  *static_cast<QWebSocket**>(luaL_checkudata(L, 1, "network.WebSocket"));
+  size_t size;
+  const char* data = luaL_checklstring(L, 2, &size);
+  QByteArray b(data, size);
+  int res = webSocket->sendBinaryMessage(b);
+  lua_pushinteger(L, res);
+  return 1;
+}/*}}}*/
+
 int web_socket_delete(lua_State *L) {/*{{{*/
 
 #line 153 "network.nw"
@@ -332,6 +343,7 @@ int luaopen_network(lua_State *L) {
     { "open", &web_socket_open },
     { "close", &web_socket_close },
     { "write", &web_socket_write },
+    { "binary_write", &web_socket_binarywrite },
     { NULL, NULL }
   };
   luaL_setfuncs(L, web_socket_functions, 0);
