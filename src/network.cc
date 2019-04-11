@@ -254,7 +254,7 @@ QWebSocket *webSocket =
 // WebSocketServer functions/*{{{*/
 int network_web_socket_server(lua_State *L) {
   QWebSocketServer *webSocketServer;
-  int isSecured = luaL_checkinteger(L, 1);
+  bool isSecured = lua_toboolean(L, 1);
   if (isSecured) {
     webSocketServer = new QWebSocketServer(QStringLiteral("Secure Cloud App"),
                                                            QWebSocketServer::SecureMode);
