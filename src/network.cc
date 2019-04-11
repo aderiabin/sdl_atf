@@ -8,6 +8,9 @@
 #include <QWebSocketServer>
 #include <QEventLoop>
 #include <QString>
+#include <QFile>
+#include <QSslCertificate>
+#include <QSslKey>
 #include <unistd.h>
 #include <errno.h>
 #include <cstring>
@@ -250,8 +253,32 @@ QWebSocket *webSocket =
 
 // WebSocketServer functions/*{{{*/
 int network_web_socket_server(lua_State *L) {
-  QWebSocketServer *webSocketServer = new QWebSocketServer(QStringLiteral("Cloud App"),
+  QWebSocketServer *webSocketServer;
+  bool isSecured = lua_toboolean(L, 1);
+  if (isSecured) {
+    webSocketServer = new QWebSocketServer(QStringLiteral("Secure Cloud App"),
+                                                           QWebSocketServer::SecureMode);
+    size_t certPathSize, keyPathSize;
+    const char* certPath = luaL_checklstring(L, 2, &certPathSize);
+    const char* keyPath = luaL_checklstring(L, 3, &keyPathSize);
+    QFile certFile(certPath);
+    QFile keyFile(keyPath);
+    certFile.open(QIODevice::ReadOnly);
+    keyFile.open(QIODevice::ReadOnly);
+    QSslCertificate certificate(&certFile, QSsl::Pem);
+    QSslKey sslKey(&keyFile, QSsl::Rsa, QSsl::Pem);
+    certFile.close();
+    keyFile.close();
+    QSslConfiguration sslConfiguration;
+    sslConfiguration.setPeerVerifyMode(QSslSocket::VerifyNone);
+    sslConfiguration.setLocalCertificate(certificate);
+    sslConfiguration.setPrivateKey(sslKey);
+    sslConfiguration.setProtocol(QSsl::TlsV1SslV3);
+    webSocketServer->setSslConfiguration(sslConfiguration);
+  } else {
+    webSocketServer = new QWebSocketServer(QStringLiteral("Cloud App"),
                                                            QWebSocketServer::NonSecureMode);
+  }
   QWebSocketServer **p = static_cast<QWebSocketServer**>(lua_newuserdata(L, sizeof(QWebSocketServer*)));
   *p = webSocketServer;
   luaL_getmetatable(L, "network.WebSocketServer");

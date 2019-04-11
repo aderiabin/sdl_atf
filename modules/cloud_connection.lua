@@ -15,12 +15,12 @@ local Cloud = { mt = { __index = {} } }
 --- Construct instance of Connection type
 -- @tparam string port Cloud port
 -- @treturn Connection Constructed instance
-function Cloud.Connection(port)
+function Cloud.Connection(port, isSecured, certPath, keyPath)
   local res =
   {
     port = port
   }
-  res.server_socket = network.WebSocketServer()
+  res.server_socket = network.WebSocketServer(isSecured, certPath, keyPath)
   setmetatable(res, Cloud.mt)
   res.qtproxy = qt.dynamic()
   return res
