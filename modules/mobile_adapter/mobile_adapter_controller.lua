@@ -1,6 +1,6 @@
 --- Module which provides Mobile Adapter control functionality on base of mobile connection emulation type
 --
--- *Dependencies:* `mobile_adapter/tcp_mobile_adapter`
+-- *Dependencies:* `mobile_adapter/tcp_mobile_adapter`, `mobile_adapter/webengine_mobile_adapter`
 --
 -- *Globals:* none
 -- @module MobileAdapterController
@@ -8,13 +8,15 @@
 -- @license <https://github.com/smartdevicelink/sdl_core/blob/master/LICENSE>
 
 local mobileAdapters = {
-  TCP = require('mobile_adapter/tcp_mobile_adapter')
+  TCP = require('mobile_adapter/tcp_mobile_adapter'),
+  WEB_ENGINE = require('mobile_adapter/webengine_mobile_adapter')
 }
 
 local MobileAdapterController = {}
 
 MobileAdapterController.ADAPTER_TYPE = {
-  NORMAL = "TCP"
+  NORMAL = "TCP",
+  WEB_ENGINE = "WEB_ENGINE"
 }
 
 --- Provide Mobile adapter instance on base of adapter type
