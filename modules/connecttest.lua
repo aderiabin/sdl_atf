@@ -14,7 +14,7 @@
 require('atf.util')
 local Test = require('testbase')
 local mobile = require("mobile_connection")
-local tcp = require("tcp_connection")
+local mobile_adapter_controller = require("mobile_adapter/mobile_adapter_controller")
 local file_connection = require("file_connection")
 local mobile_session = require("mobile_session")
 local websocket = require('websocket_connection')
@@ -40,10 +40,15 @@ local FAILED = expectations.FAILED
 
 --- HMI connection
 Test.hmiConnection = hmi_connection.Connection(websocket.WebSocketConnection(config.hmiUrl, config.hmiPort))
-local tcpConnection = tcp.Connection(config.mobileHost, config.mobilePort)
-local fileConnection = file_connection.FileConnection("mobile.out", tcpConnection)
 
 --- Default mobile connection
+local mobileAdapterType = mobile_adapter_controller.ADAPTER_TYPE.NORMAL
+local mobileAdapterParameters = {
+  host = config.mobileHost,
+  port = config.mobilePort
+}
+local mobileAdapter = mobile_adapter_controller.getAdapter(mobileAdapterType, mobileAdapterParameters)
+local fileConnection = file_connection.FileConnection("mobile.out", mobileAdapter)
 Test.mobileConnection = mobile.MobileConnection(fileConnection)
 event_dispatcher:AddConnection(Test.hmiConnection)
 event_dispatcher:AddConnection(Test.mobileConnection)
@@ -209,7 +214,7 @@ function Test:initHMI()
           "Navigation.OnAudioDataStreaming",
           "Navigation.OnVideoDataStreaming"
         })
-      registerComponent("AppService", 
+      registerComponent("AppService",
         {
           "AppService.OnAppServiceData"
         })
