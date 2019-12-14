@@ -1,12 +1,12 @@
-#line 13 "qtlua.nw"
+// #line 13 "qtlua.nw"
 #include <QObject>
-#line 5 "main.nw"
+// #line 5 "main.nw"
 extern "C" {
 #include <lua5.2/lua.h>
 #include <lua5.2/lualib.h>
 #include <lua5.2/lauxlib.h>
 }
-#line 15 "qtlua.nw"
+// #line 15 "qtlua.nw"
 #include "qtlua.h"
 #include "qtdynamic.h"
 #include "marshal.h"
@@ -29,7 +29,7 @@ int luaopen_qt(lua_State *L) {
   luaL_newlib(L, functions);
   return 1;
 }
-#line 43 "qtlua.nw"
+// #line 43 "qtlua.nw"
 int qtlua_deletedynamic(lua_State *L) {
   DynamicObject * li = *static_cast<DynamicObject**>(lua_touserdata(L, 1));
   delete li;
@@ -55,7 +55,7 @@ int qtlua_createdynamic(lua_State *L) {
   lua_setuservalue(L, -2);
   return 1;
 }
-#line 70 "qtlua.nw"
+// #line 70 "qtlua.nw"
 // Helper function, pushes onto top of stack
 // __index value of metatable of value on given index
 // If value doesn't have metatable or there is no __index field,
@@ -64,7 +64,7 @@ static void get_index_table(lua_State *L, int idx);
 // Function emits the given signal of dynamic object.
 // It takes two  upvalues: signal name and list of argument types to marshal them properly
 static int qtlua_emit_signal(lua_State *L);
-#line 86 "qtlua.nw"
+// #line 86 "qtlua.nw"
 int qtlua_connect(lua_State *L) {
   QObject *sender, *receiver;
   bool senderIsDynamic = false;
@@ -93,8 +93,8 @@ int qtlua_connect(lua_State *L) {
     DynamicObject * d_sender = static_cast<DynamicObject*>(sender);
     DynamicObject * d_receiver = static_cast<DynamicObject*>(receiver);
 
-    
-#line 134 "qtlua.nw"
+
+// #line 134 "qtlua.nw"
 QByteArray theSignal = QMetaObject::normalizedSignature(signal);
 
 get_index_table(L, 1);
@@ -115,14 +115,14 @@ lua_pushcclosure(L, &qtlua_emit_signal, 2);
 int idx = theSignal.indexOf('(');
 theSignal.truncate(idx);
 lua_setfield(L, -2, theSignal);
-#line 115 "qtlua.nw"
-    
-#line 167 "qtlua.nw"
+// #line 115 "qtlua.nw"
+
+// #line 167 "qtlua.nw"
 // Register the receiver object in the registry and store its index
 lua_pushnil(L);
 lua_copy(L, 3, -1);
 int objref = luaL_ref(L, LUA_REGISTRYINDEX);
-#line 116 "qtlua.nw"
+// #line 116 "qtlua.nw"
     bool res = DynamicObject::connectDynamicSignalToDynamicSlot(d_sender,
       signal,
       d_receiver,
@@ -130,12 +130,12 @@ int objref = luaL_ref(L, LUA_REGISTRYINDEX);
       new DynamicSlot(L, objref, slot));
     lua_pushboolean(L, res);
   } else if (senderIsDynamic) {
-#line 129 "qtlua.nw"
+// #line 129 "qtlua.nw"
     DynamicObject * d_sender = static_cast<DynamicObject*>(sender);
     bool res = d_sender->connectDynamicSignal(signal, receiver, slot);
 
-    
-#line 134 "qtlua.nw"
+
+// #line 134 "qtlua.nw"
 QByteArray theSignal = QMetaObject::normalizedSignature(signal);
 
 get_index_table(L, 1);
@@ -156,19 +156,19 @@ lua_pushcclosure(L, &qtlua_emit_signal, 2);
 int idx = theSignal.indexOf('(');
 theSignal.truncate(idx);
 lua_setfield(L, -2, theSignal);
-#line 155 "qtlua.nw"
-    
+// #line 155 "qtlua.nw"
+
     lua_pushboolean(L, res);
   } else if (receiverIsDynamic) {
     DynamicObject * d_receiver = static_cast<DynamicObject*>(receiver);
-#line 165 "qtlua.nw"
-    
-#line 167 "qtlua.nw"
+// #line 165 "qtlua.nw"
+
+// #line 167 "qtlua.nw"
 // Register the receiver object in the registry and store its index
 lua_pushnil(L);
 lua_copy(L, 3, -1);
 int objref = luaL_ref(L, LUA_REGISTRYINDEX);
-#line 172 "qtlua.nw"
+// #line 172 "qtlua.nw"
     bool res = d_receiver->connectDynamicSlot(sender, signal, slot,
         new DynamicSlot(L, objref, slot));
     lua_pushboolean(L, res);
@@ -178,7 +178,7 @@ int objref = luaL_ref(L, LUA_REGISTRYINDEX);
   }
   return 1;
 }
-#line 186 "qtlua.nw"
+// #line 186 "qtlua.nw"
 void get_index_table(lua_State *L, int idx)
 {
   lua_getmetatable(L, idx);
@@ -197,7 +197,7 @@ void get_index_table(lua_State *L, int idx)
   }
   lua_remove(L, -2);
 }
-#line 369 "qtlua.nw"
+// #line 369 "qtlua.nw"
 int qtlua_emit_signal(lua_State *L)
 {
   DynamicObject * li = *static_cast<DynamicObject**>(lua_touserdata(L, 1));
@@ -224,7 +224,7 @@ int qtlua_emit_signal(lua_State *L)
   }
   return 0;
 }
-#line 397 "qtlua.nw"
+// #line 397 "qtlua.nw"
 int qtlua_disconnect(lua_State *L)
 {
   (void)L;

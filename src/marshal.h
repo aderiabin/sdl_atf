@@ -1,12 +1,12 @@
-#line 213 "qtlua.nw"
+// #line 213 "qtlua.nw"
 #pragma once
-#line 5 "main.nw"
+// #line 5 "main.nw"
 extern "C" {
 #include <lua5.2/lua.h>
 #include <lua5.2/lualib.h>
 #include <lua5.2/lauxlib.h>
 }
-#line 215 "qtlua.nw"
+// #line 215 "qtlua.nw"
 #include <QList>
 #include <QMap>
 #include <QString>

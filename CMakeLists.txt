@@ -1,4 +1,4 @@
-project(ATF)
+project(atf_app)
 cmake_minimum_required(VERSION 3.11)
 
 # Enable PIC as static libraries may be linked to shared objects
@@ -12,13 +12,13 @@ set (CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 #
 # Options
 #
-option(BUILD_TESTS 
-  "Build unit BUILD_TESTS." 
+option(BUILD_TESTS
+  "Build unit BUILD_TESTS."
   OFF)
-option(BUILD_WITH_SERVER_LOGGING 
+option(BUILD_WITH_SERVER_LOGGING
   "ALlow logging in the library for debug purposes."
   ON)
-option(BUILD_WITH_CLIENT_LOGGING 
+option(BUILD_WITH_CLIENT_LOGGING
   "ALlow logging in the library for debug purposes."
   OFF)
 
@@ -26,7 +26,7 @@ if(BUILD_TESTS)
   enable_testing()
 endif()
 
-find_package(Qt5 COMPONENTS Core Network WebSockets REQUIRED)
+find_package(Qt5 COMPONENTS Core Network REQUIRED)
 find_package(Lua 5.2 EXACT REQUIRED)
 
 list(GET LUA_LIBRARIES 0 LUA_LIB)
@@ -60,7 +60,6 @@ add_executable(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
                        Qt5::Core
                        Qt5::Network
-                       Qt5::WebSockets
                        lua::lua
                        )
 
@@ -70,7 +69,7 @@ install(
   TARGETS ${PROJECT_NAME}
   DESTINATION "${CMAKE_INSTALL_PREFIX}"
   PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
-  COMPONENT sdl_atf
+  COMPONENT sdl_atf_app
 )
 
 install(
@@ -107,4 +106,3 @@ install(CODE "execute_process( \
 
 add_subdirectory(src/luaxml)
 add_subdirectory(src/luaopenssl)
-add_subdirectory(src/remote_adapter)
