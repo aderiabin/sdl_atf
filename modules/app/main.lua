@@ -194,16 +194,29 @@ local function onConnect()
   App.session:ExpectNotification("OnHMIStatus"):Do(onHMIStatusHandler)
   App.session:ExpectNotification("OnPermissionsChange"):Do(onPermissionsChangeHandler)
   App.session:ExpectNotification("OnVehicleData"):Do(onVehicleDataHandler)
-  -- App.connection:Close()
 end
 
 local function onDisconnect()
   print("Connection with SDL is canceled")
   xmlReporter:finalize()
-  quit()
+  -- quit()
 end
 
 -- create mobile connection
 App.connection = mob.createMobileConnection(config.mobileHost, config.mobilePort, onConnect, onDisconnect)
--- connect to SDL
-App.connection:Connect()
+
+function start()
+  if App.status ~= "connected" then
+    -- connect to SDL
+    App.status = "connected"
+    App.connection:Connect()
+  end
+end
+
+function stop()
+  if App.status == "connected" then
+    -- disconnect from SDL
+    App.status = "disconnected"
+    App.connection:Close()
+  end
+end

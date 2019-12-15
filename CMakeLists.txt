@@ -1,39 +1,20 @@
-project(atf_app)
-cmake_minimum_required(VERSION 3.11)
+project(atf_web_app)
+cmake_minimum_required(VERSION 3.1)
 
 # Enable PIC as static libraries may be linked to shared objects
 set (CMAKE_POSITION_INDEPENDENT_CODE TRUE)
 set (CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set (CMAKE_INCLUDE_CURRENT_DIR ON)
 set (CMAKE_AUTOMOC ON)
 # Append directories in the linker search path and outside the project
 set (CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-
-#
-# Options
-#
-option(BUILD_TESTS
-  "Build unit BUILD_TESTS."
-  OFF)
-option(BUILD_WITH_SERVER_LOGGING
-  "ALlow logging in the library for debug purposes."
-  ON)
-option(BUILD_WITH_CLIENT_LOGGING
-  "ALlow logging in the library for debug purposes."
-  OFF)
-
-if(BUILD_TESTS)
-  enable_testing()
-endif()
 
 find_package(Qt5 COMPONENTS Core Network REQUIRED)
 find_package(Lua 5.2 EXACT REQUIRED)
 
 list(GET LUA_LIBRARIES 0 LUA_LIB)
 list(GET LUA_LIBRARIES 1 LIBM_LIB)
-
-message(STATUS "lualib : ${LUA_LIB}")
-message(STATUS "libmlib : ${LIBM_LIB}")
 
 add_library(lua::lua UNKNOWN IMPORTED GLOBAL)
 set_target_properties(lua::lua
@@ -46,39 +27,61 @@ set_target_properties(lua::lua
 execute_process(COMMAND git submodule init WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 execute_process(COMMAND git submodule update WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
-add_executable(${PROJECT_NAME}
-                src/network.cc
-                src/timers.cc
-                src/qtdynamic.cc
-                src/qtlua.cc
-                src/qdatetime.cc
-                src/marshal.cc
-                src/main.cc
-                src/lua_interpreter.cc
-                )
+include_directories("src"
+                    "src/controller"
+                    "src/sdl"
+                    "src/httpserver"
+                    "src/logging"
+                    "src/templateengine"
+                    )
 
-target_link_libraries(${PROJECT_NAME}
-                       Qt5::Core
-                       Qt5::Network
-                       lua::lua
-                       )
+add_subdirectory("src/logging" "logging")
+add_subdirectory("src/httpserver" "httpserver")
+add_subdirectory("src/templateengine" "templateengine")
+
+add_executable(${PROJECT_NAME}  "src/main.cpp"
+                                "src/global.cpp"
+                                "src/requestmapper.cpp"
+                                "src/controller/dumpcontroller.cpp"
+                                "src/controller/templatecontroller.cpp"
+                                "src/controller/formcontroller.cpp"
+                                "src/controller/fileuploadcontroller.cpp"
+                                "src/controller/sessioncontroller.cpp"
+                                "src/controller/sdlcontrolcontroller.cpp"
+                                "src/controller/sdldatacontroller.cpp"
+                                "src/sdl/network.cc"
+                                "src/sdl/timers.cc"
+                                "src/sdl/qtdynamic.cc"
+                                "src/sdl/qtlua.cc"
+                                "src/sdl/qdatetime.cc"
+                                "src/sdl/marshal.cc"
+                                "src/sdl/lua_interpreter.cc"
+                                )
+
+target_link_libraries(${PROJECT_NAME}   Qt5::Core
+                                        Qt5::Network
+                                        lua::lua
+                                        httpserver
+                                        logging
+                                        templateengine
+                                        )
 
 include("BSON.cmake")
 
-install(
-  TARGETS ${PROJECT_NAME}
-  DESTINATION "${CMAKE_INSTALL_PREFIX}"
-  PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
-  COMPONENT sdl_atf_app
+install (
+    TARGETS ${PROJECT_NAME}
+    DESTINATION "${CMAKE_INSTALL_PREFIX}"
+    PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
 )
 
 install(
   DIRECTORY
+  "${CMAKE_SOURCE_DIR}/etc"
+  "${CMAKE_SOURCE_DIR}/logs"
   "${CMAKE_SOURCE_DIR}/modules"
   "${CMAKE_SOURCE_DIR}/data"
   DESTINATION "${CMAKE_INSTALL_PREFIX}"
-  FILE_PERMISSIONS OWNER_WRITE OWNER_READ
-  COMPONENT sdl_atf
+  FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
 )
 
 install(
@@ -89,13 +92,12 @@ install(
   COMPONENT sdl_atf
 )
 
-install(
-  FILES
-  "${CMAKE_SOURCE_DIR}/start.sh"
-  DESTINATION "${CMAKE_INSTALL_PREFIX}"
-  PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
-  COMPONENT sdl_atf
-)
+# install(
+#   FILES
+#   "${CMAKE_SOURCE_DIR}/../readme.txt"
+#   DESTINATION "${CMAKE_INSTALL_PREFIX}"
+#   PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
+# )
 
 install(CODE "execute_process( \
     COMMAND ${CMAKE_COMMAND} -E create_symlink \
@@ -104,5 +106,5 @@ install(CODE "execute_process( \
     )"
 )
 
-add_subdirectory(src/luaxml)
-add_subdirectory(src/luaopenssl)
+add_subdirectory(src/sdl/luaxml)
+add_subdirectory(src/sdl/luaopenssl)

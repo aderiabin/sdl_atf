@@ -24,6 +24,7 @@ class LuaInterpreter : public QObject {
   int retCode = 0;
   LuaInterpreter(QObject *parent, const QStringList::iterator& args, const QStringList::iterator& end);
   int load(const char *filename);
+  lua_State* getLuaState();
  public slots:
   void quit();
  public:

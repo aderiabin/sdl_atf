@@ -125,6 +125,11 @@ int LuaInterpreter::load(const char *filename) {
   }
   return quitCalled ? retCode : res;
 }
+
+lua_State* LuaInterpreter::getLuaState() {
+  return lua_state;
+}
+
 void LuaInterpreter::quit() {
   QCoreApplication::quit();
 }
