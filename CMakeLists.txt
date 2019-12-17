@@ -9,23 +9,6 @@ set (CMAKE_AUTOMOC ON)
 # Append directories in the linker search path and outside the project
 set (CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
-#
-# Options
-#
-option(BUILD_TESTS
-  "Build unit BUILD_TESTS."
-  OFF)
-option(BUILD_WITH_SERVER_LOGGING
-  "ALlow logging in the library for debug purposes."
-  ON)
-option(BUILD_WITH_CLIENT_LOGGING
-  "ALlow logging in the library for debug purposes."
-  OFF)
-
-if(BUILD_TESTS)
-  enable_testing()
-endif()
-
 find_package(Qt5 COMPONENTS Core Network REQUIRED)
 find_package(Lua 5.2 EXACT REQUIRED)
 
@@ -78,22 +61,6 @@ install(
   "${CMAKE_SOURCE_DIR}/data"
   DESTINATION "${CMAKE_INSTALL_PREFIX}"
   FILE_PERMISSIONS OWNER_WRITE OWNER_READ
-  COMPONENT sdl_atf
-)
-
-install(
-  DIRECTORY
-  "${CMAKE_SOURCE_DIR}/tools"
-  DESTINATION "${CMAKE_INSTALL_PREFIX}"
-  FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
-  COMPONENT sdl_atf
-)
-
-install(
-  FILES
-  "${CMAKE_SOURCE_DIR}/start.sh"
-  DESTINATION "${CMAKE_INSTALL_PREFIX}"
-  PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
   COMPONENT sdl_atf
 )
 

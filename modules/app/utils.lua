@@ -225,6 +225,16 @@ function m.cprint(pColor, ...)
   print("\27[" .. tostring(pColor) .. "m" .. table.concat(table.pack(...), "\t") .. "\27[0m")
 end
 
+--[[ @dprint: print debug message to console
+--! @parameters:
+--! ... - message
+--]]
+function m.dprint(...)
+  if config.debug then
+    print("DEBUG: " .. table.concat(table.pack(...)))
+  end
+end
+
 --[[ @spairs: sorted iterator, allows to get items from table sorted by key
 -- Usually used as a replacement of standard 'pairs' function
 --! @parameters:

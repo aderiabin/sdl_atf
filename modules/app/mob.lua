@@ -4,6 +4,7 @@ local tcp = require("tcp_connection")
 local file_connection = require("file_connection")
 local mobile = require("mobile_connection")
 local mobile_session = require("mobile_session")
+local utils = require("app.utils")
 
 local Mob = {}
 
@@ -92,7 +93,7 @@ function Mob.createSession(pMobConn)
   for k, v in pairs(mobSesionConfig) do
     session[k] = v
   end
-  print("Mobile session is created")
+  utils.dprint("Mobile session is created")
   return session
 end
 
