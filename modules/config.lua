@@ -26,7 +26,7 @@ config.mobilePort = 12345
 --- Define URL for WS default mobile device connection
 config.wsMobileURL = "ws://localhost"
 --- Define port for WS default mobile device connection
-config.wsMobilePort = 2134
+config.wsMobilePort = 2020
 --
 --- Define timeout for Heartbeat in msec
 config.heartbeatTimeout = 7000
