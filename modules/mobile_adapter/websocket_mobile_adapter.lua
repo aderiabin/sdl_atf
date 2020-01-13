@@ -1,4 +1,4 @@
---- Module which provides transport level interface for emulate web engine connection to SDL
+--- Module which provides transport level interface for emulate web engine WS connection to SDL
 --
 -- *Dependencies:* `qt`, `network`
 --
@@ -7,7 +7,7 @@
 -- @copyright [Ford Motor Company](https://smartdevicelink.com/partners/ford/) and [SmartDeviceLink Consortium](https://smartdevicelink.com/consortium/)
 -- @license <https://github.com/smartdevicelink/sdl_core/blob/master/LICENSE>
 
-local WebEngine = { mt = { __index = {} } }
+local WebEngineWS = { mt = { __index = {} } }
 
 --- Type which provides transport level interface for emulate connection with mobile for SDL
 -- @type Connection
@@ -16,13 +16,23 @@ local WebEngine = { mt = { __index = {} } }
 -- @tparam string host SDL host address
 -- @tparam string port SDL port
 -- @treturn Connection Constructed instance
-function WebEngine.Connection(params)
+function WebEngineWS.Connection(params)
   local res = {
     url = params.url,
-    port = params.port
+    port = params.port,
+    ssl = params.sslProtocol and {} or nil
   }
+
+  if res.ssl then
+    res.ssl.protocol = params.sslProtocol
+    res.ssl.cypherListString = params.sslCypherListString
+    res.ssl.caCertPath = params.sslCaCertPath
+    res.ssl.certPath = params.sslCertPath
+    res.ssl.keyPath = params.sslKeyPath
+  end
+
   res.socket = network.WebSocket()
-  setmetatable(res, WebEngine.mt)
+  setmetatable(res, WebEngineWS.mt)
   res.qtproxy = qt.dynamic()
 
   return res
@@ -31,21 +41,25 @@ end
 --- Check 'self' argument
 local function checkSelfArg(s)
   if type(s) ~= "table" or
-  getmetatable(s) ~= WebEngine.mt then
+  getmetatable(s) ~= WebEngineWS.mt then
     error("Invalid argument 'self': must be connection (use ':', not '.')")
   end
 end
 
 --- Connect to SDL through QT transport interface
-function WebEngine.mt.__index:Connect()
+function WebEngineWS.mt.__index:Connect()
   xmlReporter.AddMessage("websocket_connection","Connect")
   checkSelfArg(self)
-  self.socket:open(self.url, self.port)
+  -- function self.qtproxy:onSslErrors()
+  --   print("SSL errors have occurred")
+  -- end
+  -- qt.connect(self.socket, "sslErrors(QList<QSslError>)", self.qtproxy, "onSslErrors(QList<QSslError>)")
+  self.socket:open(self.url, self.port, self.ssl)
 end
 
 --- Send pack of messages from mobile to SDL
 -- @tparam table data Data to be sent
-function WebEngine.mt.__index:Send(data)
+function WebEngineWS.mt.__index:Send(data)
   checkSelfArg(self)
   for _, c in ipairs(data) do
     self.socket:binary_write(c)
@@ -54,7 +68,7 @@ end
 
 --- Set handler for OnInputData
 -- @tparam function func Handler function
-function WebEngine.mt.__index:OnInputData(func)
+function WebEngineWS.mt.__index:OnInputData(func)
   local this = self
   function self.qtproxy:binaryMessageReceived(data)
     func(this, data)
@@ -64,7 +78,7 @@ end
 
 --- Set handler for OnDataSent
 -- @tparam function func Handler function
-function WebEngine.mt.__index:OnDataSent(func)
+function WebEngineWS.mt.__index:OnDataSent(func)
   local this = self
   function self.qtproxy:bytesWritten(num)
     func(this, num)
@@ -74,10 +88,9 @@ end
 
 --- Set handler for OnConnected
 -- @tparam function func Handler function
-function WebEngine.mt.__index:OnConnected(func)
-  checkSelfArg(self)
+function WebEngineWS.mt.__index:OnConnected(func)
   if self.qtproxy.connected then
-    error("WebEngine connection: connected signal is handled already")
+    error("WebEngineWS connection: connected signal is handled already")
   end
   local this = self
   self.qtproxy.connected = function() func(this) end
@@ -86,10 +99,9 @@ end
 
 --- Set handler for OnDisconnected
 -- @tparam function func Handler function
-function WebEngine.mt.__index:OnDisconnected(func)
-  checkSelfArg(self)
+function WebEngineWS.mt.__index:OnDisconnected(func)
   if self.qtproxy.disconnected then
-    error("WebEngine connection: disconnected signal is handled already")
+    error("WebEngineWS connection: disconnected signal is handled already")
   end
   local this = self
   self.qtproxy.disconnected = function() func(this) end
@@ -97,10 +109,10 @@ function WebEngine.mt.__index:OnDisconnected(func)
 end
 
 --- Close connection
-function WebEngine.mt.__index:Close()
-  xmlReporter.AddMessage("websocket_connection", "Close")
+function WebEngineWS.mt.__index:Close()
   checkSelfArg(self)
+  xmlReporter.AddMessage("websocket_connection", "Close")
   self.socket:close();
 end
 
-return WebEngine
+return WebEngineWS

@@ -7,6 +7,10 @@
 #include <QWebSocket>
 #include <QEventLoop>
 #include <QString>
+#include <QSslConfiguration>
+#include <QSslCertificate>
+#include <QFile>
+#include <QList>
 #include <unistd.h>
 #include <errno.h>
 #include <cstring>
@@ -182,6 +186,39 @@ QWebSocket *webSocket =
 #line 126 "network.nw"
   QUrl url(luaL_checkstring(L, 2));
   url.setPort(lua_tointegerx(L, 3, NULL));
+  // check wheather ssl parameters passed then construct and set QSslConfiguration
+  if (!lua_isnoneornil(L, 4)) {
+    lua_getfield(L, 4, "protocol");
+    const char* protocol = lua_tostring(L, -1);
+    lua_pop(L, 1);
+
+    lua_getfield(L, 4, "cypherListString");
+    const char* cypherListString = lua_tostring(L, -1);
+    lua_pop(L, 1);
+
+    lua_getfield(L, 4, "caCertPath");
+    const char* caCertPath = lua_tostring(L, -1);
+    lua_pop(L, 1);
+    QString caCertPathStr(caCertPath);
+    QFile caCertFile(caCertPathStr);
+    caCertFile.open(QIODevice::ReadOnly);
+    QSslCertificate caCertificate(&caCertFile, QSsl::Pem);
+    caCertFile.close();
+
+    lua_getfield(L, 4, "certPath");
+    const char* certPath = lua_tostring(L, -1);
+    lua_pop(L, 1);
+
+    lua_getfield(L, 4, "keyPath");
+    const char* keyPath = lua_tostring(L, -1);
+    lua_pop(L, 1);
+
+    QList<QSslCertificate> caCertificates;
+    caCertificates << caCertificate;
+    QSslConfiguration sslConfiguration;
+    sslConfiguration.setCaCertificates(caCertificates);
+    webSocket->setSslConfiguration(sslConfiguration);
+  }
 
   QEventLoop loop;
   #line 170 "network.nw"

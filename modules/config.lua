@@ -18,7 +18,9 @@ config.hmiPort = 8087
 --- Define transport type for default mobile device connection
 -- TCP - TCP connection (connection parameters: mobileHost, mobilePort)
 -- WS - WebSocket connection (connection parameters: wsMobileURL, wsMobilePort)
-config.defaultMobileAdapterType = "WS"
+-- WSS - WebSocketSecure connection (connection parameters: wssMobileURL, wssMobilePort,
+--      wssCertificateCA, wssCertificateClient, wssPrivateKey)
+config.defaultMobileAdapterType = "TCP"
 --- Define host for TCP default mobile device connection
 config.mobileHost = "localhost"
 --- Define port for TCP default mobile device connection
@@ -27,6 +29,20 @@ config.mobilePort = 12345
 config.wsMobileURL = "ws://localhost"
 --- Define port for WS default mobile device connection
 config.wsMobilePort = 2020
+--- Define URL for WSS default mobile device connection
+config.wssMobileURL = "wss://localhost"
+--- Define port for WSS default mobile device connection
+config.wssMobilePort = 2020
+--- Define security protocol for WSS default mobile device connection
+config.wssSecurityProtocol = "TLS"
+--- Define cypher list for WSS default mobile device connection
+config.wssCypherListString = "ALL:!ADH:!LOW:!EXP:!MD5:@STRENGTH"
+--- Define CA certificate for WSS default mobile device connection
+config.wssCertificateCAPath = "./data/cert/wss/ca-cert.pem"
+--- Define client certificate for WSS default mobile device connection
+config.wssCertificateClientPath = "./data/cert/wss/client-cert.pem"
+--- Define client private key for WSS default mobile device connection
+config.wssPrivateKeyPath = "./data/cert/wss/client-key.pem"
 --
 --- Define timeout for Heartbeat in msec
 config.heartbeatTimeout = 7000

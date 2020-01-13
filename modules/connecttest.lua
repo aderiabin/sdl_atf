@@ -43,22 +43,32 @@ Test.hmiConnection = hmi_connection.Connection(websocket.WebSocketConnection(con
 
 --- Default mobile connection
 local function getDefaultMobileAdapter()
-  print("Default mobile device transport: " .. tostring(config.defaultMobileAdapterType))
-  if config.defaultMobileAdapterType == "TCP" then
-    local mobileAdapterType = mobile_adapter_controller.ADAPTER_TYPE.NORMAL
+  local mobileAdapterType = config.defaultMobileAdapterType
+  print("Default mobile device transport: " .. tostring(mobileAdapterType))
+  if mobileAdapterType == "TCP" then
     local mobileAdapterParameters = {
       host = config.mobileHost,
       port = config.mobilePort
     }
     return mobile_adapter_controller.getAdapter(mobileAdapterType, mobileAdapterParameters)
-  elseif config.defaultMobileAdapterType == "WS" then
-    local mobileAdapterType = mobile_adapter_controller.ADAPTER_TYPE.WEB_ENGINE
+  elseif mobileAdapterType == "WS" then
     local mobileAdapterParameters = {
       url = config.wsMobileURL,
       port = config.wsMobilePort
     }
     return mobile_adapter_controller.getAdapter(mobileAdapterType, mobileAdapterParameters)
-  else error("Unknown default mobile adapter type: " .. tostring(config.defaultMobileAdapterType))
+  elseif mobileAdapterType == "WSS" then
+    local mobileAdapterParameters = {
+      url = config.wssMobileURL,
+      port = config.wssMobilePort,
+      sslProtocol = config.wssSecurityProtocol,
+      sslCypherListString = config.wssCypherListString,
+      sslCaCertPath = config.wssCertificateCAPath,
+      sslCertPath = config.wssCertificateClientPath,
+      sslKeyPath = config.wssPrivateKeyPath
+    }
+    return mobile_adapter_controller.getAdapter(mobileAdapterType, mobileAdapterParameters)
+  else error("Unknown default mobile adapter type: " .. tostring(mobileAdapterType))
   end
 end
 

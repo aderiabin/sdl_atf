@@ -9,15 +9,11 @@
 
 local mobileAdapters = {
   TCP = require('mobile_adapter/tcp_mobile_adapter'),
-  WEB_ENGINE = require('mobile_adapter/webengine_mobile_adapter')
+  WS = require('mobile_adapter/websocket_mobile_adapter'),
+  WSS = require('mobile_adapter/websocket_mobile_adapter')
 }
 
 local MobileAdapterController = {}
-
-MobileAdapterController.ADAPTER_TYPE = {
-  NORMAL = "TCP",
-  WEB_ENGINE = "WEB_ENGINE"
-}
 
 --- Provide Mobile adapter instance on base of adapter type
 -- @tparam string adapterType Instance of ADAPTER_TYPE enumeration
