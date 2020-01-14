@@ -12,6 +12,15 @@ local WebEngineWS = { mt = { __index = {} } }
 --- Type which provides transport level interface for emulate connection with mobile for SDL
 -- @type Connection
 
+local ProtocolType = {
+  TlsV1_0 = 2,
+  TlsV1_1 = 3,
+  TlsV1_2 = 4,
+  DtlsV1_0 = 11,
+  DtlsV1_2 = 13,
+  TlsV1SslV3 = 6
+}
+
 --- Construct instance of Connection type
 -- @tparam string host SDL host address
 -- @tparam string port SDL port
@@ -24,10 +33,14 @@ function WebEngineWS.Connection(params)
   }
 
   if res.ssl then
-    res.ssl.protocol = params.sslProtocol
+    if not ProtocolType[params.sslProtocol] then
+      error("Protocol " .. params.sslProtocol .. "is not supported")
+    end
+    res.ssl.protocol = ProtocolType[params.sslProtocol]
     res.ssl.cypherListString = params.sslCypherListString
     res.ssl.caCertPath = params.sslCaCertPath
     res.ssl.certPath = params.sslCertPath
+    res.ssl.certChainPath = params.certChainPath
     res.ssl.keyPath = params.sslKeyPath
   end
 

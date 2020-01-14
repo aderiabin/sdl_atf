@@ -7,8 +7,11 @@
 #include <QWebSocket>
 #include <QEventLoop>
 #include <QString>
+#include <QStringList>
 #include <QSslConfiguration>
 #include <QSslCertificate>
+#include <QSslCipher>
+#include <QSslKey>
 #include <QFile>
 #include <QList>
 #include <unistd.h>
@@ -178,6 +181,23 @@ int network_web_socket(lua_State *L) {/*{{{*/
   return 1;
 }/*}}}*/
 
+void setCypherList(QSslConfiguration& sslConfiguration, const QString& cypherListString) {
+    QList<QSslCipher> supportedCyphers = QSslConfiguration::supportedCiphers();
+    QStringList cypherStringsList = cypherListString.split(':', QString::SkipEmptyParts);
+    cypherStringsList.removeDuplicates();
+
+    if (cypherStringsList.contains(QStringLiteral("ALL"))) {
+        sslConfiguration.setCiphers(supportedCyphers);
+    } else {
+        QList<QSslCipher> cyphers;
+        for (QStringList::const_iterator it = cypherStringsList.cbegin(); it != cypherStringsList.cend(); ++it) {
+            QSslCipher cypher(*it);
+            if (!cypher.name().isEmpty()) cyphers << cypher;
+        }
+        sslConfiguration.setCiphers(cyphers);
+    }
+}
+
 int web_socket_open(lua_State *L) {/*{{{*/
 
 #line 153 "network.nw"
@@ -189,34 +209,53 @@ QWebSocket *webSocket =
   // check wheather ssl parameters passed then construct and set QSslConfiguration
   if (!lua_isnoneornil(L, 4)) {
     lua_getfield(L, 4, "protocol");
-    const char* protocol = lua_tostring(L, -1);
+    const QSsl::SslProtocol protocol = static_cast<QSsl::SslProtocol>(lua_tointeger(L, -1));
     lua_pop(L, 1);
 
     lua_getfield(L, 4, "cypherListString");
-    const char* cypherListString = lua_tostring(L, -1);
+    const QString cypherListString = lua_tostring(L, -1);
     lua_pop(L, 1);
 
     lua_getfield(L, 4, "caCertPath");
-    const char* caCertPath = lua_tostring(L, -1);
+    const QString caCertPath = lua_tostring(L, -1);
     lua_pop(L, 1);
-    QString caCertPathStr(caCertPath);
-    QFile caCertFile(caCertPathStr);
+    QFile caCertFile(caCertPath);
     caCertFile.open(QIODevice::ReadOnly);
     QSslCertificate caCertificate(&caCertFile, QSsl::Pem);
     caCertFile.close();
-
-    lua_getfield(L, 4, "certPath");
-    const char* certPath = lua_tostring(L, -1);
-    lua_pop(L, 1);
-
-    lua_getfield(L, 4, "keyPath");
-    const char* keyPath = lua_tostring(L, -1);
-    lua_pop(L, 1);
-
     QList<QSslCertificate> caCertificates;
     caCertificates << caCertificate;
+
+    lua_getfield(L, 4, "certChainPath");
+    const QString certChainPath = lua_tostring(L, -1);
+    lua_pop(L, 1);
+    QList<QSslCertificate> localCertificateChain =
+      QSslCertificate::fromPath(certChainPath, QSsl::Pem, QRegExp::Wildcard);
+
+    lua_getfield(L, 4, "certPath");
+    const QString certPath = lua_tostring(L, -1);
+    lua_pop(L, 1);
+    QFile certFile(certPath);
+    certFile.open(QIODevice::ReadOnly);
+    QSslCertificate certificate(&certFile, QSsl::Pem);
+    certFile.close();
+    localCertificateChain.push_front(certificate);
+
+    lua_getfield(L, 4, "keyPath");
+    const QString keyPath = lua_tostring(L, -1);
+    lua_pop(L, 1);
+    QFile keyFile(keyPath);
+    keyFile.open(QIODevice::ReadOnly);
+    QSslKey sslKey(&keyFile, QSsl::Rsa, QSsl::Pem);
+    keyFile.close();
+
     QSslConfiguration sslConfiguration;
+    sslConfiguration.setProtocol(protocol);
+    setCypherList(sslConfiguration, cypherListString);
+    sslConfiguration.setPeerVerifyMode(QSslSocket::VerifyPeer);
     sslConfiguration.setCaCertificates(caCertificates);
+    sslConfiguration.setLocalCertificateChain(localCertificateChain);
+    sslConfiguration.setPrivateKey(sslKey);
     webSocket->setSslConfiguration(sslConfiguration);
   }
 
