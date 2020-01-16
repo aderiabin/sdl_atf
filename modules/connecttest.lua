@@ -535,8 +535,9 @@ function Test:connectMobile()
       print("Disconnected!!!")
       quit(exit_codes.aborted)
     end)
-  self.mobileConnection:Connect()
-  return EXPECT_EVENT(events.connectedEvent, "Connected")
+    local ret = EXPECT_EVENT(events.connectedEvent, "Connected")
+    self.mobileConnection:Connect()
+    return ret
 end
 
 --- Start default mobile session on default mobile conection
