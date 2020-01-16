@@ -266,11 +266,18 @@ QWebSocket *webSocket =
   QObject::connect(webSocket, SIGNAL(connected()), &loop, SLOT(quit()));
   QObject::connect(webSocket, SIGNAL(disconnected()), &loop, SLOT(quit()));
 
+  const int time_waiting_ms = 1000;
+  QTime timer;
+  timer.start();
   // Wait until socket connection is established
   while (webSocket->state() != QAbstractSocket::ConnectedState) {
     webSocket->open(url);
     loop.exec();
     usleep(100);
+    if (timer.elapsed() > time_waiting_ms){
+      fprintf(stderr, "%s\n%s\n", "Error: WS Connection not established", strerror(errno));
+      return 0;
+    }
   }
 
   return 0;
