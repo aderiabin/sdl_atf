@@ -40,7 +40,6 @@ function WebEngineWS.Connection(params)
     res.ssl.cypherListString = params.sslCypherListString
     res.ssl.caCertPath = params.sslCaCertPath
     res.ssl.certPath = params.sslCertPath
-    res.ssl.certChainPath = params.certChainPath
     res.ssl.keyPath = params.sslKeyPath
   end
 

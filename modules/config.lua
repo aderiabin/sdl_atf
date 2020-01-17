@@ -47,8 +47,6 @@ config.wssCypherListString = "ALL"
 config.wssCertificateCAPath = "./data/cert/wss/ca-cert.pem"
 --- Define client certificate for WSS default mobile device connection
 config.wssCertificateClientPath = "./data/cert/wss/client-cert.pem"
---- Define client certificate trusted chain for WSS default mobile device connection (wildcard is supported: *.pem)
-config.wssCertificateChainClientPath = "./data/cert/wss/client-chain*.pem"
 --- Define client private key for WSS default mobile device connection
 config.wssPrivateKeyPath = "./data/cert/wss/client-key.pem"
 --

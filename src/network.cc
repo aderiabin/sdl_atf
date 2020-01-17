@@ -226,12 +226,6 @@ QWebSocket *webSocket =
     QList<QSslCertificate> caCertificates;
     caCertificates << caCertificate;
 
-    lua_getfield(L, 4, "certChainPath");
-    const QString certChainPath = lua_tostring(L, -1);
-    lua_pop(L, 1);
-    QList<QSslCertificate> localCertificateChain =
-      QSslCertificate::fromPath(certChainPath, QSsl::Pem, QRegExp::Wildcard);
-
     lua_getfield(L, 4, "certPath");
     const QString certPath = lua_tostring(L, -1);
     lua_pop(L, 1);
@@ -239,7 +233,6 @@ QWebSocket *webSocket =
     certFile.open(QIODevice::ReadOnly);
     QSslCertificate certificate(&certFile, QSsl::Pem);
     certFile.close();
-    localCertificateChain.push_front(certificate);
 
     lua_getfield(L, 4, "keyPath");
     const QString keyPath = lua_tostring(L, -1);
@@ -254,7 +247,7 @@ QWebSocket *webSocket =
     setCypherList(sslConfiguration, cypherListString);
     sslConfiguration.setPeerVerifyMode(QSslSocket::VerifyPeer);
     sslConfiguration.setCaCertificates(caCertificates);
-    sslConfiguration.setLocalCertificateChain(localCertificateChain);
+    sslConfiguration.setLocalCertificate(certificate);
     sslConfiguration.setPrivateKey(sslKey);
     webSocket->setSslConfiguration(sslConfiguration);
   }

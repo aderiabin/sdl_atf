@@ -65,7 +65,6 @@ local function getDefaultMobileAdapter()
       sslCypherListString = config.wssCypherListString,
       sslCaCertPath = config.wssCertificateCAPath,
       sslCertPath = config.wssCertificateClientPath,
-      sslcertChainPath = config.wssCertificateChainClientPath,
       sslKeyPath = config.wssPrivateKeyPath
     }
     return mobile_adapter_controller.getAdapter(mobileAdapterType, mobileAdapterParameters)
