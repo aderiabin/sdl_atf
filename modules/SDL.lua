@@ -502,7 +502,6 @@ SDL.PolicyDB = {}
 
 function SDL.PolicyDB.clean()
   deleteFile(getFilePath(config.pathToSDLPolicyDB, SDL.INI.get("AppStorageFolder")))
-  deleteFile(getFilePath(SDL.INI.get("AppInfoStorage")))
 end
 
 SDL.Log = {}
@@ -543,6 +542,34 @@ function SDL.AppStorage.clean(pPath)
     pPath = "*"
   end
   getExecFunc()("rm -rf " .. SDL.AppStorage.path() .. pPath)
+end
+
+SDL.AppInfo = {}
+
+function SDL.AppInfo.file()
+  return getPath(SDL.INI.get("AppInfoStorage"))
+end
+
+function SDL.AppInfo.get()
+  local content = getFileContent(SDL.AppInfo.file())
+  return json.decode(content)
+end
+
+function SDL.AppInfo.set(pAppInfo)
+  local content = json.encode(pAppInfo)
+  saveFileContent(SDL.HMICap.file(), content)
+end
+
+function SDL.AppInfo.backup()
+  backup(SDL.AppInfo.file())
+end
+
+function SDL.AppInfo.restore()
+  restore(SDL.AppInfo.file())
+end
+
+function SDL.AppInfo.clean()
+  deleteFile(SDL.AppInfo.file())
 end
 
 --- A global function for organizing execution delays (using the OS)
