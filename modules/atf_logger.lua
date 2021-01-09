@@ -2,7 +2,7 @@
 --
 -- *Dependencies:* `json`, `atf.stdlib.std.io`, `protocol_handler.ford_protocol_constants`
 --
--- *Globals:* `qdatetime`, `timestamp`, `config`
+-- *Globals:* `timestamp`, `config`
 -- @module atf_logger
 -- @copyright [Ford Motor Company](https://smartdevicelink.com/partners/ford/) and [SmartDeviceLink Consortium](https://smartdevicelink.com/consortium/)
 -- @license <https://github.com/smartdevicelink/sdl_core/blob/master/LICENSE>
@@ -10,6 +10,7 @@
 local json = require('json')
 local io = require('atf.stdlib.std.io')
 local ford_constants = require("protocol_handler/ford_protocol_constants")
+local qdatetime = require('luv.datetime')
 
 --- Singleton table which is used for perform all logging activities for ATF log.
 -- @table Logger

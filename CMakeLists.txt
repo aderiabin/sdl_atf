@@ -53,7 +53,6 @@ add_executable(${PROJECT_NAME}
     src/timers.cc
     src/qtdynamic.cc
     src/qtlua.cc
-    src/qdatetime.cc
     src/marshal.cc
     src/main.cc
     src/lua_interpreter.cc)

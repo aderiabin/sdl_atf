@@ -8,7 +8,6 @@
 #include "network.h"
 #include "timers.h"
 #include "qtlua.h"
-#include "qdatetime.h"
 #include <assert.h>
 #include <iostream>
 #include <stdexcept>
@@ -39,7 +38,7 @@ int app_quit(lua_State *L) {
 
 int timestamp(lua_State *L) {
   struct timespec ts;
-  clock_gettime(CLOCK_MONOTONIC, &ts);
+  clock_gettime(CLOCK_REALTIME, &ts);
   lua_pushnumber(L, ts.tv_sec * 1000 + ts.tv_nsec / 1000000);
   return 1;
 }
@@ -60,19 +59,18 @@ LuaInterpreter::LuaInterpreter(QObject *parent, const QStringList::iterator& arg
   : QObject(parent) {
   lua_state = luaL_newstate();
 
-  luaL_requiref(lua_state, "base", &luaopen_base, 1);
-  luaL_requiref(lua_state, "package", &luaopen_package, 1);
-  luaL_requiref(lua_state, "network", &luaopen_network, 1);
-  luaL_requiref(lua_state, "timers", &luaopen_timers, 1);
-  luaL_requiref(lua_state, "string", &luaopen_string, 1);
-  luaL_requiref(lua_state, "table", &luaopen_table, 1);
-  luaL_requiref(lua_state, "debug", &luaopen_debug, 1);
-  luaL_requiref(lua_state, "math", &luaopen_math, 1);
-  luaL_requiref(lua_state, "io", &luaopen_io, 1);
-  luaL_requiref(lua_state, "os", &luaopen_os, 1);
-  luaL_requiref(lua_state, "bit32", &luaopen_bit32, 1);
-  luaL_requiref(lua_state, "qt", &luaopen_qt, 1);
-  luaL_requiref(lua_state, "qdatetime", &luaopen_qdatetime, 1);
+  luaL_requiref(lua_state, "base", &luaopen_base, 1); // <lualib.h>
+  luaL_requiref(lua_state, "package", &luaopen_package, 1); // <lualib.h>
+  luaL_requiref(lua_state, "network", &luaopen_network, 1); // network.h
+  luaL_requiref(lua_state, "timers", &luaopen_timers, 1); // timers.h
+  luaL_requiref(lua_state, "string", &luaopen_string, 1); // <lualib.h>
+  luaL_requiref(lua_state, "table", &luaopen_table, 1); // <lualib.h>
+  luaL_requiref(lua_state, "debug", &luaopen_debug, 1); // <lualib.h>
+  luaL_requiref(lua_state, "math", &luaopen_math, 1); // <lualib.h>
+  luaL_requiref(lua_state, "io", &luaopen_io, 1); // <lualib.h>
+  luaL_requiref(lua_state, "os", &luaopen_os, 1); // <lualib.h>
+  luaL_requiref(lua_state, "bit32", &luaopen_bit32, 1); // <lualib.h>
+  luaL_requiref(lua_state, "qt", &luaopen_qt, 1); // qtlua.h
 
 #line 192 "main.nw"
   // extend package.cpath
