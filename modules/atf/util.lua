@@ -293,7 +293,7 @@ function Util.commandLine.parse_cmdl()
         argument = (argument):gsub ("%W", "_")
         Util.commandLine[argument](value)
       else
-        if argument >= 2 and value ~= "modules/launch.lua" then
+        if value ~= "modules/launch.lua" then
           table.insert(scriptFiles, value)
         end
       end

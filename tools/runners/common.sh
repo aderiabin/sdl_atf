@@ -27,7 +27,12 @@ status() {
   remove_color ${REPORT_PATH_TS}/${REPORT_FILE}
 }
 
+print_lua_version() {
+  lua -v
+}
+
 process() {
+  print_lua_version
   ID=0
   local EXT=${TEST_TARGET: -3}
   if [ $EXT = "txt" ]; then
@@ -72,7 +77,7 @@ run_atf() {
     exec 2>&1
     sleep .1
     export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:./lib
-    ./ATF modules/launch.lua $SCRIPT $OPTIONS
+    lua modules/launch.lua $SCRIPT $OPTIONS
 
     RESULT_CODE=$?
 
