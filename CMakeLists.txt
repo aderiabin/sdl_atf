@@ -99,4 +99,5 @@ install(FILES "${CMAKE_SOURCE_DIR}/start.sh"
 
 add_subdirectory(src/luaxml)
 add_subdirectory(src/luaopenssl)
+add_subdirectory(src/luatime)
 add_subdirectory(src/remote_adapter)
