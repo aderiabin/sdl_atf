@@ -7,9 +7,11 @@
 -- @copyright [Ford Motor Company](https://smartdevicelink.com/partners/ford/) and [SmartDeviceLink Consortium](https://smartdevicelink.com/consortium/)
 -- @license <https://github.com/smartdevicelink/sdl_core/blob/master/LICENSE>
 
-local remote_connection = require("remote/remote_connection")
-local remote_file_utils = require("remote/remote_file_utils")
-local remote_application_utils = require("remote/remote_application_utils")
+if config.remoteConnection.enabled then
+  local remote_connection = require("remote/remote_connection")
+  local remote_file_utils = require("remote/remote_file_utils")
+  local remote_application_utils = require("remote/remote_application_utils")
+end
 
 --- Type ATF provides high level interface for test script creation
 -- @type ATF

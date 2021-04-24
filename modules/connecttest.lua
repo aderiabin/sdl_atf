@@ -56,7 +56,7 @@ event_dispatcher:AddConnection(Test.hmiConnection)
 event_dispatcher:AddConnection(Test.mobileConnection)
 --- Notification counter
 Test.notification_counter = 1
---- Tist of timers for specific test
+--- List of timers for specific test
 Test.timers = { }
 
 function Test.hmiConnection:EXPECT_HMIRESPONSE(id, args)
