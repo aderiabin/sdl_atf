@@ -13,6 +13,7 @@
 
 local ph = require('protocol_handler/protocol_handler')
 local constants = require('protocol_handler/ford_protocol_constants')
+local timers = require('luv.timers')
 
 local MD = {
   mt = { __index = { } }
@@ -163,7 +164,7 @@ end
 -- @treturn MessageDispatcher Constructed instance
 function MD.MessageDispatcher(connection)
   local res = {}
-  res._d = qt.dynamic()
+  res._d = { }
   res.generators = { }
   res.idx = 0
   res.connection = connection
@@ -171,7 +172,7 @@ function MD.MessageDispatcher(connection)
   -- res.bufferSize = 8192 -- previous hardcoded value
   res.mapped = { }
   res.timer = timers.Timer()
-  res.sender = qt.dynamic()
+  res.sender = { }
 
   function res._d:timeout()
     self:bytesWritten(0)
@@ -206,8 +207,8 @@ function MD.MessageDispatcher(connection)
   end
 
   res.timer:setSingleShot(true)
+  res.timer:setTimeoutHandler(res._d.timeout)
   res.connection:OnDataSent(function(_, num) res._d:bytesWritten(num) end)
-  qt.connect(res.timer, "timeout()", res._d, "timeout()")
   setmetatable(res, MD.mt)
   return res
 end
@@ -215,13 +216,7 @@ end
 --- Set handler for OnMessageSent
 -- @tparam function func Handler function
 function MD.mt.__index:OnMessageSent(func)
-  local d = qt.dynamic()
-
-  function d:SlotMessageSent(v)
-    func(v)
-  end
-
-  qt.connect(self.sender, "SignalMessageSent(int)", d, "SlotMessageSent(int)")
+  self.sender.onMessageSentHandler = func -- ToDo: investigate usage
 end
 
 --- Add filebuffer to generators
