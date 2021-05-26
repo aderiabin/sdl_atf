@@ -93,7 +93,7 @@ function mt.__index:StartHeartbeat()
     end
 
     if not self.heartbeatToSDLTimerRegistered then
-      qt.connect(self.heartbeatToSDLTimer, "timeout()", self.qtproxy, "SendHeartbeat()")
+      self.heartbeatToSDLTimer:setTimeoutHandler(self.proxy.SendHeartbeat)
       self.heartbeatToSDLTimerRegistered = true
     end
 
@@ -141,9 +141,9 @@ end
 -- @treturn HeartBeatMonitor Constructed instance
 function HbMonitor.HeartBeatMonitor(session)
   local res = { }
-  res.qtproxy = qt.dynamic()
+  res.proxy = { }
 
-  function res.qtproxy.SendHeartbeat()
+  function res.proxy.SendHeartbeat()
     if res.heartbeatEnabled and res.SendHeartbeatToSDL.get() then
       SendHeartbeat(res)
     end
