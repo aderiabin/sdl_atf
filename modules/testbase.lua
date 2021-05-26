@@ -13,7 +13,8 @@
 -- @module testbase
 -- @copyright [Ford Motor Company](https://smartdevicelink.com/partners/ford/) and [SmartDeviceLink Consortium](https://smartdevicelink.com/consortium/)
 -- @license <https://github.com/smartdevicelink/sdl_core/blob/master/LICENSE>
-
+local uv = require('luv')
+local timers = require('luv.timers')
 local ed = require("event_dispatcher")
 local events = require("events")
 local expectations = require('expectations')
@@ -36,7 +37,7 @@ local CRASH = SDL.CRASH
 local total_testset_result = true
 
 --- Support table for controlling test steps execution status
-local control = qt.dynamic()
+local control = { }
 
 --- Check whether character is capital
 -- @tparam string c Character for check
@@ -61,6 +62,7 @@ local function finishTestCaseRun()
   Test.current_case_name = nil
   util.runner.print_stopscript()
   xmlReporter:finalize()
+  uv.stop()
   if total_testset_result == false then
     quit(exit_codes.failed)
   else
@@ -173,7 +175,7 @@ function control:start()
   if config.color == nil then config.color = true end
   if is_redirected then config.color = false end
   SDL.DeleteFile()
-  self:next()
+  self:runNextCase()
 end
 
 --- Checks Test Case result and SDL status
@@ -241,7 +243,7 @@ local function CheckStatus()
       quit(exit_codes.aborted)
     end
   end
-  control:next()
+  control:runNextCase()
 end
 
 --- Fail the current Test execution
@@ -271,15 +273,14 @@ end
 
 --- Execute 'func' after defined timeout
 local function runAfter(self, func, timeout)
-  local d = qt.dynamic()
-  d.timeout = function(pTimer)
+  local timeoutHandler = function(pTimer)
     func()
     self.timers[pTimer] = nil
   end
 
   local timer = timers.Timer()
   self.timers[timer] = true
-  qt.connect(timer, "timeout()", d, "timeout()")
+  timer:setTimeoutHandler(timeoutHandler)
   timer:setSingleShot(true)
   timer:start(timeout)
 end
@@ -287,9 +288,6 @@ end
 --- Testbase module initialization
 local function main()
   setmetatable(Test, mt)
-
-  qt.connect(control, "next()", control, "runNextCase()")
-
   rawset(Test, "FailTestCase", FailTestCase)
   rawset(Test, "SkipTest", SkipTest)
   rawset(Test, "RunAfter", runAfter)
@@ -297,10 +295,13 @@ local function main()
   event_dispatcher = ed.EventDispatcher()
   event_dispatcher:OnPostEvent(CheckStatus)
   timeoutTimer = timers.Timer()
-  qt.connect(timeoutTimer, "timeout()", control, "checkstatus()")
-
+  timeoutTimer:setTimeoutHandler(control.checkstatus)
   timeoutTimer:start(400)
-  control:next()
+
+  local startTimer = timers.Timer()
+  startTimer:setTimeoutHandler(control.runNextCase)
+  startTimer:setSingleShot(true)
+  startTimer:start(5000)
 end
 
 -- Execute main and return result metatable
