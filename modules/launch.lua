@@ -36,24 +36,6 @@ function pt(tbl, name)
     print("[" .. tostring(k) .. "] = " .. tostring(v))
   end
 end
-
-local function test()
-  local uv = require('luv')
-
-  local ticks = 0
-  local aliveTimer = uv.new_timer()
-  aliveTimer:start(1000, 1000, function ()
-    if ticks < 20 then
-      print("UV timer is ticked")
-      ticks = ticks + 1
-    else
-      quit(4)
-    end
-  end)
-
-  uv.run()
-end
-
 -------------------------------------------------------------
 local uv = require('luv')
 local util = require ("atf.util")
@@ -84,11 +66,9 @@ end)
 local script_files = util.commandLine.parse_cmdl()
 if (#script_files > 0) then
   for _,scpt in ipairs(script_files) do
-    test()
-    -- util.runner.print_startscript(scpt)
-    -- util.runner.script_execute(scpt)
+    util.runner.print_startscript(scpt)
+    util.runner.script_execute(scpt)
   end
 end
 
-print("---004---")
 uv.run()
