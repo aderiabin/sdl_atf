@@ -1,3 +1,5 @@
+local uv = require('luv')
+
 local TimersManager = {}
 
 -- Timer
@@ -5,9 +7,9 @@ local timer_mt = { __index = {} }
 
 function timer_mt.__index:start(pMsecs)
   if pMsecs then
-    self.setInterval(pMsecs)
+    self:setInterval(pMsecs)
   end
-  local repeatInterval = self.isSingleShot and self.interval or 0
+  local repeatInterval = not self.isSingleShot and self.interval or 0
   self.timer:start(self.interval, repeatInterval, self.timeoutHandler)
 end
 
@@ -16,8 +18,8 @@ function timer_mt.__index:stop()
 end
 
 function timer_mt.__index:reset()
-  self.stop()
-  self.start()
+  self:stop()
+  self:start()
 end
 
 function timer_mt.__index:setInterval(pMsec)
