@@ -1,3 +1,5 @@
+local uv = require('luv')
+
 local TcpManager = {}
 
 -- TCP client
@@ -37,27 +39,45 @@ end
 
 function tcp_client_mt.__index:write(pData)
   -- ToDo: Add connection check here
-  self.client:write(pData)
+  self.client:write(pData, self.onDataSentHandler)
 end
 
 function tcp_client_mt.__index:close() end
 
-function tcp_client_mt.__index:setOnDataHandler(pHandlerFunc)
+function tcp_client_mt.__index:setOnDataReceivedHandler(pHandlerFunc)
   if not type(pHandlerFunc) == "function" then
-    print("OnDataHandler of " .. self .. " TCP client was not set because "
+    print("OnDataReceivedHandler of " .. self .. " TCP client was not set because "
       .. pHandlerFunc .. " is not a function")
     return
   end
-  self.onDataHandler = pHandlerFunc
+  self.onDataReceivedHandler = pHandlerFunc
 end
 
-function tcp_client_mt.__index:setOnConnectHandler(pHandlerFunc)
+function tcp_client_mt.__index:setOnDataSentHandler(pHandlerFunc)
+  if not type(pHandlerFunc) == "function" then
+    print("OnDataSentHandler of " .. self .. " TCP client was not set because "
+      .. pHandlerFunc .. " is not a function")
+    return
+  end
+  self.onDataSentHandler = pHandlerFunc
+end
+
+function tcp_client_mt.__index:setOnConnectedHandler(pHandlerFunc)
   if not type(pHandlerFunc) == "function" then
     print("OnConnectHandler of " .. self .. " TCP client was not set because "
       .. pHandlerFunc .. " is not a function")
     return
   end
-  self.onDataHandler = pHandlerFunc
+  self.onConnectedHandler = pHandlerFunc
+end
+
+function tcp_client_mt.__index:setOnDisconnectedHandler(pHandlerFunc)
+  if not type(pHandlerFunc) == "function" then
+    print("OnDisconnectHandler of " .. self .. " TCP client was not set because "
+      .. pHandlerFunc .. " is not a function")
+    return
+  end
+  self.onDisconnectedHandler = pHandlerFunc
 end
 
 -- TCP server
@@ -83,12 +103,14 @@ function tcp_server_mt.__index:get_connection()
   return nil
 end
 
--- TimersManager
+-- TcpManager
 function TcpManager.TcpClient()
   local res = {
     client = uv.new_tcp(),
-    onDataHandler = nil,
-    onConnectHandler = nil
+    onDataReceivedHandler = nil,
+    onDataSentHandler = nil,
+    onConnectedHandler = nil,
+    onDisconnectedHandler = nil
   }
   setmetatable(res, tcp_client_mt)
   return res
@@ -98,7 +120,7 @@ function TcpManager.TcpServer()
   local res = {
     server = uv.new_tcp(),
     backlog = 128,
-    pendingConnections = {}
+    pendingConnections = { }
   }
   setmetatable(res, tcp_server_mt)
   return res

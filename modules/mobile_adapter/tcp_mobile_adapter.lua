@@ -7,6 +7,8 @@
 -- @copyright [Ford Motor Company](https://smartdevicelink.com/partners/ford/) and [SmartDeviceLink Consortium](https://smartdevicelink.com/consortium/)
 -- @license <https://github.com/smartdevicelink/sdl_core/blob/master/LICENSE>
 
+local network = require('luv.network')
+
 local Tcp = { mt = { __index = {} } }
 
 --- Type which provides transport level interface for emulate connection with mobile for SDL
@@ -25,18 +27,18 @@ function Tcp.Connection(params)
   }
   res.socket = network.TcpClient()
   setmetatable(res, Tcp.mt)
-  res.qtproxy = qt.dynamic()
+  -- res.qtproxy = qt.dynamic()
+  res.proxy = { }
+  -- function res:inputData() end
 
-  function res:inputData() end
-
-  function res.qtproxy.readyRead()
-    while true do
-      local data = res.socket:read(81920)
-      if data == '' then break end
-      res.qtproxy:inputData(data)
-    end
-  end
-  qt.connect(res.socket, "readyRead()", res.qtproxy, "readyRead()")
+  -- function res.proxy.readyRead()
+  --   while true do
+  --     local data = res.socket:read(81920)
+  --     if data == '' then break end
+  --     res.proxy:inputData(data)
+  --   end
+  -- end
+  -- qt.connect(res.socket, "readyRead()", res.qtproxy, "readyRead()")
 
   return res
 end
@@ -54,6 +56,7 @@ function Tcp.mt.__index:Connect()
   xmlReporter.AddMessage("tcp_connection","Connect")
   checkSelfArg(self)
   self.socket:connect(self.targetHost, self.targetPort, config.connectionTimeout, self.sourceHost)
+  self.socket:read()
 end
 
 --- Send pack of messages from mobile to SDL
@@ -70,47 +73,53 @@ end
 -- @tparam function func Handler function
 function Tcp.mt.__index:OnInputData(func)
   checkSelfArg(self)
-  local d = qt.dynamic()
+  -- local d = qt.dynamic()
+  local d = { }
   local this = self
   function d:inputData(data)
     func(this, data)
   end
-  qt.connect(self.qtproxy, "inputData(QByteArray)", d, "inputData(QByteArray)")
+  -- qt.connect(self.qtproxy, "inputData(QByteArray)", d, "inputData(QByteArray)")
+  self.socket:setOnDataReceivedHandler(d.inputData)
 end
 
 --- Set handler for OnDataSent
 -- @tparam function func Handler function
 function Tcp.mt.__index:OnDataSent(func)
-  local d = qt.dynamic()
+  -- local d = qt.dynamic()
+  local d = { }
   local this = self
   function d:bytesWritten(num)
     func(this, num)
   end
-  qt.connect(self.socket, "bytesWritten(qint64)", d, "bytesWritten(qint64)")
+  -- qt.connect(self.socket, "bytesWritten(qint64)", d, "bytesWritten(qint64)")
+  self.socket:setOnDataSentHandler(d.bytesWritten)
 end
 
 --- Set handler for OnConnected
 -- @tparam function func Handler function
 function Tcp.mt.__index:OnConnected(func)
   checkSelfArg(self)
-  if self.qtproxy.connected then
+  if self.proxy.connected then
     error("Tcp connection: connected signal is handled already")
   end
   local this = self
-  self.qtproxy.connected = function() func(this) end
-  qt.connect(self.socket, "connected()", self.qtproxy, "connected()")
+  self.proxy.connected = function() func(this) end
+  -- qt.connect(self.socket, "connected()", self.qtproxy, "connected()")
+  self.socket:setOnConnectedHandler(self.proxy.connected)
 end
 
 --- Set handler for OnDisconnected
 -- @tparam function func Handler function
 function Tcp.mt.__index:OnDisconnected(func)
   checkSelfArg(self)
-  if self.qtproxy.disconnected then
+  if self.proxy.disconnected then
     error("Tcp connection: disconnected signal is handled already")
   end
   local this = self
-  self.qtproxy.disconnected = function() func(this) end
-  qt.connect(self.socket, "disconnected()", self.qtproxy, "disconnected()")
+  self.proxy.disconnected = function() func(this) end
+  -- qt.connect(self.socket, "disconnected()", self.qtproxy, "disconnected()")
+  self.socket:setOnDisconnectedHandler(function() func(this) end)
 end
 
 --- Close connection

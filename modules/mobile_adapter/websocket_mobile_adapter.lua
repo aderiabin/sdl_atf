@@ -7,6 +7,8 @@
 -- @copyright [Ford Motor Company](https://smartdevicelink.com/partners/ford/) and [SmartDeviceLink Consortium](https://smartdevicelink.com/consortium/)
 -- @license <https://github.com/smartdevicelink/sdl_core/blob/master/LICENSE>
 
+local network = require('luv.network')
+
 local WebEngineWS = { mt = { __index = {} } }
 
 --- Type which provides transport level interface for emulate connection with mobile for SDL
@@ -45,8 +47,8 @@ function WebEngineWS.Connection(params)
 
   res.socket = network.WebSocket()
   setmetatable(res, WebEngineWS.mt)
-  res.qtproxy = qt.dynamic()
-
+  -- res.qtproxy = qt.dynamic()
+  res.proxy = { }
   return res
 end
 
@@ -67,6 +69,7 @@ function WebEngineWS.mt.__index:Connect()
   -- end
   -- qt.connect(self.socket, "sslErrors(QList<QSslError>)", self.qtproxy, "onSslErrors(QList<QSslError>)")
   self.socket:open(self.url, self.port, config.connectionTimeout, self.ssl)
+  self.socket:read()
 end
 
 --- Send pack of messages from mobile to SDL
@@ -82,42 +85,46 @@ end
 -- @tparam function func Handler function
 function WebEngineWS.mt.__index:OnInputData(func)
   local this = self
-  function self.qtproxy:binaryMessageReceived(data)
+  function self.proxy:binaryMessageReceived(data)
     func(this, data)
   end
-  qt.connect(self.socket, "binaryMessageReceived(QByteArray)", self.qtproxy, "binaryMessageReceived(QByteArray)")
+  -- qt.connect(self.socket, "binaryMessageReceived(QByteArray)", self.qtproxy, "binaryMessageReceived(QByteArray)")
+  self.socket:setOnBinaryDataReceivedHandler(self.proxy.binaryMessageReceived)
 end
 
 --- Set handler for OnDataSent
 -- @tparam function func Handler function
 function WebEngineWS.mt.__index:OnDataSent(func)
   local this = self
-  function self.qtproxy:bytesWritten(num)
+  function self.proxy:bytesWritten(num)
     func(this, num)
   end
-  qt.connect(self.socket, "bytesWritten(qint64)", self.qtproxy, "bytesWritten(qint64)")
+  -- qt.connect(self.socket, "bytesWritten(qint64)", self.qtproxy, "bytesWritten(qint64)")
+  self.socket:setOnBinaryDataSentHandler(self.proxy.bytesWritten)
 end
 
 --- Set handler for OnConnected
 -- @tparam function func Handler function
 function WebEngineWS.mt.__index:OnConnected(func)
-  if self.qtproxy.connected then
+  if self.proxy.connected then
     error("WebEngineWS connection: connected signal is handled already")
   end
   local this = self
-  self.qtproxy.connected = function() func(this) end
-  qt.connect(self.socket, "connected()", self.qtproxy, "connected()")
+  self.proxy.connected = function() func(this) end
+  -- qt.connect(self.socket, "connected()", self.qtproxy, "connected()")
+  self.socket:setOnConnectedHandler(self.proxy.connected)
 end
 
 --- Set handler for OnDisconnected
 -- @tparam function func Handler function
 function WebEngineWS.mt.__index:OnDisconnected(func)
-  if self.qtproxy.disconnected then
+  if self.proxy.disconnected then
     error("WebEngineWS connection: disconnected signal is handled already")
   end
   local this = self
-  self.qtproxy.disconnected = function() func(this) end
-  qt.connect(self.socket, "disconnected()", self.qtproxy, "disconnected()")
+  self.proxy.disconnected = function() func(this) end
+  -- qt.connect(self.socket, "disconnected()", self.qtproxy, "disconnected()")
+  self.socket:setOnDisconnectedHandler(self.proxy.disconnected)
 end
 
 --- Close connection
