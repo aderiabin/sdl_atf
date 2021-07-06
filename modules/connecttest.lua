@@ -14,7 +14,8 @@
 require('atf.util')
 local Test = require('testbase')
 local mobile = require("mobile_connection")
-local mobile_adapter_controller = require("mobile_adapter/mobile_adapter_controller")
+local mobile_adapter_controller = require("mobile_adapter/emulated/mobile_adapter_controller")
+local mobile_device_manager = require("mobile_device/mobile_device_manager")
 local file_connection = require("file_connection")
 local mobile_session = require("mobile_session")
 local hmi_adapter_controller = require("hmi_adapter/hmi_adapter_controller")
@@ -44,16 +45,13 @@ local FAILED = expectations.FAILED
 
 --- HMI connection
 Test.hmiConnection = hmi_connection.Connection(hmi_adapter_controller.getHmiAdapter({connection = Test.remoteConnection}))
+event_dispatcher:AddConnection(Test.hmiConnection)
 
 --- Default mobile connection
-Test.getDefaultMobileAdapter = mobile_adapter_controller.getDefaultAdapter
+local defaultDeviceInfo = mobile_device_manager.GetDefaultDeviceInfo()
+local defaultAdapterParameters = mobile_adapter_controller.getDefaultAdapterParameters()
+Test.mobileConnection = mobile_device_manager.CreateMobileConnection(defaultDeviceInfo, defaultAdapterParameters)
 
-local mobileAdapter = Test.getDefaultMobileAdapter()
-local fileConnection = file_connection.FileConnection("mobile.out", mobileAdapter)
-Test.mobileConnection = mobile.MobileConnection(fileConnection)
-
-event_dispatcher:AddConnection(Test.hmiConnection)
-event_dispatcher:AddConnection(Test.mobileConnection)
 --- Notification counter
 Test.notification_counter = 1
 --- Tist of timers for specific test

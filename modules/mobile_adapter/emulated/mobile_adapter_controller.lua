@@ -1,6 +1,6 @@
 --- Module which provides Mobile Adapter control functionality on base of mobile connection emulation type
 --
--- *Dependencies:* `mobile_adapter/tcp_mobile_adapter`, `mobile_adapter/webengine_mobile_adapter`
+-- *Dependencies:* `mobile_adapter/emulated/tcp_mobile_adapter`, `mobile_adapter/websocket_mobile_adapter`
 --
 -- *Globals:* none
 -- @module MobileAdapterController
@@ -8,9 +8,12 @@
 -- @license <https://github.com/smartdevicelink/sdl_core/blob/master/LICENSE>
 
 local mobileAdapters = {
-  TCP = require('mobile_adapter/tcp_mobile_adapter'),
-  WS = require('mobile_adapter/websocket_mobile_adapter'),
-  WSS = require('mobile_adapter/websocket_mobile_adapter')
+  TCP = require('mobile_adapter/emulated/tcp_mobile_adapter'),
+  WS = require('mobile_adapter/emulated/websocket_mobile_adapter'),
+  WSS = require('mobile_adapter/emulated/websocket_mobile_adapter'),
+  WIFI = require('mobile_adapter/real/real_device_tcp_transport_adapter'),
+  BT = require('mobile_adapter/real/real_device_tcp_transport_adapter'),
+  USB = require('mobile_adapter/real/real_device_tcp_transport_adapter')
 }
 
 local MobileAdapterController = {}
@@ -27,23 +30,22 @@ function MobileAdapterController.getAdapter(adapterType, adapterParams)
     .. "' was passed to MobileAdapterController.getAdapter method")
 end
 
-function MobileAdapterController.getDefaultAdapter()
+function MobileAdapterController.getDefaultAdapterParameters()
   local mobileAdapterType = config.defaultMobileAdapterType
   print("Default mobile device transport: " .. tostring(mobileAdapterType))
+  local mobileAdapterParameters
   if mobileAdapterType == "TCP" then
-    local mobileAdapterParameters = {
+    mobileAdapterParameters = {
       host = config.remoteConnection.enabled and config.remoteConnection.url or config.mobileHost,
       port = config.mobilePort
     }
-    return MobileAdapterController.getAdapter(mobileAdapterType, mobileAdapterParameters)
   elseif mobileAdapterType == "WS" then
-    local mobileAdapterParameters = {
+    mobileAdapterParameters = {
       url = config.wsMobileURL,
       port = config.wsMobilePort
     }
-    return MobileAdapterController.getAdapter(mobileAdapterType, mobileAdapterParameters)
   elseif mobileAdapterType == "WSS" then
-    local mobileAdapterParameters = {
+    mobileAdapterParameters = {
       url = config.wssMobileURL,
       port = config.wssMobilePort,
       sslProtocol = config.wssSecurityProtocol,
@@ -52,9 +54,21 @@ function MobileAdapterController.getDefaultAdapter()
       sslCertPath = config.wssCertificateClientPath,
       sslKeyPath = config.wssPrivateKeyPath
     }
-    return MobileAdapterController.getAdapter(mobileAdapterType, mobileAdapterParameters)
+  elseif mobileAdapterType == "WIFI" then
+    mobileAdapterParameters = {
+      --ToDo: Add parameters
+    }
+  elseif mobileAdapterType == "BT" then
+    mobileAdapterParameters = {
+      --ToDo: Add parameters
+    }
+  elseif mobileAdapterType == "USB" then
+    mobileAdapterParameters = {
+      --ToDo: Add parameters
+    }
   else error("Unknown default mobile adapter type: " .. tostring(mobileAdapterType))
   end
+  return mobileAdapterParameters
 end
 
 return MobileAdapterController

@@ -5,6 +5,8 @@
 #include <QTcpSocket>
 #include <QTcpServer>
 #include <QWebSocket>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
 #include <QEventLoop>
 #include <QString>
 #include <QStringList>
@@ -324,6 +326,59 @@ QWebSocket *webSocket =
   return 0;
 }/*}}}*/
 /*}}}*/
+
+// HttpClient functions/*{{{*/
+int network_http_client(lua_State *L) {/*{{{*/
+  QNetworkAccessManager *client = new QNetworkAccessManager();
+  QNetworkAccessManager **p =
+    static_cast<QNetworkAccessManager**>(lua_newuserdata(L, sizeof(QNetworkAccessManager*)));
+  *p = client;
+  luaL_getmetatable(L, "network.HttpClient");
+  lua_setmetatable(L, -2);
+  return 1;
+}/*}}}*/
+
+int http_client_get(lua_State *L) {/*{{{*/
+  QNetworkAccessManager *client =
+    *static_cast<QNetworkAccessManager**>(luaL_checkudata(L, 1, "network.HttpClient"));
+  QUrl url(luaL_checkstring(L, 2));
+  QNetworkRequest request;
+  request.setUrl(url);
+  request.setRawHeader("Content-Type","application/json");
+
+  QNetworkReply *reply = client->get(request);
+  bool isError = false;
+  QTime timer;
+  timer.start();
+  while (!reply->isFinished()) {
+    // Check elapsed time
+    const int timeWaitingMs = 1000;
+    if (timer.elapsed() > timeWaitingMs){
+      fprintf(stderr, "Error: Request was not finished in %i msec\n", timeWaitingMs);
+      isError = true;
+      break;
+    }
+  }
+  if (!isError) {
+    QByteArray result = reply->readAll();
+    lua_pushlstring(L, result.data(), result.count());
+    lua_pushnil(L);
+    return 2;
+  }
+  QByteArray error = reply->errorString().toLatin1();
+  lua_pushnil(L);
+  lua_pushlstring(L, error.data(), error.count());
+  return 2;
+}/*}}}*/
+
+int http_client_delete(lua_State *L) {/*{{{*/
+QNetworkAccessManager *client =
+  *static_cast<QNetworkAccessManager**>(luaL_checkudata(L, 1, "network.HttpClient"));
+  delete client;
+  return 0;
+}/*}}}*/
+/*}}}*/
+
 #line 158 "network.nw"
 int luaopen_network(lua_State *L) {
   lua_newtable(L);
@@ -372,11 +427,23 @@ int luaopen_network(lua_State *L) {
   lua_setfield(L, -2, "__index");
   lua_pushcfunction(L, web_socket_delete);
   lua_setfield(L, -2, "__gc");/*}}}*/
+  // HttpClient metatable/*{{{*/
+  luaL_newmetatable(L, "network.HttpClient");
+  lua_newtable(L);
+  luaL_Reg http_client_functions[] = {
+    { "get", &http_client_get },
+    { NULL, NULL }
+  };
+  luaL_setfuncs(L, http_client_functions, 0);
+  lua_setfield(L, -2, "__index");
+  lua_pushcfunction(L, http_client_delete);
+  lua_setfield(L, -2, "__gc");/*}}}*/
 
   luaL_Reg network_functions[] = {
     { "TcpClient", &network_tcp_client },
     { "TcpServer", &network_tcp_server },
     { "WebSocket", &network_web_socket },
+    {"HttpClient", &network_http_client },
     { NULL, NULL }
   };
   luaL_newlib(L, network_functions);

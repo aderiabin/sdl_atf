@@ -24,10 +24,16 @@ local MobileConnection = {
 
 --- Construct instance of MobileConnection type
 -- @tparam FileConnection connection Lower level connection
+-- @tparam DeviceInfo deviceInfo Table which contains information about used device
 -- @treturn MobileConnection Constructed instance
-function MobileConnection.MobileConnection(connection)
+function MobileConnection.MobileConnection(connection, deviceInfo)
+  if not deviceInfo then
+    deviceInfo = config.defaultMobileDeviceInfo
+  end
   local res = { }
   res.connection = connection
+  res.deviceInfo = deviceInfo
+  res.isConnected = false
   setmetatable(res, MobileConnection.mt)
   return res
 end
@@ -157,13 +163,19 @@ end
 --- Set handler for OnConnected
 -- @tparam function func Handler function
 function MobileConnection.mt.__index:OnConnected(func)
-  self.connection:OnConnected(function() func(self) end)
+  self.connection:OnConnected(function()
+      self.isConnected = true
+      func(self)
+    end)
 end
 
 --- Set handler for OnDisconnected
 -- @tparam function func Handler function
 function MobileConnection.mt.__index:OnDisconnected(func)
-  self.connection:OnDisconnected(function() func(self) end)
+  self.connection:OnDisconnected(function()
+      func(self)
+      self.isConnected = false
+    end)
 end
 
 --- Close connection
